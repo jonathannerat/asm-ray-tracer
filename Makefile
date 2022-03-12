@@ -1,7 +1,8 @@
 TARGET=rt
-SRC=main.c vec3.c camera.c
+SRC=main.c vec3.c  util.c
+# camera.c util.c
 OBJ=${SRC:.c=.o}
-CFLAGS=-std=c99 -pedantic -Wall
+CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm
 
 all: options ${TARGET}
@@ -14,8 +15,6 @@ options:
 
 .c.o:
 	${CC} -c ${CFLAGS} $<
-
-${OBJ}: util.h
 
 ${TARGET}: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
