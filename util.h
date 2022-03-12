@@ -19,5 +19,6 @@ inline double random_double_between(double min, double max) {
 
 void vec3_debug(const vec3 v);
 void ray_debug(const ray *r);
+char* strfind(char *c, char f);
 
 #endif // UTIL_H

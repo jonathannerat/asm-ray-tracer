@@ -46,3 +46,19 @@ vec3 vec3_sum(const u_int32_t n, ...) {
 
   return r;
 }
+
+vec3 parse_vec3(char *c, char **t) {
+  vec3 v;
+
+  v.x = strtod(c, &c);
+  c++;
+
+  v.y = strtod(c, &c);
+  c++;
+
+  v.z = strtod(c, &c);
+
+  if (t) *t = c;
+
+  return v;
+}

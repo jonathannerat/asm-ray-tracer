@@ -17,6 +17,7 @@ vec3 vec3_random_in_unit_sphere();
 vec3 vec3_random();
 vec3 vec3_random_between(double min, double max);
 vec3 vec3_sum(const u_int32_t n, ...);
+vec3 parse_vec3(char *c, char **t);
 
 inline vec3 vec3_add(const vec3 a, const vec3 b) {
   return (vec3){a.x + b.x, a.y + b.y, a.z + b.z};
