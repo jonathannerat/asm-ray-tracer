@@ -1,6 +1,7 @@
-#include "vec3.h"
-
 #include <stdarg.h>
+
+#include "vec3.h"
+#include "util.h"
 
 vec3 vec3_sum(const u_int32_t n, ...) {
   vec3 r = {.x = 0, .y = 0, .z = 0};
@@ -19,4 +20,25 @@ vec3 vec3_sum(const u_int32_t n, ...) {
   va_end(args);
 
   return r;
+}
+
+vec3 vec3_random_in_unit_sphere() {
+  while (1) {
+    vec3 p = vec3_random_between(-1, 1);
+
+    if (vec3_norm2(p) >= 1) 
+      continue;
+
+    return p;
+  }
+}
+
+vec3 vec3_random() {
+  return (vec3){random_double(), random_double(), random_double()};
+}
+
+vec3 vec3_random_between(double min, double max) {
+  return (vec3){random_double_between(min, max),
+                random_double_between(min, max),
+                random_double_between(min, max)};
 }

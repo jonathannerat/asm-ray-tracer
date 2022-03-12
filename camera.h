@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "vec3.h"
+#include "ray.h"
 
 typedef struct {
   point origin;
@@ -9,9 +9,10 @@ typedef struct {
   vec3 horizontal;
   vec3 vertical;
   vec3 u, v, w;
-  float lens_radius;
+  double lens_radius;
 } camera;
 
-camera camera_init(point from, point to, vec3 vup, float vfov,
-                   float aspect_ratio, float aperture, float focus_dist);
+camera camera_init(point from, point to, vec3 vup, double vfov,
+                   double aspect_ratio, double aperture, double focus_dist);
+ray camera_get_ray(const camera *c, double s, double t);
 #endif // CAMERA_H
