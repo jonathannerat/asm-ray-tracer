@@ -53,3 +53,7 @@ dkms.conf
 
 # LSP Files
 .ccls-cache/
+.cache/
+compile_commands.json
+out.*
+rt
