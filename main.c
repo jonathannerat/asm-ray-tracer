@@ -2,9 +2,10 @@
 #include <sys/types.h>
 
 #include "Scene.h"
+#include "hittable/Box.h"
 #include "hittable/List.h"
 #include "hittable/Plane.h"
-#include "hittable/Box.h"
+#include "hittable/Sphere.h"
 
 int main(int argc, char **argv) {
   Scene *s;
@@ -15,7 +16,7 @@ int main(int argc, char **argv) {
   else
     s = scene_init();
 
-  list_push(l, (Hittable *)box_init((point){0, 0, 0}, (point){1, 1, 1}));
+  list_push(l, (Hittable *)sphere_init((point){0, 1, 0}, .9));
 
   s->world = (Hittable *)l;
 
