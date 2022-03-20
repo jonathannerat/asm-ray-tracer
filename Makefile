@@ -1,5 +1,6 @@
 TARGET=rt
-SRC=main.c vec3.c  util.c camera.c scene.c
+CC=gcc
+SRC=main.c vec3.c  util.c camera.c ray.c Scene.c hittable/List.c hittable/Plane.c
 OBJ=${SRC:.c=.o}
 CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm
@@ -11,9 +12,10 @@ options:
 	@echo "CFLAGS     = ${CFLAGS}"
 	@echo "LDFLAGS    = ${LDFLAGS}"
 	@echo "CC         = ${CC}"
+	@echo "OBJ        = ${OBJ}"
 
 .c.o:
-	${CC} -c ${CFLAGS} $<
+	${CC} -c -o $@ ${CFLAGS} $<
 
 ${TARGET}: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}

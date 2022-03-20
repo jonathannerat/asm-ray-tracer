@@ -3,13 +3,18 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
-#include "vec3.h"
-#include "ray.h"
+#define EPS 1e-8
+#define M_PI 3.14159265358979323846f
 
-#define PI 3.1415926535897932385
+#define false 0
+#define true 1
 
-inline double degrees_to_radians(double degrees) { return degrees * PI / 180.0; }
+typedef u_int8_t bool_;
+
+
+inline double degrees_to_radians(double degrees) { return degrees * M_PI / 180.0; }
 
 inline double random_double() { return rand() / (RAND_MAX + 1.0); }
 
@@ -17,8 +22,10 @@ inline double random_double_between(double min, double max) {
   return min + random_double() * (max - min);
 }
 
-void vec3_debug(const vec3 v);
-void ray_debug(const ray *r);
+inline double clamp(double x, double min, double max) {
+  return x < min ? min : (x > max ? max : x);
+}
+
 char* strfind(char *c, char f);
 
 #endif // UTIL_H
