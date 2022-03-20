@@ -6,6 +6,7 @@
 #include "hittable/List.h"
 #include "hittable/Plane.h"
 #include "hittable/Sphere.h"
+#include "hittable/Triangle.h"
 
 int main(int argc, char **argv) {
   Scene *s;
@@ -16,7 +17,7 @@ int main(int argc, char **argv) {
   else
     s = scene_init();
 
-  list_push(l, (Hittable *)sphere_init((point){0, 1, 0}, .9));
+  list_push(l, (Hittable *)triangle_init((point){0, 1, 0}, (point){1, 0, 0}, (point){0, 0, 1}));
 
   s->world = (Hittable *)l;
 
