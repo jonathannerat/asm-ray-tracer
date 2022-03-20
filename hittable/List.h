@@ -6,13 +6,15 @@
 typedef struct {
   Hittable _hittable;
   Hittable **list;
-  u_int32_t size;
-  u_int32_t cap;
+  size_t size;
+  size_t cap;
 } List;
 
 List *list_init();
 
 bool_ list_push(List *l, Hittable *h);
+
+Hittable *list_get(List *l, size_t i);
 
 void list_destroy(List *l);
 

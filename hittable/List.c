@@ -1,6 +1,6 @@
 #include "List.h"
 
-#define LIST_INITIAL_CAPACITY 64
+#define LIST_INITIAL_CAPACITY 16
 
 bool_ list_hit(const Hittable *o, const ray *r, double t_min, double t_max,
                HitRecord *hr);
@@ -31,6 +31,12 @@ bool_ list_push(List *self, Hittable *h) {
   self->size++;
 
   return true;
+}
+
+Hittable *list_get(List *l, size_t i) {
+  if (i >= l->size) return NULL;
+
+  return l->list[i];
 }
 
 void list_destroy(List *self) {
