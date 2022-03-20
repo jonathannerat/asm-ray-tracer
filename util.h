@@ -11,6 +11,9 @@
 #define false 0
 #define true 1
 
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+
 typedef u_int8_t bool_;
 
 

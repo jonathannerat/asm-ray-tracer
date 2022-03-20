@@ -1,6 +1,6 @@
 TARGET=rt
 CC=gcc
-SRC=main.c vec3.c  util.c camera.c ray.c Scene.c hittable/List.c hittable/Plane.c
+SRC=main.c vec3.c  util.c camera.c ray.c Scene.c hittable/List.c hittable/Plane.c hittable/Box.c
 OBJ=${SRC:.c=.o}
 CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm
