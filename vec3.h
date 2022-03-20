@@ -68,8 +68,16 @@ inline vec3 normalized(const vec3 v) {
 inline bool_ vec3_near_zero(const vec3 v) {
   return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS ;
 }
+
 inline vec3 reflect(const vec3 v, const vec3 n) {
   return vec3_sub(v, vec3_scale(2 * dot(v, n), n));
+}
+
+inline vec3 refract(const vec3 uv, const vec3 n, double etai_over_etat) {
+  double cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
+  vec3 r_out_perp = vec3_scale(etai_over_etat, vec3_add(uv, vec3_scale(cos_theta, n)));
+  vec3 r_out_par = vec3_scale(-sqrt(fabs(1.0 - vec3_norm2(r_out_perp))), n);
+  return vec3_add(r_out_perp, r_out_par);
 }
 
 const char* vec3_tostr(const vec3 v);

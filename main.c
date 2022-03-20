@@ -20,11 +20,13 @@ int main(int argc, char **argv) {
   // list_push(l, (Hittable *)triangle_init((point){0, 1, 0}, (point){1, 0, 0}, (point){0, 0, 1},
   //                                        (Material *)lambertian_init((color){1, 1, .2})));
   list_push(l, (Hittable *)plane_init((point){0, -.2, 0}, (vec3){0, 1, 0},
-                                         (Material *)lambertian_init((color){.3, .8, .1})));
-  list_push(l, (Hittable *)box_init((point){2, 1, 0}, (point){0,0,1},
-                                         (Material *)lambertian_init((color){0, 0, .5})));
+                                      (Material *)lambertian_init((color){.3, .8, .1})));
+  list_push(l, (Hittable *)box_init((point){2, 1, 0}, (point){0, 0, 1},
+                                    (Material *)lambertian_init((color){.1, .2, .6})));
   list_push(l, (Hittable *)sphere_init((point){-2, 1, 0}, .9,
-                                         (Material *)metal_init((color){.9, .9, .9}, 0)));
+                                       (Material *)dielectric_init((color){1, 1, 1}, .95)));
+  list_push(l, (Hittable *)sphere_init((point){-2, 1, 0}, -.85,
+                                       (Material *)dielectric_init((color){1, 1, 1}, .95)));
 
   s->world = (Hittable *)l;
 

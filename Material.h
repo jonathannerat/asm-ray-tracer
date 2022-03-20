@@ -37,4 +37,17 @@ typedef struct {
 Metal *metal_init(color albedo, double fuzz);
 void metal_destroy(Metal *self);
 
+
+
+/// DIELECTRIC
+
+typedef struct {
+  Material _material;
+  color albedo;
+  double ir;
+} Dielectric;
+
+Dielectric *dielectric_init(color albedo, double ir);
+void dielectrict_destroy(Dielectric *self);
+
 #endif // MATERIAL_H
