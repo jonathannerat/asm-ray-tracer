@@ -1,6 +1,6 @@
 #include "Sphere.h"
 
-bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, HitRecord *hr);
+bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
 Sphere *sphere_init(point center, double radius) {
   Sphere *s = malloc(sizeof(Sphere));
@@ -13,7 +13,7 @@ Sphere *sphere_init(point center, double radius) {
   return s;
 }
 
-bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, HitRecord *hr) {
+bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   Sphere *self = (Sphere *)_self;
 
   vec3 oc = vec3_sub(r->origin, self->center);

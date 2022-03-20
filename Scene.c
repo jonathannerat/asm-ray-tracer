@@ -66,7 +66,7 @@ color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
   if (depth <= 0)
     return (color){0, 0, 0};
 
-  HitRecord rec;
+  Record rec;
 
   if (world->hit(world, r, 0.001, INFINITY, &rec))
     return (color){.3, .4, .5};

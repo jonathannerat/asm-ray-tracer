@@ -1,6 +1,6 @@
 #include "Box.h"
 
-bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, HitRecord *hr);
+bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 bool_ box_is_inside(Box *b, point p);
 
 Box *box_init(point p1, point p2) {
@@ -33,12 +33,12 @@ Box *box_init(point p1, point p2) {
   return b;
 }
 
-bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, HitRecord *hr) {
+bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   Box *self = (Box *)_self;
   size_t i;
   bool_ hit_anything = false;
   double closest_so_far = t_max;
-  HitRecord tmp;
+  Record tmp;
 
   for (i = 0; i < self->faces->size; i++) {
     Hittable *h = list_get(self->faces, i);

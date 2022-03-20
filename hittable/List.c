@@ -3,7 +3,7 @@
 #define LIST_INITIAL_CAPACITY 16
 
 bool_ list_hit(const Hittable *o, const ray *r, double t_min, double t_max,
-               HitRecord *hr);
+               Record *hr);
 
 List *list_init() {
   List *self = malloc(sizeof(List));
@@ -49,9 +49,9 @@ void list_destroy(List *self) {
 }
 
 bool_ list_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
-               HitRecord *hr) {
+               Record *hr) {
   List *self = (List *)_self;
-  HitRecord tmp;
+  Record tmp;
   u_int32_t i;
   bool_ hit_anything = false;
   double closest_so_far = t_max;
