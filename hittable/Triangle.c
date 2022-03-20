@@ -2,7 +2,7 @@
 
 bool_ triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
-Triangle *triangle_init(point p1, point p2, point p3) {
+Triangle *triangle_init(point p1, point p2, point p3, Material *m) {
   Triangle *self = malloc(sizeof(Triangle));
 
   self->_hittable.hit = triangle_hit;
@@ -10,6 +10,8 @@ Triangle *triangle_init(point p1, point p2, point p3) {
   self->p1 = p1;
   self->p2 = p2;
   self->p3 = p3;
+
+  self->mat = m;
 
   return self;
 }
@@ -33,6 +35,7 @@ bool_ triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_m
       dot(normal, cross(vec3_sub(self->p1, self->p3), vec3_sub(p, self->p3))) > 0) {
     hr->t = t;
     hr->p = p;
+    hr->mat = self->mat;
     hr_set_face_normal(hr, r, normal);
     return true;
   }

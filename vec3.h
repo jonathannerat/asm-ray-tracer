@@ -65,6 +65,10 @@ inline vec3 normalized(const vec3 v) {
   return vec3_scale(1.0 / sqrt(vec3_norm2(v)), v);
 }
 
+inline bool_ vec3_near_zero(const vec3 v) {
+  return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS ;
+}
+
 const char* vec3_tostr(const vec3 v);
 
 void write_color(color pixel, u_int16_t spp);

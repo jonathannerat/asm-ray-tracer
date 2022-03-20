@@ -68,8 +68,15 @@ color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
 
   Record rec;
 
-  if (world->hit(world, r, 0.001, INFINITY, &rec))
-    return (color){.3, .4, .5};
+  if (world->hit(world, r, 0.001, INFINITY, &rec)) {
+    ray scattered;
+    color attenuation;
+
+    if (rec.mat->scatter(rec.mat, r, &rec, &attenuation, &scattered))
+      return vec3_prod(attenuation, ray_color(&scattered, world, depth - 1));
+
+    return (vec3){0,0,0};
+  }
 
   // Gradiente
   vec3 unit_dir = normalized(r->direction);

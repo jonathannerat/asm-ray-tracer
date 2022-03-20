@@ -2,12 +2,15 @@
 
 bool_ plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
-Plane *plane_init(point origin, vec3 normal) {
+Plane *plane_init(point origin, vec3 normal, Material *m) {
   Plane *p = malloc(sizeof(Plane));
 
   p->_hittable.hit = plane_hit;
+
   p->origin = origin;
   p->normal = normal;
+
+  p->mat = m;
 
   return p;
 }
@@ -27,6 +30,7 @@ bool_ plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
 
   hr->t = t;
   hr->p = ray_at(r, t);
+  hr->mat = self->mat;
   hr_set_face_normal(hr, r, self->normal);
 
   return true;

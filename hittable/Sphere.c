@@ -2,13 +2,15 @@
 
 bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
-Sphere *sphere_init(point center, double radius) {
+Sphere *sphere_init(point center, double radius, Material *m) {
   Sphere *s = malloc(sizeof(Sphere));
 
   s->_hittable.hit = sphere_hit;
 
   s->center = center;
   s->radius = radius;
+
+  s->mat = m;
 
   return s;
 }
@@ -37,6 +39,7 @@ bool_ sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max
 
   hr->t = root;
   hr->p = ray_at(r, hr->t);
+  hr->mat = self->mat;
   vec3 outward_normal = vec3_scale(1 / self->radius, vec3_sub(hr->p, self->center));
   hr_set_face_normal(hr, r, outward_normal);
 

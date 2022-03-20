@@ -3,7 +3,7 @@
 bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 bool_ box_is_inside(Box *b, point p);
 
-Box *box_init(point p1, point p2) {
+Box *box_init(point p1, point p2, Material *m) {
   Box *b = malloc(sizeof(Box));
 
   b->_hittable.hit = box_hit;
@@ -20,15 +20,17 @@ Box *box_init(point p1, point p2) {
       MAX(p1.z, p2.z),
   };
 
+  b->mat = m;
+
   vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
 
   b->faces = list_init();
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(x)));
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(y)));
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(z)));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, x));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, y));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, z));
+  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(x), m));
+  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(y), m));
+  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(z), m));
+  list_push(b->faces, (Hittable *)plane_init(b->cfront, x, m));
+  list_push(b->faces, (Hittable *)plane_init(b->cfront, y, m));
+  list_push(b->faces, (Hittable *)plane_init(b->cfront, z, m));
 
   return b;
 }
@@ -55,23 +57,4 @@ bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, R
 void box_destroy(Box *box) {
   list_destroy(box->faces);
   free(box);
-}
-
-/** Checks if the point p is inside box
- *
- * @param box box boundary
- * @param p point to check
- * @return true iff it's inside
- */
-bool_ box_is_inside(Box *box, point p) {
-  if (p.x < box->cback.x - EPS || box->cfront.x + EPS < p.x)
-    return false;
-
-  if (p.y < box->cback.y - EPS || box->cfront.y + EPS < p.y)
-    return false;
-
-  if (p.z < box->cback.z - EPS || box->cfront.z + EPS < p.z)
-    return false;
-
-  return true;
 }

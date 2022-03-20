@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#define EPS 1e-8
+#define EPS 1e-7
 #define M_PI 3.14159265358979323846f
 
 #define false 0
