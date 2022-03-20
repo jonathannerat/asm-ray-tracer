@@ -1,5 +1,7 @@
 #include "hittable/Record.h"
 
+/// LAMBERTIAN
+
 bool_ lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                          ray *scattered);
 
@@ -26,3 +28,35 @@ bool_ lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, c
 }
 
 void lambertian_destroy(Lambertian *self) { free(self); }
+
+/// METAL
+
+bool_ metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+                    ray *scattered);
+
+Metal *metal_init(color albedo, double fuzz) {
+  Metal *m = malloc(sizeof(Metal));
+
+  m->_material.scatter = metal_scatter;
+
+  m->albedo = albedo;
+  m->fuzz = fuzz;
+
+  return m;
+}
+
+bool_ metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+                    ray *scattered) {
+  Metal *self = (Metal *)m;
+  vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
+
+  *scattered = (ray){
+      hr->p,
+      vec3_add(reflected, vec3_scale(self->fuzz, vec3_random_in_unit_sphere())),
+  };
+  *attenuation = self->albedo;
+
+  return dot(reflected, hr->normal) > 0;
+}
+
+void metal_destroy(Metal *self) { free(self); }

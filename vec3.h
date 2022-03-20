@@ -68,6 +68,9 @@ inline vec3 normalized(const vec3 v) {
 inline bool_ vec3_near_zero(const vec3 v) {
   return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS ;
 }
+inline vec3 reflect(const vec3 v, const vec3 n) {
+  return vec3_sub(v, vec3_scale(2 * dot(v, n), n));
+}
 
 const char* vec3_tostr(const vec3 v);
 

@@ -24,4 +24,17 @@ typedef struct {
 Lambertian *lambertian_init(color albedo);
 void lambertian_destroy(Lambertian *self);
 
+
+
+/// METAL
+
+typedef struct {
+  Material _material;
+  color albedo;
+  double fuzz;
+} Metal;
+
+Metal *metal_init(color albedo, double fuzz);
+void metal_destroy(Metal *self);
+
 #endif // MATERIAL_H
