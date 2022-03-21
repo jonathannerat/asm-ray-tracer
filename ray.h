@@ -12,7 +12,7 @@ typedef struct {
   vec3 direction;
 } ray;
 
-inline point ray_at(const ray *r, float t) {
+inline point ray_at(const ray *r, double t) {
   return vec3_add(r->origin, vec3_scale(t, r->direction));
 }
 
