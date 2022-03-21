@@ -34,7 +34,7 @@ void box_destroy(Box *box);
  * @param p point to check
  * @return true iff it's inside
  */
-inline bool_ box_is_inside(Box *self, point p) {
+inline bool box_is_inside(Box *self, point p) {
   return self->cback.x - EPS <= p.x && p.x <= self->cfront.x + EPS &&
          self->cback.y - EPS <= p.y && p.y <= self->cfront.y + EPS &&
          self->cback.z - EPS <= p.z && p.z <= self->cfront.z + EPS;

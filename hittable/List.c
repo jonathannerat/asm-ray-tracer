@@ -2,7 +2,7 @@
 
 #define LIST_INITIAL_CAPACITY 16
 
-bool_ list_hit(const Hittable *o, const ray *r, double t_min, double t_max,
+bool list_hit(const Hittable *o, const ray *r, double t_min, double t_max,
                Record *hr);
 
 List *list_init() {
@@ -16,7 +16,7 @@ List *list_init() {
   return self;
 }
 
-bool_ list_push(List *self, Hittable *h) {
+bool list_push(List *self, Hittable *h) {
   if (self->size == self->cap) {
     Hittable **list = realloc(self->list, self->cap * 2);
     if (!list)
@@ -48,12 +48,12 @@ void list_destroy(List *self) {
   free(self);
 }
 
-bool_ list_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
+bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
                Record *hr) {
   List *self = (List *)_self;
   Record tmp;
   u_int32_t i;
-  bool_ hit_anything = false;
+  bool hit_anything = false;
   double closest_so_far = t_max;
 
   for (i = 0; i < self->size; i++) {

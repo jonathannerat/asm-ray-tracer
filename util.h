@@ -4,18 +4,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
-#define EPS 1e-5
+#define EPS 1e-8
 #define M_PI 3.14159265358979323846f
-
-#define false 0
-#define true 1
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
-
-typedef u_int8_t bool_;
-
 
 inline double degrees_to_radians(double degrees) { return degrees * M_PI / 180.0; }
 

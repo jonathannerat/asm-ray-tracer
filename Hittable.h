@@ -4,7 +4,7 @@
 #include "hittable/Record.h"
 
 typedef struct _hittable Hittable;
-typedef bool_ (*hit_method)(const Hittable *o, const ray *r, double t_min,
+typedef bool (*hit_method)(const Hittable *o, const ray *r, double t_min,
                             double t_max, Record *hr);
 
 struct _hittable {

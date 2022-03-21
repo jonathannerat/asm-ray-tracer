@@ -7,7 +7,7 @@ struct record {
   double t;
   point p;
   vec3 normal;
-  bool_ front_face;
+  bool front_face;
   Material *mat;
 };
 

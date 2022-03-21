@@ -57,7 +57,7 @@ inline double dot(const vec3 a, const vec3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-inline u_int8_t perpendicular(const vec3 a, const vec3 b) {
+inline bool perpendicular(const vec3 a, const vec3 b) {
   return fabs(dot(a, b)) < EPS;
 }
 
@@ -65,7 +65,7 @@ inline vec3 normalized(const vec3 v) {
   return vec3_scale(1.0 / sqrt(vec3_norm2(v)), v);
 }
 
-inline bool_ vec3_near_zero(const vec3 v) {
+inline bool vec3_near_zero(const vec3 v) {
   return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS ;
 }
 

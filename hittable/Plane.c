@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-bool_ plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
 Plane *plane_init(point origin, vec3 normal, Material *m) {
   Plane *p = malloc(sizeof(Plane));
@@ -17,7 +17,7 @@ Plane *plane_init(point origin, vec3 normal, Material *m) {
 
 void plane_destroy(Plane *self) { free(self); }
 
-bool_ plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   Plane *self = (Plane *)_self;
 
   if (perpendicular(r->direction, self->normal))

@@ -12,7 +12,7 @@ typedef struct {
 
 List *list_init();
 
-bool_ list_push(List *l, Hittable *h);
+bool list_push(List *l, Hittable *h);
 
 Hittable *list_get(List *l, size_t i);
 

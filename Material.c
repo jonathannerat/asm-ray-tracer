@@ -4,7 +4,7 @@ double reflectance(double cosine, double ref_idx);
 
 /// LAMBERTIAN
 
-bool_ lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                          ray *scattered);
 
 Lambertian *lambertian_init(color albedo) {
@@ -16,7 +16,7 @@ Lambertian *lambertian_init(color albedo) {
   return m;
 }
 
-bool_ lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                          ray *scattered) {
   Lambertian *self = (Lambertian *)m;
   vec3 scatter_direction = vec3_add(hr->normal, vec3_random_in_unit_sphere());
@@ -33,7 +33,7 @@ void lambertian_destroy(Lambertian *self) { free(self); }
 
 /// METAL
 
-bool_ metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                     ray *scattered);
 
 Metal *metal_init(color albedo, double fuzz) {
@@ -47,7 +47,7 @@ Metal *metal_init(color albedo, double fuzz) {
   return m;
 }
 
-bool_ metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                     ray *scattered) {
   Metal *self = (Metal *)m;
   vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
@@ -65,7 +65,7 @@ void metal_destroy(Metal *self) { free(self); }
 
 /// DIELECTRIC
 
-bool_ dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                          ray *scattered);
 
 Dielectric *dielectric_init(color albedo, double ir) {
@@ -79,14 +79,14 @@ Dielectric *dielectric_init(color albedo, double ir) {
   return d;
 }
 
-bool_ dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                          ray *scattered) {
   Dielectric *self = (Dielectric *)m;
   double ref_ratio = hr->front_face ? 1 / self->ir : self->ir;
   vec3 unit_dir = normalized(r_in->direction);
   double cos_theta = fmin(dot(vec3_inv(unit_dir), hr->normal), 1);
   double sin_theta = sqrt(1 - cos_theta * cos_theta);
-  bool_ cannot_refract = ref_ratio * sin_theta > 1;
+  bool cannot_refract = ref_ratio * sin_theta > 1;
   vec3 direction;
 
   if (cannot_refract || reflectance(cos_theta, ref_ratio) > random_double())

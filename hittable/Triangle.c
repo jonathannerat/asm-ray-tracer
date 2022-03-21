@@ -1,6 +1,6 @@
 #include "Triangle.h"
 
-bool_ triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 
 Triangle *triangle_init(point p1, point p2, point p3, Material *m) {
   Triangle *self = malloc(sizeof(Triangle));
@@ -16,7 +16,7 @@ Triangle *triangle_init(point p1, point p2, point p3, Material *m) {
   return self;
 }
 
-bool_ triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   Triangle *self = (Triangle *)_self;
 
   vec3 normal = cross(vec3_sub(self->p2, self->p1), vec3_sub(self->p3, self->p1));

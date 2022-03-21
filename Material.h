@@ -6,7 +6,7 @@
 typedef struct record Record;
 typedef struct material Material;
 
-typedef bool_ (*scatter_method)(const Material *m, const ray *r_in, const Record *hr, color *attenuation, ray *scattered);
+typedef bool (*scatter_method)(const Material *m, const ray *r_in, const Record *hr, color *attenuation, ray *scattered);
 
 struct material{
   scatter_method scatter;

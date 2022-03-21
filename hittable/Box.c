@@ -1,7 +1,7 @@
 #include "Box.h"
 
-bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
-bool_ box_is_inside(Box *b, point p);
+bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+bool box_is_inside(Box *b, point p);
 
 Box *box_init(point p1, point p2, Material *m) {
   Box *b = malloc(sizeof(Box));
@@ -35,10 +35,10 @@ Box *box_init(point p1, point p2, Material *m) {
   return b;
 }
 
-bool_ box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   Box *self = (Box *)_self;
   size_t i;
-  bool_ hit_anything = false;
+  bool hit_anything = false;
   double closest_so_far = t_max;
   Record tmp;
 
