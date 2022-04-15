@@ -1,18 +1,20 @@
 #include "Sphere.h"
 
 bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+void sphere_destroy(Hittable *h);
 
-Sphere *sphere_init(point center, double radius, Material *m) {
+Hittable *sphere_init(point center, double radius, Material *m) {
   Sphere *s = malloc(sizeof(Sphere));
 
   s->_hittable.hit = sphere_hit;
+  s->_hittable.destroy = sphere_destroy;
 
   s->center = center;
   s->radius = radius;
 
   s->mat = m;
 
-  return s;
+  return (Hittable *)s;
 }
 
 bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
@@ -46,4 +48,7 @@ bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
   return true;
 }
 
-void sphere_destroy(Sphere *sphere) { free(sphere); }
+void sphere_destroy(Hittable *h) {
+  free(((Sphere *)h)->mat);
+  free(h);
+}

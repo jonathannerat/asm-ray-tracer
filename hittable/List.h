@@ -10,12 +10,10 @@ typedef struct {
   size_t cap;
 } List;
 
-List *list_init();
+Hittable *list_init();
 
 bool list_push(List *l, Hittable *h);
 
 Hittable *list_get(List *l, size_t i);
-
-void list_destroy(List *l);
 
 #endif // LIST_H

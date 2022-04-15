@@ -1,11 +1,13 @@
 #include "Triangle.h"
 
 bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+void triangle_destroy(Hittable *h);
 
-Triangle *triangle_init(point p1, point p2, point p3, Material *m) {
+Hittable *triangle_init(point p1, point p2, point p3, Material *m) {
   Triangle *self = malloc(sizeof(Triangle));
 
   self->_hittable.hit = triangle_hit;
+  self->_hittable.destroy = triangle_destroy;
 
   self->p1 = p1;
   self->p2 = p2;
@@ -13,7 +15,7 @@ Triangle *triangle_init(point p1, point p2, point p3, Material *m) {
 
   self->mat = m;
 
-  return self;
+  return (Hittable *)self;
 }
 
 bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
@@ -43,4 +45,7 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
   return false;
 }
 
-void triangle_destroy(Triangle *t) { free(t); }
+void triangle_destroy(Hittable *h)  { 
+  free(((Triangle *) h)->mat);
+  free(h);
+}

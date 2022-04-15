@@ -9,7 +9,6 @@ typedef struct {
   Material *mat;
 } Triangle;
 
-Triangle *triangle_init(point p1, point p2, point p3, Material *m);
-void triangle_destroy(Triangle *t);
+Hittable *triangle_init(point p1, point p2, point p3, Material *m);
 
 #endif // TRIANGLE_H

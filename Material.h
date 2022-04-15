@@ -21,8 +21,7 @@ typedef struct {
   color albedo;
 } Lambertian;
 
-Lambertian *lambertian_init(color albedo);
-void lambertian_destroy(Lambertian *self);
+Material *lambertian_init(color albedo);
 
 
 
@@ -34,8 +33,7 @@ typedef struct {
   double fuzz;
 } Metal;
 
-Metal *metal_init(color albedo, double fuzz);
-void metal_destroy(Metal *self);
+Material *metal_init(color albedo, double fuzz);
 
 
 
@@ -47,7 +45,6 @@ typedef struct {
   double ir;
 } Dielectric;
 
-Dielectric *dielectric_init(color albedo, double ir);
-void dielectrict_destroy(Dielectric *self);
+Material *dielectric_init(color albedo, double ir);
 
 #endif // MATERIAL_H

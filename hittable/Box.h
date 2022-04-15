@@ -23,10 +23,10 @@ typedef struct {
  * @param m box material (owned)
  * @return the Box instance
  */
-Box *box_init(point p1, point p2, Material *m);
+Hittable *box_init(point p1, point p2, Material *m);
 
 /** Free the box instance */
-void box_destroy(Box *box);
+void box_destroy(Hittable *box);
 
 /** Checks if the point p is inside box
  *

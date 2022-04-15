@@ -10,7 +10,6 @@ typedef struct {
   Material *mat;
 } Sphere;
 
-Sphere *sphere_init(point center, double radius, Material *m);
-void sphere_destroy(Sphere *sphere);
+Hittable *sphere_init(point center, double radius, Material *m);
 
 #endif // SPHERE_H

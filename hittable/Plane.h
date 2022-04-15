@@ -10,8 +10,6 @@ typedef struct {
   Material *mat;
 } Plane;
 
-Plane *plane_init(point origin, vec3 normal, Material *m);
-
-void plane_destroy(Plane *self);
+Hittable *plane_init(point origin, vec3 normal, Material *m);
 
 #endif // HITTABLE_PLANE_H

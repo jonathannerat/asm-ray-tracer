@@ -2,18 +2,19 @@
 
 #define LIST_INITIAL_CAPACITY 16
 
-bool list_hit(const Hittable *o, const ray *r, double t_min, double t_max,
-               Record *hr);
+bool list_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
+void list_destroy(Hittable *self);
 
-List *list_init() {
+Hittable *list_init() {
   List *self = malloc(sizeof(List));
 
   self->_hittable.hit = list_hit;
+  self->_hittable.destroy = list_destroy;
   self->list = malloc(LIST_INITIAL_CAPACITY * sizeof(Hittable *));
   self->size = 0;
   self->cap = LIST_INITIAL_CAPACITY;
 
-  return self;
+  return (Hittable *)self;
 }
 
 bool list_push(List *self, Hittable *h) {
@@ -34,22 +35,13 @@ bool list_push(List *self, Hittable *h) {
 }
 
 Hittable *list_get(List *l, size_t i) {
-  if (i >= l->size) return NULL;
+  if (i >= l->size)
+    return NULL;
 
   return l->list[i];
 }
 
-void list_destroy(List *self) {
-  u_int32_t i;
-
-  for (i = 0; i < self->size; i++)
-    free(self->list[i]);
-
-  free(self);
-}
-
-bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
-               Record *hr) {
+bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
   List *self = (List *)_self;
   Record tmp;
   u_int32_t i;
@@ -66,4 +58,9 @@ bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
   }
 
   return hit_anything;
+}
+
+void list_destroy(Hittable *h) {
+  DESTROY(*((List *)h)->list);
+  free(h);
 }

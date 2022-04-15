@@ -19,4 +19,3 @@ typedef struct {
 Scene *scene_init();
 Scene *scene_init_file(const char* path);
 void scene_render(const Scene *s);
-inline void scene_destroy(Scene *s) { free(s); }

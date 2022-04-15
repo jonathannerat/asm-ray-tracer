@@ -2,11 +2,13 @@
 
 bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 bool box_is_inside(Box *b, point p);
+void box_destroy(Hittable *box);
 
-Box *box_init(point p1, point p2, Material *m) {
+Hittable *box_init(point p1, point p2, Material *m) {
   Box *b = malloc(sizeof(Box));
 
   b->_hittable.hit = box_hit;
+  b->_hittable.destroy = box_destroy;
 
   b->cback = (point){
       MIN(p1.x, p2.x),
@@ -24,15 +26,15 @@ Box *box_init(point p1, point p2, Material *m) {
 
   vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
 
-  b->faces = list_init();
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(x), m));
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(y), m));
-  list_push(b->faces, (Hittable *)plane_init(b->cback, vec3_inv(z), m));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, x, m));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, y, m));
-  list_push(b->faces, (Hittable *)plane_init(b->cfront, z, m));
+  b->faces = (List *)list_init();
+  list_push(b->faces, plane_init(b->cback, vec3_inv(x), m));
+  list_push(b->faces, plane_init(b->cback, vec3_inv(y), m));
+  list_push(b->faces, plane_init(b->cback, vec3_inv(z), m));
+  list_push(b->faces, plane_init(b->cfront, x, m));
+  list_push(b->faces, plane_init(b->cfront, y, m));
+  list_push(b->faces, plane_init(b->cfront, z, m));
 
-  return b;
+  return (Hittable *)b;
 }
 
 bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
@@ -54,7 +56,9 @@ bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Re
   return hit_anything;
 }
 
-void box_destroy(Box *box) {
-  list_destroy(box->faces);
-  free(box);
+void box_destroy(Hittable *h) {
+  Box *self = (Box *)h;
+  DESTROY(self->faces);
+  free(self->mat);
+  free(self);
 }
