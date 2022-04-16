@@ -2,15 +2,20 @@
 
 bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 void sphere_destroy(Hittable *h);
+Box *sphere_bbox(const Hittable *h);
 
 Hittable *sphere_init(point center, double radius, shrmat sm) {
   Sphere *s = malloc(sizeof(Sphere));
 
   s->_hittable.hit = sphere_hit;
   s->_hittable.destroy = sphere_destroy;
+  s->_hittable.bbox = sphere_bbox;
 
   s->center = center;
   s->radius = radius;
+
+  vec3 r = {radius, radius, radius};
+  s->bbox = (Box *)box_init(vec3_sub(center, r), vec3_add(center, r), (shrmat){.m = NULL});
 
   sm.refcount++;
   s->sm = sm;
@@ -52,8 +57,12 @@ bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
 void sphere_destroy(Hittable *h) {
   Sphere *self = (Sphere *)h;
 
-  if (self->sm.refcount-- == 1)
+  if (!--self->sm.refcount && self->sm.m)
     free(self->sm.m);
+
+  DESTROY(self->bbox);
 
   free(h);
 }
+
+Box *sphere_bbox(const Hittable *h) { return ((Sphere *)h)->bbox; }

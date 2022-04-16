@@ -6,13 +6,15 @@
 #define DESTROY(e) ((Hittable *)(e))->destroy((Hittable *)e)
 
 typedef struct _hittable Hittable;
-typedef bool (*hit_method)(const Hittable *o, const ray *r, double t_min,
-                            double t_max, Record *hr);
-typedef void (*destroy_method)(Hittable *);
+
+struct _box;
 
 struct _hittable {
-  hit_method hit;
-  destroy_method destroy;
+  bool (*hit)(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
+
+  void (*destroy)(Hittable *);
+
+  struct _box *(*bbox)(const Hittable *);
 };
 
 #endif // HITTABLE_H

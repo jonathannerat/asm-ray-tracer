@@ -4,13 +4,15 @@
 #include "List.h"
 #include "Plane.h"
 
-typedef struct {
+struct _box {
   Hittable _hittable;
   point cback;
   point cfront;
   List *faces;
   shrmat sm;
-} Box;
+};
+
+typedef struct _box Box;
 
 /** Initialize a new axis aligned box delimited by two (*distinct) points
  *
@@ -28,13 +30,15 @@ Hittable *box_init(point p1, point p2, shrmat sm);
 /** Free the box instance */
 void box_destroy(Hittable *box);
 
+Box *box_join(const Box *a, const Box *b);
+
 /** Checks if the point p is inside box
  *
  * @param box box boundary
  * @param p point to check
  * @return true iff it's inside
  */
-inline bool box_is_inside(Box *self, point p) {
+inline bool box_is_inside(const Box *self, point p) {
   return self->cback.x - EPS <= p.x && p.x <= self->cfront.x + EPS &&
          self->cback.y - EPS <= p.y && p.y <= self->cfront.y + EPS &&
          self->cback.z - EPS <= p.z && p.z <= self->cfront.z + EPS;

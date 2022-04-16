@@ -2,16 +2,25 @@
 
 bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 void triangle_destroy(Hittable *h);
+Box *triangle_bbox(const Hittable *h);
 
 Hittable *triangle_init(point p1, point p2, point p3, shrmat sm) {
   Triangle *self = malloc(sizeof(Triangle));
 
   self->_hittable.hit = triangle_hit;
   self->_hittable.destroy = triangle_destroy;
+  self->_hittable.bbox = triangle_bbox;
 
   self->p1 = p1;
   self->p2 = p2;
   self->p3 = p3;
+
+  point cback = {MIN(MIN(p1.x, p2.x), p3.x), MIN(MIN(p1.y, p2.y), p3.y),
+                 MIN(MIN(p1.z, p2.z), p3.z)};
+  point cfront = {MAX(MAX(p1.x, p2.x), p3.x), MAX(MAX(p1.y, p2.y), p3.y),
+                  MAX(MAX(p1.z, p2.z), p3.z)};
+
+  self->bbox = (Box *)box_init(cback, cfront, (shrmat){.m = NULL});
 
   sm.refcount++;
   self->sm = sm;
@@ -49,8 +58,12 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
 void triangle_destroy(Hittable *h) {
   Triangle *self = (Triangle *)h;
 
-  if (self->sm.refcount-- == 1)
+  if (!--self->sm.refcount && self->sm.m)
     free(self->sm.m);
+
+  DESTROY(self->bbox);
 
   free(h);
 }
+
+Box *triangle_bbox(const Hittable *h) { return ((Triangle *)h)->bbox; }

@@ -8,12 +8,14 @@
 
 bool triangle_mesh_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
 void triangle_mesh_destroy(Hittable *self);
+Box *triangle_mesh_bbox(const Hittable *h);
 
 Hittable *triangle_mesh_init(const char *path, shrmat sm) {
   TriangleMesh *self = malloc(sizeof(TriangleMesh));
 
   self->_hittable.hit = triangle_mesh_hit;
   self->_hittable.destroy = triangle_mesh_destroy;
+  self->_hittable.bbox = triangle_mesh_bbox;
 
   sm.refcount++;
   self->sm = sm;
@@ -69,8 +71,12 @@ bool triangle_mesh_hit(const Hittable *o, const ray *r, double t_min, double t_m
 void triangle_mesh_destroy(Hittable *h) {
   TriangleMesh *self = (TriangleMesh *)h;
 
-  if (self->sm.refcount-- == 1)
+  DESTROY(self->objects);
+
+  if (!--self->sm.refcount && self->sm.m)
     free(self->sm.m);
 
   free(self);
 }
+
+Box *triangle_mesh_bbox(const Hittable *h) { return ((TriangleMesh *)h)->objects->bbox; }

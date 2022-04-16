@@ -33,4 +33,7 @@ vec3 array_vec3_get(const array_vec3 *arr, size_t i) {
   return arr->data[i];
 }
 
-void array_vec3_destroy(array_vec3 *arr) { free(arr->data); }
+void array_vec3_destroy(array_vec3 *arr) {
+  free(arr->data);
+  free(arr);
+}

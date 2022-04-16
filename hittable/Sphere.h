@@ -2,11 +2,13 @@
 #define SPHERE_H
 
 #include "../Hittable.h"
+#include "Box.h"
 
 typedef struct {
   Hittable _hittable;
   point center;
   double radius;
+  Box *bbox;
   shrmat sm;
 } Sphere;
 

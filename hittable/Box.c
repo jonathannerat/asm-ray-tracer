@@ -1,14 +1,15 @@
 #include "Box.h"
 
 bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
-bool box_is_inside(Box *b, point p);
 void box_destroy(Hittable *box);
+Box *box_bbox(const Hittable *h);
 
 Hittable *box_init(point p1, point p2, shrmat sm) {
   Box *b = malloc(sizeof(Box));
 
   b->_hittable.hit = box_hit;
   b->_hittable.destroy = box_destroy;
+  b->_hittable.bbox = box_bbox;
 
   b->cback = (point){
       MIN(p1.x, p2.x),
@@ -61,8 +62,29 @@ void box_destroy(Hittable *h) {
   Box *self = (Box *)h;
   DESTROY(self->faces);
 
-  if (self->sm.refcount-- == 1)
+  if (!--self->sm.refcount && self->sm.m)
     free(self->sm.m);
 
   free(self);
+}
+
+Box *box_bbox(const Hittable *h) { return (Box *)h; }
+
+Box *box_join(const Box *a, const Box *b) {
+  point cb = a->cback, cf = a->cfront;
+  point bcb = b->cback, bcf = b->cfront;
+
+  if (!box_is_inside(a, bcb)) {
+    cb.x = MIN(cb.x, bcb.x);
+    cb.y = MIN(cb.y, bcb.y);
+    cb.z = MIN(cb.z, bcb.z);
+  }
+
+  if (!box_is_inside(a, bcf)) {
+    cf.x = MAX(cf.x, bcf.x);
+    cf.y = MAX(cf.y, bcf.y);
+    cf.z = MAX(cf.z, bcf.z);
+  }
+
+  return (Box *)box_init(cb, cf, a->sm);
 }

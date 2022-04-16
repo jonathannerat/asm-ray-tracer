@@ -1,35 +1,50 @@
 #include "List.h"
 
+#include "Box.h"
+
 #define LIST_INITIAL_CAPACITY 16
 
 bool list_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
 void list_destroy(Hittable *self);
+Box *list_bbox(const Hittable *h);
 
 Hittable *list_init() {
   List *self = malloc(sizeof(List));
 
   self->_hittable.hit = list_hit;
   self->_hittable.destroy = list_destroy;
-  self->list = malloc(LIST_INITIAL_CAPACITY * sizeof(Hittable *));
+  self->_hittable.bbox = list_bbox;
+
   self->size = 0;
   self->cap = LIST_INITIAL_CAPACITY;
+  self->list = malloc(sizeof(Hittable *) * self->cap);
+  self->bbox = NULL;
 
   return (Hittable *)self;
 }
 
 bool list_push(List *self, Hittable *h) {
   if (self->size == self->cap) {
-    Hittable **list = realloc(self->list, sizeof(Hittable *) * self->cap * 2);
+    self->cap *= 2;
+    Hittable **list = realloc(self->list, sizeof(Hittable *) * self->cap);
+
     if (!list)
       return false;
 
-    if (list != self->list)
-      self->list = list;
-    self->cap *= 2;
+    self->list = list;
   }
 
-  self->list[self->size] = h;
-  self->size++;
+  self->list[self->size++] = h;
+
+  Box *hbox = h->bbox(h);
+
+  if (!self->bbox && hbox) {
+    self->bbox = (Box *)box_init(hbox->cback, hbox->cfront, (shrmat){.m = NULL});
+  } else if (hbox) {
+    Box *newbbox = box_join(self->bbox, hbox);
+    DESTROY(self->bbox);
+    self->bbox = newbbox;
+  }
 
   return true;
 }
@@ -61,6 +76,18 @@ bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max, R
 }
 
 void list_destroy(Hittable *h) {
-  DESTROY(*((List *)h)->list);
-  free(h);
+  List *self = (List *)h;
+  size_t i;
+
+  for (i = 0; i < self->size; i++)
+    DESTROY(self->list[i]);
+
+  free(self->list);
+
+  if (self->bbox)
+    DESTROY(self->bbox);
+
+  free(self);
 }
+
+Box *list_bbox(const Hittable *h) { return ((const List *)h)->bbox; }

@@ -8,6 +8,7 @@ typedef struct {
   Hittable **list;
   size_t size;
   size_t cap;
+  struct _box *bbox;
 } List;
 
 Hittable *list_init();
