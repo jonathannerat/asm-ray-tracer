@@ -9,7 +9,7 @@ typedef struct {
   point cback;
   point cfront;
   List *faces;
-  Material *mat;
+  shrmat sm;
 } Box;
 
 /** Initialize a new axis aligned box delimited by two (*distinct) points
@@ -23,7 +23,7 @@ typedef struct {
  * @param m box material (owned)
  * @return the Box instance
  */
-Hittable *box_init(point p1, point p2, Material *m);
+Hittable *box_init(point p1, point p2, shrmat sm);
 
 /** Free the box instance */
 void box_destroy(Hittable *box);

@@ -7,6 +7,7 @@
 #include "hittable/Plane.h"
 #include "hittable/Sphere.h"
 #include "hittable/Triangle.h"
+#include "hittable/TriangleMesh.h"
 
 int main(int argc, char **argv) {
   Scene *s;
@@ -17,12 +18,14 @@ int main(int argc, char **argv) {
   else
     s = scene_init();
 
-  // list_push(l, (Hittable *)triangle_init((point){0, 1, 0}, (point){1, 0, 0}, (point){0, 0, 1},
-  //                                        (Material *)lambertian_init((color){1, 1, .2})));
-  list_push(l, plane_init((point){0, -.2, 0}, (vec3){0, 1, 0}, lambertian_init((color){.3, .8, .1})));
-  list_push(l, box_init((point){2, 1, 0}, (point){0, 0, 1}, lambertian_init((color){.1, .2, .6})));
-  list_push(l, sphere_init((point){-2, 1, 0}, .9, dielectric_init((color){1, 1, 1}, .95)));
-  list_push(l, sphere_init((point){-2, 1, 0}, -.85, dielectric_init((color){1, 1, 1}, .95)));
+  list_push(l, plane_init((point){0, -.2, 0}, (vec3){0, 1, 0},
+                          (shrmat){.m = lambertian_init((color){.3, .8, .1})}));
+
+  list_push(l, box_init((point){2, 1, 0}, (point){0, 0, 1},
+                        (shrmat){.m = lambertian_init((color){.1, .2, .6})}));
+
+  list_push(
+      l, triangle_mesh_init("models/cow.obj", (shrmat){.m = lambertian_init((color){1, .2, .15})}));
 
   s->world = (Hittable *)l;
 

@@ -3,7 +3,7 @@
 bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 void triangle_destroy(Hittable *h);
 
-Hittable *triangle_init(point p1, point p2, point p3, Material *m) {
+Hittable *triangle_init(point p1, point p2, point p3, shrmat sm) {
   Triangle *self = malloc(sizeof(Triangle));
 
   self->_hittable.hit = triangle_hit;
@@ -13,7 +13,8 @@ Hittable *triangle_init(point p1, point p2, point p3, Material *m) {
   self->p2 = p2;
   self->p3 = p3;
 
-  self->mat = m;
+  sm.refcount++;
+  self->sm = sm;
 
   return (Hittable *)self;
 }
@@ -37,7 +38,7 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
       dot(normal, cross(vec3_sub(self->p1, self->p3), vec3_sub(p, self->p3))) > 0) {
     hr->t = t;
     hr->p = p;
-    hr->mat = self->mat;
+    hr->mat = self->sm.m;
     hr_set_face_normal(hr, r, normal);
     return true;
   }
@@ -45,7 +46,11 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
   return false;
 }
 
-void triangle_destroy(Hittable *h)  { 
-  free(((Triangle *) h)->mat);
+void triangle_destroy(Hittable *h) {
+  Triangle *self = (Triangle *)h;
+
+  if (self->sm.refcount-- == 1)
+    free(self->sm.m);
+
   free(h);
 }

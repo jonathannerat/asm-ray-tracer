@@ -19,7 +19,7 @@ Hittable *list_init() {
 
 bool list_push(List *self, Hittable *h) {
   if (self->size == self->cap) {
-    Hittable **list = realloc(self->list, self->cap * 2);
+    Hittable **list = realloc(self->list, sizeof(Hittable *) * self->cap * 2);
     if (!list)
       return false;
 

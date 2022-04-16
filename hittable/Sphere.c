@@ -3,7 +3,7 @@
 bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 void sphere_destroy(Hittable *h);
 
-Hittable *sphere_init(point center, double radius, Material *m) {
+Hittable *sphere_init(point center, double radius, shrmat sm) {
   Sphere *s = malloc(sizeof(Sphere));
 
   s->_hittable.hit = sphere_hit;
@@ -12,7 +12,8 @@ Hittable *sphere_init(point center, double radius, Material *m) {
   s->center = center;
   s->radius = radius;
 
-  s->mat = m;
+  sm.refcount++;
+  s->sm = sm;
 
   return (Hittable *)s;
 }
@@ -41,7 +42,7 @@ bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
 
   hr->t = root;
   hr->p = ray_at(r, hr->t);
-  hr->mat = self->mat;
+  hr->mat = self->sm.m;
   vec3 outward_normal = vec3_scale(1 / self->radius, vec3_sub(hr->p, self->center));
   hr_set_face_normal(hr, r, outward_normal);
 
@@ -49,6 +50,10 @@ bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max,
 }
 
 void sphere_destroy(Hittable *h) {
-  free(((Sphere *)h)->mat);
+  Sphere *self = (Sphere *)h;
+
+  if (self->sm.refcount-- == 1)
+    free(self->sm.m);
+
   free(h);
 }

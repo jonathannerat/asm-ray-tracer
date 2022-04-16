@@ -6,6 +6,11 @@
 typedef struct record Record;
 typedef struct material Material;
 
+typedef struct {
+  Material *m;
+  size_t refcount;
+} shrmat;
+
 typedef bool (*scatter_method)(const Material *m, const ray *r_in, const Record *hr, color *attenuation, ray *scattered);
 
 struct material{

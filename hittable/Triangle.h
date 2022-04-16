@@ -6,9 +6,9 @@
 typedef struct {
   Hittable _hittable;
   point p1, p2, p3;
-  Material *mat;
+  shrmat sm;
 } Triangle;
 
-Hittable *triangle_init(point p1, point p2, point p3, Material *m);
+Hittable *triangle_init(point p1, point p2, point p3, shrmat sm);
 
 #endif // TRIANGLE_H

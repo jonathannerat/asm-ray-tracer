@@ -7,9 +7,9 @@ typedef struct {
   Hittable _hittable;
   point origin;
   vec3 normal;
-  Material *mat;
+  shrmat sm;
 } Plane;
 
-Hittable *plane_init(point origin, vec3 normal, Material *m);
+Hittable *plane_init(point origin, vec3 normal, shrmat sm);
 
 #endif // HITTABLE_PLANE_H

@@ -7,9 +7,9 @@ typedef struct {
   Hittable _hittable;
   point center;
   double radius;
-  Material *mat;
+  shrmat sm;
 } Sphere;
 
-Hittable *sphere_init(point center, double radius, Material *m);
+Hittable *sphere_init(point center, double radius, shrmat sm);
 
 #endif // SPHERE_H

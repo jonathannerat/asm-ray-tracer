@@ -1,11 +1,9 @@
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <util.h>
 
 #include "Scene.h"
-
-#define MAX_BUF_SIZE 256
 
 camera parse_camera_line(char *c);
 output parse_output_line(char *c);
@@ -35,6 +33,8 @@ Scene *scene_init_file(const char *path) {
   if (fp)
     return _scene_init(fp);
 
+  fclose(fp);
+
   return NULL;
 }
 
@@ -43,8 +43,7 @@ void scene_render(const Scene *s) {
   printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
 
   for (j = s->output.height - 1; j >= 0; j--) {
-    fprintf(stderr, "\rWriting lines: %d / %d", s->output.height - j,
-            s->output.height);
+    fprintf(stderr, "\rWriting lines: %d / %d", s->output.height - j, s->output.height);
     fflush(stderr);
 
     for (i = 0; i < s->output.width; i++) {
@@ -75,14 +74,14 @@ color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
     if (rec.mat->scatter(rec.mat, r, &rec, &attenuation, &scattered))
       return vec3_prod(attenuation, ray_color(&scattered, world, depth - 1));
 
-    return (vec3){0,0,0};
+    return (vec3){0, 0, 0};
   }
 
   // Gradiente
   vec3 unit_dir = normalized(r->direction);
   double t = .5 * (unit_dir.y + 1);
-  color bg_color = vec3_add(vec3_scale(1.0 - t, (color){1, 1, 1}),
-                            vec3_scale(t, (color){.5, .7, 1}));
+  color bg_color =
+      vec3_add(vec3_scale(1.0 - t, (color){1, 1, 1}), vec3_scale(t, (color){.5, .7, 1}));
 
   return bg_color;
 }
