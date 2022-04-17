@@ -1,9 +1,10 @@
+#include "Scene.h"
+
+#include "Material.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "Scene.h"
 
 camera parse_camera_line(char *c);
 output parse_output_line(char *c);
@@ -70,8 +71,9 @@ color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
   if (world->hit(world, r, 0.001, INFINITY, &rec)) {
     ray scattered;
     color attenuation;
+    Material *m = rec.sm ? rec.sm->m : NULL;
 
-    if (rec.mat->scatter(rec.mat, r, &rec, &attenuation, &scattered))
+    if (m->scatter(m, r, &rec, &attenuation, &scattered))
       return vec3_prod(attenuation, ray_color(&scattered, world, depth - 1));
 
     return (vec3){0, 0, 0};
@@ -81,7 +83,7 @@ color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
   vec3 unit_dir = normalized(r->direction);
   double t = .5 * (unit_dir.y + 1);
   color bg_color =
-      vec3_add(vec3_scale(1.0 - t, (color){1, 1, 1}), vec3_scale(t, (color){.5, .7, 1}));
+    vec3_add(vec3_scale(1.0 - t, (color){1, 1, 1}), vec3_scale(t, (color){.5, .7, 1}));
 
   return bg_color;
 }

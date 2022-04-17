@@ -1,7 +1,8 @@
 TARGET=rt
 CC=gcc
 SRC=main.c vec3.c  util.c camera.c ray.c array.c Scene.c Material.c \
-    hittable/List.c hittable/Plane.c hittable/Box.c hittable/Sphere.c hittable/Triangle.c hittable/TriangleMesh.c
+    hittable/Plane.c hittable/Sphere.c hittable/Triangle.c \
+    hittable/List.c hittable/Box.c hittable/KDTree.c
 OBJ=${SRC:.c=.o}
 CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm

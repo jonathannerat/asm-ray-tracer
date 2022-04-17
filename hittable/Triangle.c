@@ -4,12 +4,16 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
 void triangle_destroy(Hittable *h);
 Box *triangle_bbox(const Hittable *h);
 
-Hittable *triangle_init(point p1, point p2, point p3, shrmat sm) {
+Hittable *triangle_init(point p1, point p2, point p3, spmat *sm) {
   Triangle *self = malloc(sizeof(Triangle));
+  point refp = vec3_unscale(vec3_add(vec3_add(p1, p2), p3), 3);
 
-  self->_hittable.hit = triangle_hit;
-  self->_hittable.destroy = triangle_destroy;
-  self->_hittable.bbox = triangle_bbox;
+  self->_hittable = (Hittable){
+    triangle_hit,
+    triangle_destroy,
+    triangle_bbox,
+    refp,
+  };
 
   self->p1 = p1;
   self->p2 = p2;
@@ -20,9 +24,9 @@ Hittable *triangle_init(point p1, point p2, point p3, shrmat sm) {
   point cfront = {MAX(MAX(p1.x, p2.x), p3.x), MAX(MAX(p1.y, p2.y), p3.y),
                   MAX(MAX(p1.z, p2.z), p3.z)};
 
-  self->bbox = (Box *)box_init(cback, cfront, (shrmat){.m = NULL});
+  self->bbox = (Box *)box_init(cback, cfront, NULL);
 
-  sm.refcount++;
+  sm->c++;
   self->sm = sm;
 
   return (Hittable *)self;
@@ -47,7 +51,7 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
       dot(normal, cross(vec3_sub(self->p1, self->p3), vec3_sub(p, self->p3))) > 0) {
     hr->t = t;
     hr->p = p;
-    hr->mat = self->sm.m;
+    hr->sm = self->sm;
     hr_set_face_normal(hr, r, normal);
     return true;
   }
@@ -58,8 +62,11 @@ bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_ma
 void triangle_destroy(Hittable *h) {
   Triangle *self = (Triangle *)h;
 
-  if (!--self->sm.refcount && self->sm.m)
-    free(self->sm.m);
+  spmat *sm = self->sm;
+  if (sm && !--sm->c && sm->m) {
+    free(sm->m);
+    free(sm);
+  }
 
   DESTROY(self->bbox);
 

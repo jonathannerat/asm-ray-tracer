@@ -1,4 +1,4 @@
-#include "hittable/Record.h"
+#include "Material.h"
 
 double reflectance(double cosine, double ref_idx);
 
@@ -7,13 +7,17 @@ double reflectance(double cosine, double ref_idx);
 bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                         ray *scattered);
 
-Material *lambertian_init(color albedo) {
-  Lambertian *m = malloc(sizeof(Lambertian));
+spmat *lambertian_init(color albedo) {
+  Lambertian *mat = malloc(sizeof(Lambertian));
+  spmat *sm = malloc(sizeof(spmat));
 
-  m->_material.scatter = lambertian_scatter;
-  m->albedo = albedo;
+  mat->_material.scatter = lambertian_scatter;
+  mat->albedo = albedo;
 
-  return (Material *)m;
+  sm->m = (Material *)mat;
+  sm->c = 0;
+
+  return sm;
 }
 
 bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
@@ -34,15 +38,18 @@ bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, co
 bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                    ray *scattered);
 
-Material *metal_init(color albedo, double fuzz) {
-  Metal *m = malloc(sizeof(Metal));
+spmat *metal_init(color albedo, double fuzz) {
+  Metal *mat = malloc(sizeof(Metal));
+  spmat *sm = malloc(sizeof(spmat));
 
-  m->_material.scatter = metal_scatter;
+  mat->_material.scatter = metal_scatter;
+  mat->albedo = albedo;
+  mat->fuzz = fuzz;
 
-  m->albedo = albedo;
-  m->fuzz = fuzz;
+  sm->m = (Material *)mat;
+  sm->c = 0;
 
-  return (Material *)m;
+  return sm;
 }
 
 bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
@@ -51,8 +58,8 @@ bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *
   vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
 
   *scattered = (ray){
-      hr->p,
-      vec3_add(reflected, vec3_scale(self->fuzz, vec3_random_in_unit_sphere())),
+    hr->p,
+    vec3_add(reflected, vec3_scale(self->fuzz, vec3_random_in_unit_sphere())),
   };
   *attenuation = self->albedo;
 
@@ -64,15 +71,18 @@ bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *
 bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                         ray *scattered);
 
-Material *dielectric_init(color albedo, double ir) {
-  Dielectric *d = malloc(sizeof(Dielectric));
+spmat *dielectric_init(color albedo, double ir) {
+  Dielectric *mat = malloc(sizeof(Dielectric));
+  spmat *sm = malloc(sizeof(spmat));
 
-  d->_material.scatter = dielectric_scatter;
+  mat->_material.scatter = dielectric_scatter;
+  mat->albedo = albedo;
+  mat->ir = ir;
 
-  d->albedo = albedo;
-  d->ir = ir;
+  sm->m = (Material *)mat;
+  sm->c = 0;
 
-  return (Material *)d;
+  return sm;
 }
 
 bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,

@@ -9,9 +9,9 @@ typedef struct {
   point center;
   double radius;
   Box *bbox;
-  shrmat sm;
+  spmat *sm;
 } Sphere;
 
-Hittable *sphere_init(point center, double radius, shrmat sm);
+Hittable *sphere_init(point center, double radius, spmat *sm);
 
 #endif // SPHERE_H

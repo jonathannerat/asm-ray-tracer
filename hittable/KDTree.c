@@ -1,0 +1,165 @@
+#include "KDTree.h"
+
+#include "Box.h"
+#include <stdlib.h>
+#include <string.h>
+
+bool node_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
+void node_destroy(Hittable *o);
+Box *node_bbox(const Hittable *o) { return ((Node *)o)->bbox; }
+
+Node *node_init(List *objects) {
+  Node *self = malloc(sizeof(Node));
+
+  self->_hittable = (Hittable){
+    node_hit,
+    node_destroy,
+    node_bbox,
+    objects->_hittable.refp,
+  };
+
+  self->left = NULL;
+  self->right = NULL;
+  self->objects = objects;
+  self->bbox = objects->bbox;
+
+  return self;
+}
+
+size_t node_size(Node *n) {
+  return n->objects ? n->objects->size : node_size(n->left) + node_size(n->right);
+}
+
+char axis = 'x';
+
+int node_objects_sort_by_axis(const void *a, const void *b) {
+  Hittable *ha = (Hittable *)a, *hb = (Hittable *)b;
+
+  if (axis == 'x')
+    return ha->refp.x < hb->refp.x ? -1 : 1;
+  else if (axis == 'y')
+    return ha->refp.y < hb->refp.y ? -1 : 1;
+  else
+    return ha->refp.z < hb->refp.z ? -1 : 1;
+}
+
+void node_split(Node *n, size_t leaf_size) {
+  if (!n->objects)
+    return;
+
+  // get axis with max diff
+  Box *bbox = n->objects->bbox;
+  point cb = bbox->cback, cf = bbox->cfront;
+  double maxdiff = cf.x - cb.x;
+
+  if (cf.y - cb.y > maxdiff) {
+    maxdiff = cf.y - cb.y;
+    axis = 'y';
+  }
+
+  if (cf.z - cb.z > maxdiff)
+    axis = 'z';
+
+  // order objects by that axis
+  List *sorted = list_copy(n->objects);
+  qsort(sorted->list, sorted->size, sizeof(Hittable *), node_objects_sort_by_axis);
+
+  size_t middle = sorted->size / 2, i;
+  List *hleft = (List *)list_init(), *hright = (List *)list_init();
+
+  for (i = 0; i < middle; i++)
+    list_push(hleft, list_get(sorted, i));
+
+  for (i = middle; i < sorted->size; i++)
+    list_push(hright, list_get(sorted, i));
+
+  list_copy_destroy(sorted);
+
+  n->left = node_init(hleft);
+  n->right = node_init(hright);
+
+  if (n->objects->size > leaf_size) {
+    list_copy_destroy(n->objects);
+    n->objects = NULL;
+  }
+
+  if (hleft->size > leaf_size)
+    node_split(n->left, leaf_size);
+  if (hright->size > leaf_size)
+    node_split(n->right, leaf_size);
+}
+
+bool node_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr) {
+  Box *bbox = o->bbox(o);
+  Node *self = (Node *)o;
+  List *objects = self->objects;
+  Record tmp;
+
+  if (!bbox || !HIT(bbox, r, t_min, t_max, &tmp))
+    return false;
+
+  if (objects) {
+    return HIT(objects, r, t_min, t_max, hr);
+  } else {
+    Record lrec, rrec;
+    bool lhit = false, rhit = false;
+
+    if (self->left)
+      lhit = HIT(self->left, r, t_min, t_max, &lrec);
+
+    if (self->right)
+      rhit = HIT(self->right, r, t_min, t_max, &rrec);
+
+    if (lhit && rhit)
+      *hr = lrec.t < rrec.t ? lrec : rrec;
+    else if (lhit || rhit)
+      *hr = lhit ? lrec : rrec;
+
+    return lhit || rhit;
+  }
+}
+
+void node_destroy(Hittable *h) {
+  Node *self = (Node *)h;
+
+  if (self->left)
+    DESTROY(self->left);
+
+  if (self->right)
+    DESTROY(self->right);
+
+  if (self->objects)
+    DESTROY(self->objects);
+  else
+    DESTROY(self->bbox);
+
+  free(self);
+}
+
+bool kdtree_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr) {
+  return HIT(((KDTree *)o)->root, r, t_min, t_max, hr);
+}
+
+void kdtree_destroy(Hittable *o) {
+  DESTROY(((KDTree *)o)->root);
+  free(o);
+}
+
+Box *kdtree_bbox(const Hittable *o) { return ((KDTree *)o)->root->bbox; }
+
+Hittable *kdtree_init(List *objects, size_t leaf_size) {
+  KDTree *self = malloc(sizeof(KDTree));
+
+  self->_hittable = (Hittable){
+    kdtree_hit,
+    kdtree_destroy,
+    kdtree_bbox,
+    objects->_hittable.refp,
+  };
+
+  self->root = node_init(objects);
+
+  node_split(self->root, leaf_size);
+
+  return (Hittable *)self;
+}

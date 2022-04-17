@@ -37,6 +37,10 @@ inline vec3 vec3_scale(double s, const vec3 v) {
   return (vec3){v.x * s, v.y * s, v.z * s};
 }
 
+inline vec3 vec3_unscale(const vec3 v, double s) {
+  return (vec3){v.x / s, v.y / s, v.z / s};
+}
+
 inline vec3 vec3_sub(const vec3 a, const vec3 b) {
   return (vec3){a.x - b.x, a.y - b.y, a.z - b.z};
 }

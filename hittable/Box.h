@@ -9,7 +9,7 @@ struct _box {
   point cback;
   point cfront;
   List *faces;
-  shrmat sm;
+  spmat *sm;
 };
 
 typedef struct _box Box;
@@ -25,7 +25,7 @@ typedef struct _box Box;
  * @param m box material (owned)
  * @return the Box instance
  */
-Hittable *box_init(point p1, point p2, shrmat sm);
+Hittable *box_init(point p1, point p2, spmat *sm);
 
 /** Free the box instance */
 void box_destroy(Hittable *box);

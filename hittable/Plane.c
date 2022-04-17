@@ -6,17 +6,21 @@ bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, 
 void plane_destroy(Hittable *h);
 Box *plane_bbox(const Hittable *h) { return NULL; }
 
-Hittable *plane_init(point origin, vec3 normal, shrmat sm) {
+Hittable *plane_init(point origin, vec3 normal, spmat *sm) {
   Plane *p = malloc(sizeof(Plane));
 
-  p->_hittable.hit = plane_hit;
-  p->_hittable.destroy = plane_destroy;
-  p->_hittable.bbox = plane_bbox;
+  p->_hittable = (Hittable){
+    plane_hit,
+    plane_destroy,
+    plane_bbox,
+    origin,
+  };
 
   p->origin = origin;
   p->normal = normal;
 
-  sm.refcount++;
+  if (sm)
+    sm->c++;
   p->sm = sm;
 
   return (Hittable *)p;
@@ -35,7 +39,7 @@ bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, 
 
   hr->t = t;
   hr->p = ray_at(r, t);
-  hr->mat = self->sm.m;
+  hr->sm = self->sm;
   hr_set_face_normal(hr, r, self->normal);
 
   return true;
@@ -44,8 +48,11 @@ bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, 
 void plane_destroy(Hittable *h) {
   Plane *self = (Plane *)h;
 
-  if (!--self->sm.refcount && self->sm.m)
-    free(self->sm.m);
+  spmat *sm = self->sm;
+  if (sm && !--sm->c && sm->m) {
+    free(sm->m);
+    free(sm);
+  }
 
   free(h);
 }

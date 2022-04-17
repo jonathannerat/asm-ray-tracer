@@ -1,23 +1,21 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include "ray.h"
+#include "hittable/Record.h"
 
-typedef struct record Record;
-typedef struct material Material;
+typedef struct _material Material;
 
-typedef struct {
+typedef struct _spmat spmat;
+
+struct _spmat {
   Material *m;
-  size_t refcount;
-} shrmat;
-
-typedef bool (*scatter_method)(const Material *m, const ray *r_in, const Record *hr, color *attenuation, ray *scattered);
-
-struct material{
-  scatter_method scatter;
+  size_t c;
 };
 
-
+struct _material {
+  bool (*scatter)(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+                  ray *scattered);
+};
 
 /// LAMBERTIAN
 
@@ -26,9 +24,7 @@ typedef struct {
   color albedo;
 } Lambertian;
 
-Material *lambertian_init(color albedo);
-
-
+spmat *lambertian_init(color albedo);
 
 /// METAL
 
@@ -38,9 +34,7 @@ typedef struct {
   double fuzz;
 } Metal;
 
-Material *metal_init(color albedo, double fuzz);
-
-
+spmat *metal_init(color albedo, double fuzz);
 
 /// DIELECTRIC
 
@@ -50,6 +44,6 @@ typedef struct {
   double ir;
 } Dielectric;
 
-Material *dielectric_init(color albedo, double ir);
+spmat *dielectric_init(color albedo, double ir);
 
 #endif // MATERIAL_H

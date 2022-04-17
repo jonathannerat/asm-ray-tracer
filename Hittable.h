@@ -4,6 +4,7 @@
 #include "hittable/Record.h"
 
 #define DESTROY(e) ((Hittable *)(e))->destroy((Hittable *)e)
+#define HIT(e, ...) ((Hittable *)(e))->hit((Hittable *)(e), __VA_ARGS__)
 
 typedef struct _hittable Hittable;
 
@@ -15,6 +16,8 @@ struct _hittable {
   void (*destroy)(Hittable *);
 
   struct _box *(*bbox)(const Hittable *);
+
+  point refp;
 };
 
 #endif // HITTABLE_H
