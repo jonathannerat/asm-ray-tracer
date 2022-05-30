@@ -1,6 +1,7 @@
 #include "Material.h"
 
 double reflectance(double cosine, double ref_idx);
+color emits_black(const Material *_) { return (color){0, 0, 0}; }
 
 /// LAMBERTIAN
 
@@ -12,6 +13,7 @@ spmat *lambertian_init(color albedo) {
   spmat *sm = malloc(sizeof(spmat));
 
   mat->_material.scatter = lambertian_scatter;
+  mat->_material.emitted = emits_black;
   mat->albedo = albedo;
 
   sm->m = (Material *)mat;
@@ -43,6 +45,7 @@ spmat *metal_init(color albedo, double fuzz) {
   spmat *sm = malloc(sizeof(spmat));
 
   mat->_material.scatter = metal_scatter;
+  mat->_material.emitted = emits_black;
   mat->albedo = albedo;
   mat->fuzz = fuzz;
 
@@ -76,6 +79,7 @@ spmat *dielectric_init(color albedo, double ir) {
   spmat *sm = malloc(sizeof(spmat));
 
   mat->_material.scatter = dielectric_scatter;
+  mat->_material.emitted = emits_black;
   mat->albedo = albedo;
   mat->ir = ir;
 
@@ -104,6 +108,27 @@ bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, co
   *scattered = (ray){hr->p, direction};
 
   return true;
+}
+
+color diffuse_light_emitted(const Material *m) { return ((DiffuseLight *)m)->albedo; }
+
+bool diffuse_light_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
+                           ray *scattered) {
+  return false;
+}
+
+spmat *diffuse_light_init(color albedo) {
+  DiffuseLight *mat = malloc(sizeof(DiffuseLight));
+  spmat *sm = malloc(sizeof(spmat));
+
+  mat->_material.scatter = diffuse_light_scatter;
+  mat->_material.emitted = diffuse_light_emitted;
+  mat->albedo = albedo;
+
+  sm->m = (Material *)mat;
+  sm->c = 0;
+
+  return sm;
 }
 
 double reflectance(double cosine, double ref_idx) {

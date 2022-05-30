@@ -19,7 +19,14 @@ int main(int argc, char **argv) {
     s = scene_init();
 
   list_push(
-    l, kdtree_init((List *)list_parse_obj("models/cow.obj", lambertian_init((color){1, .2, .15})), 500));
+    l, kdtree_init((List *)list_parse_obj("models/cow.obj", lambertian_init((color){1, .2, .15})),
+                   500));
+
+  list_push(l, triangle_init((point){1, 2, -1}, (point){-1, 2, -1}, (point){0, 2, 1},
+                             diffuse_light_init((color){1, 1, 1})));
+
+  list_push(l,
+            plane_init((point){0, 0, -1}, (point){0, 1, 0}, lambertian_init((color){.3, .4, .7})));
 
   s->world = (Hittable *)l;
 

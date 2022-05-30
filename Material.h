@@ -15,6 +15,7 @@ struct _spmat {
 struct _material {
   bool (*scatter)(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
                   ray *scattered);
+  color (*emitted)(const Material *m);
 };
 
 /// LAMBERTIAN
@@ -45,5 +46,12 @@ typedef struct {
 } Dielectric;
 
 spmat *dielectric_init(color albedo, double ir);
+
+typedef struct {
+  Material _material;
+  color albedo;
+} DiffuseLight;
+
+spmat *diffuse_light_init(color albedo);
 
 #endif // MATERIAL_H

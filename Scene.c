@@ -8,7 +8,7 @@
 
 camera parse_camera_line(char *c);
 output parse_output_line(char *c);
-color ray_color(const ray *r, Hittable *world, u_int16_t max_depth);
+color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t max_depth);
 void write_color(color pixel, u_int16_t spp);
 
 Scene *_scene_init(FILE *fp) {
@@ -41,6 +41,7 @@ Scene *scene_init_file(const char *path) {
 
 void scene_render(const Scene *s) {
   int16_t i, j, k;
+  color bg_color = {0,0,0};
   printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
 
   for (j = s->output.height - 1; j >= 0; j--) {
@@ -54,7 +55,7 @@ void scene_render(const Scene *s) {
         double u = (i + random_double()) / (s->output.width - 1);
         double v = (j + random_double()) / (s->output.height - 1);
         ray r = camera_get_ray(&s->camera, u, v);
-        pixel = vec3_add(pixel, ray_color(&r, s->world, s->output.max_depth));
+        pixel = vec3_add(pixel, ray_color(&r, &bg_color, s->world, s->output.max_depth));
       }
 
       write_color(pixel, s->output.samples_per_pixel);
@@ -62,30 +63,24 @@ void scene_render(const Scene *s) {
   }
 }
 
-color ray_color(const ray *r, Hittable *world, u_int16_t depth) {
+color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t depth) {
   if (depth <= 0)
     return (color){0, 0, 0};
 
   Record rec;
 
-  if (world->hit(world, r, 0.001, INFINITY, &rec)) {
-    ray scattered;
-    color attenuation;
-    Material *m = rec.sm ? rec.sm->m : NULL;
+  if (!world->hit(world, r, 0.001, INFINITY, &rec))
+    return *bg;
 
-    if (m->scatter(m, r, &rec, &attenuation, &scattered))
-      return vec3_prod(attenuation, ray_color(&scattered, world, depth - 1));
+  Material *m = rec.sm ? rec.sm->m : NULL;
+  ray scattered;
+  color attenuation;
+  color emitted = m->emitted(m);
 
-    return (vec3){0, 0, 0};
-  }
+  if (!m->scatter(m, r, &rec, &attenuation, &scattered))
+    return emitted;
 
-  // Gradiente
-  vec3 unit_dir = normalized(r->direction);
-  double t = .5 * (unit_dir.y + 1);
-  color bg_color =
-    vec3_add(vec3_scale(1.0 - t, (color){1, 1, 1}), vec3_scale(t, (color){.5, .7, 1}));
-
-  return bg_color;
+  return vec3_add(emitted, vec3_prod(attenuation, ray_color(&scattered, bg, world, depth - 1)));
 }
 
 camera parse_camera_line(char *c) {
