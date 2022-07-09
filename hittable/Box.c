@@ -34,12 +34,13 @@ Hittable *box_init(point p1, point p2, spmat *sm) {
   vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
 
   b->faces = (List *)list_init();
-  list_push(b->faces, plane_init(b->cback, vec3_inv(x), NULL));
-  list_push(b->faces, plane_init(b->cback, vec3_inv(y), NULL));
-  list_push(b->faces, plane_init(b->cback, vec3_inv(z), NULL));
-  list_push(b->faces, plane_init(b->cfront, x, NULL));
-  list_push(b->faces, plane_init(b->cfront, y, NULL));
-  list_push(b->faces, plane_init(b->cfront, z, NULL));
+
+  list_push(b->faces, plane_init(b->cback, vec3_inv(x), sm));
+  list_push(b->faces, plane_init(b->cback, vec3_inv(y), sm));
+  list_push(b->faces, plane_init(b->cback, vec3_inv(z), sm));
+  list_push(b->faces, plane_init(b->cfront, x, sm));
+  list_push(b->faces, plane_init(b->cfront, y, sm));
+  list_push(b->faces, plane_init(b->cfront, z, sm));
 
   return (Hittable *)b;
 }
