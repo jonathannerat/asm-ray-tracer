@@ -163,3 +163,7 @@ Hittable *kdtree_init(List *objects, size_t leaf_size) {
 
   return (Hittable *)self;
 }
+
+Hittable *kdtree_init_from_file(const char *path, size_t leaf_size, spmat *sm) {
+  return kdtree_init((List *)list_parse_obj(path, sm), leaf_size);
+}

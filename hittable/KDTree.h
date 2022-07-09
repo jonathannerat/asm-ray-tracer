@@ -18,5 +18,6 @@ typedef struct {
 } KDTree;
 
 Hittable *kdtree_init(List *objects, size_t leaf_size);
+Hittable *kdtree_init_from_file(const char* path, size_t leaf_size, spmat *sm);
 
 #endif // KDTREE_H
