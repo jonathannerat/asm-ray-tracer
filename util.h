@@ -2,9 +2,17 @@
 #define UTIL_H
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <stdbool.h>
+
+void d(const char *fmt, ...);
+
+#ifdef DEBUG
+#define D(...) d("[debug] " __VA_ARGS__)
+#else
+#define D(...) d(NULL)
+#endif
 
 #define EPS 1e-8
 #define M_PI 3.14159265358979323846f

@@ -22,7 +22,7 @@ options:
 ${TARGET}: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
-debug: CFLAGS += -g
+debug: CFLAGS += -g -DDEBUG
 debug: ${TARGET}
 
 clean:
