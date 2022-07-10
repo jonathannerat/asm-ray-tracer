@@ -33,9 +33,13 @@ ${TARGET}-c: ${OBJ} c_core.o
 ${TARGET}-asm: ${OBJ} asm_core.o
 	${CC} -o $@ ${OBJ} asm_core.o ${LDFLAGS}
 
-debug: CFLAGS += -g -DDEBUG
-debug: NASMFLAGS += -g -F DWARF
-debug: targets
+debug-c: CFLAGS += -g -DDEBUG
+debug-c: rt-c
+
+debug-asm: NASMFLAGS += -g -F DWARF
+debug-asm: rt-asm
+
+debug: debug-c debug-asm
 
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm
