@@ -1,22 +1,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include "hittable/Record.h"
-
-typedef struct _material Material;
-
-typedef struct _spmat spmat;
-
-struct _spmat {
-  Material *m;
-  size_t c;
-};
-
-struct _material {
-  bool (*scatter)(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                  ray *scattered);
-  color (*emitted)(const Material *m);
-};
+#include "core.h"
 
 /// LAMBERTIAN
 

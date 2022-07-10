@@ -1,10 +1,11 @@
-#include "KDTree.h"
-
-#include "Box.h"
 #include <stdlib.h>
 #include <string.h>
 
-bool node_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
+#include "KDTree.h"
+#include "List.h"
+#include "util.h"
+
+bool node_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr);
 void node_destroy(Hittable *o);
 Box *node_bbox(const Hittable *o) { return ((Node *)o)->bbox; }
 
@@ -89,7 +90,7 @@ void node_split(Node *n, size_t leaf_size) {
     node_split(n->right, leaf_size);
 }
 
-bool node_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr) {
+bool node_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr) {
   Box *bbox = o->bbox(o);
   Node *self = (Node *)o;
   List *objects = self->objects;
@@ -136,7 +137,7 @@ void node_destroy(Hittable *h) {
   free(self);
 }
 
-bool kdtree_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr) {
+bool kdtree_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr) {
   return HIT(((KDTree *)o)->root, r, t_min, t_max, hr);
 }
 
@@ -147,7 +148,7 @@ void kdtree_destroy(Hittable *o) {
 
 Box *kdtree_bbox(const Hittable *o) { return ((KDTree *)o)->root->bbox; }
 
-Hittable *kdtree_init(List *objects, size_t leaf_size) {
+Hittable *kdtree_init(List *objects, uint leaf_size) {
   KDTree *self = malloc(sizeof(KDTree));
 
   self->_hittable = (Hittable){
@@ -164,6 +165,6 @@ Hittable *kdtree_init(List *objects, size_t leaf_size) {
   return (Hittable *)self;
 }
 
-Hittable *kdtree_init_from_file(const char *path, size_t leaf_size, spmat *sm) {
+Hittable *kdtree_init_from_file(const char *path, uint leaf_size, spmat *sm) {
   return kdtree_init((List *)list_parse_obj(path, sm), leaf_size);
 }

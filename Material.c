@@ -1,12 +1,16 @@
+#include <stdlib.h>
+#include <math.h>
+
 #include "Material.h"
+#include "util.h"
 
 double reflectance(double cosine, double ref_idx);
 color emits_black(const Material *_) { return (color){0, 0, 0}; }
 
 /// LAMBERTIAN
 
-bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                        ray *scattered);
+bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                        Ray *scattered);
 
 spmat *lambertian_init(color albedo) {
   Lambertian *mat = malloc(sizeof(Lambertian));
@@ -22,23 +26,23 @@ spmat *lambertian_init(color albedo) {
   return sm;
 }
 
-bool lambertian_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                        ray *scattered) {
+bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                        Ray *scattered) {
   Lambertian *self = (Lambertian *)m;
   vec3 scatter_direction = vec3_add(hr->normal, vec3_random_in_unit_sphere());
 
   if (vec3_near_zero(scatter_direction))
     scatter_direction = hr->normal;
 
-  *scattered = (ray){hr->p, scatter_direction};
+  *scattered = (Ray){hr->p, scatter_direction};
   *attenuation = self->albedo;
   return true;
 }
 
 /// METAL
 
-bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                   ray *scattered);
+bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                   Ray *scattered);
 
 spmat *metal_init(color albedo, double fuzz) {
   Metal *mat = malloc(sizeof(Metal));
@@ -55,12 +59,12 @@ spmat *metal_init(color albedo, double fuzz) {
   return sm;
 }
 
-bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                   ray *scattered) {
+bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                   Ray *scattered) {
   Metal *self = (Metal *)m;
   vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
 
-  *scattered = (ray){
+  *scattered = (Ray){
     hr->p,
     vec3_add(reflected, vec3_scale(self->fuzz, vec3_random_in_unit_sphere())),
   };
@@ -71,8 +75,8 @@ bool metal_scatter(const Material *m, const ray *r_in, const Record *hr, color *
 
 /// DIELECTRIC
 
-bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                        ray *scattered);
+bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                        Ray *scattered);
 
 spmat *dielectric_init(color albedo, double ir) {
   Dielectric *mat = malloc(sizeof(Dielectric));
@@ -89,8 +93,8 @@ spmat *dielectric_init(color albedo, double ir) {
   return sm;
 }
 
-bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                        ray *scattered) {
+bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                        Ray *scattered) {
   Dielectric *self = (Dielectric *)m;
   double ref_ratio = hr->front_face ? 1 / self->ir : self->ir;
   vec3 unit_dir = normalized(r_in->direction);
@@ -105,15 +109,15 @@ bool dielectric_scatter(const Material *m, const ray *r_in, const Record *hr, co
     direction = refract(unit_dir, hr->normal, ref_ratio);
 
   *attenuation = self->albedo;
-  *scattered = (ray){hr->p, direction};
+  *scattered = (Ray){hr->p, direction};
 
   return true;
 }
 
 color diffuse_light_emitted(const Material *m) { return ((DiffuseLight *)m)->albedo; }
 
-bool diffuse_light_scatter(const Material *m, const ray *r_in, const Record *hr, color *attenuation,
-                           ray *scattered) {
+bool diffuse_light_scatter(const Material *m, const Ray *r_in, const Record *hr, color *attenuation,
+                           Ray *scattered) {
   return false;
 }
 

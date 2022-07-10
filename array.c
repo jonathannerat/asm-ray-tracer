@@ -1,4 +1,7 @@
+#include <stdlib.h>
+
 #include "array.h"
+#include "util.h"
 
 array_vec3 *array_vec3_init() {
   array_vec3 *arr = malloc(sizeof(array_vec3));
@@ -26,7 +29,7 @@ bool array_vec3_push(array_vec3 *arr, vec3 v) {
   return true;
 }
 
-vec3 array_vec3_get(const array_vec3 *arr, size_t i) {
+vec3 array_vec3_get(const array_vec3 *arr, uint i) {
   if (i >= arr->size)
     return (vec3){NAN, NAN, NAN};
 
@@ -66,7 +69,7 @@ bool array_gen_push(array_gen *arr, void *v) {
   return true;
 }
 
-void *array_gen_get(const array_gen *arr, size_t i) {
+void *array_gen_get(const array_gen *arr, uint i) {
   if (i >= arr->size)
     return NULL;
 

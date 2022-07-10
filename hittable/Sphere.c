@@ -1,6 +1,9 @@
-#include "Sphere.h"
+#include <stdlib.h>
 
-bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+#include "Sphere.h"
+#include "Box.h"
+
+bool sphere_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 void sphere_destroy(Hittable *h);
 Box *sphere_bbox(const Hittable *h);
 
@@ -26,7 +29,7 @@ Hittable *sphere_init(point center, double radius, spmat *sm) {
   return (Hittable *)s;
 }
 
-bool sphere_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool sphere_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
   Sphere *self = (Sphere *)_self;
 
   vec3 oc = vec3_sub(r->origin, self->center);

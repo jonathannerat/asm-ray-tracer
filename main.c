@@ -1,13 +1,5 @@
-#include <stdio.h>
-#include <sys/types.h>
-
 #include "Scene.h"
-#include "hittable/Box.h"
-#include "hittable/KDTree.h"
-#include "hittable/List.h"
-#include "hittable/Plane.h"
-#include "hittable/Sphere.h"
-#include "hittable/Triangle.h"
+#include "util.h"
 
 int main(int argc, char **argv) {
   Scene *s;

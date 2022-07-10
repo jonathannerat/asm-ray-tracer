@@ -1,15 +1,16 @@
-#include "Scene.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "Scene.h"
 #include "Material.h"
-#include "array.h"
 #include "hittable/Box.h"
+#include "hittable/KDTree.h"
+#include "hittable/List.h"
+#include "hittable/Plane.h"
 #include "hittable/Sphere.h"
 #include "hittable/Triangle.h"
-#include "hittable/KDTree.h"
+#include "array.h"
 #include "util.h"
 
 #define SKIPBLANK(c)                                                                               \
@@ -22,12 +23,12 @@ typedef enum {
   PARSING_OBJECTS,
 } ParsingStage;
 
-camera parse_camera_line(char *c);
+Camera parse_camera_line(char *c);
 output parse_output_line(char *c);
-color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t max_depth);
+color ray_color(const Ray *r, const color *bg, Hittable *world, u_int16_t max_depth);
 spmat *parse_material_line(char *c);
 Hittable *parse_object_line(const array_gen *materials, char *c);
-void write_color(color pixel, u_int16_t spp);
+void write_color(color pixel, uint spp);
 
 Scene *_scene_init(FILE *fp) {
   Scene *s = malloc(sizeof(Scene));
@@ -92,7 +93,7 @@ void scene_render(const Scene *s) {
       for (k = 0; k < s->output.samples_per_pixel; k++) {
         double u = (i + random_double()) / (s->output.width - 1);
         double v = (j + random_double()) / (s->output.height - 1);
-        ray r = camera_get_ray(&s->camera, u, v);
+        Ray r = camera_get_ray(&s->camera, u, v);
         pixel = vec3_add(pixel, ray_color(&r, &bg_color, s->world, s->output.max_depth));
       }
 
@@ -101,7 +102,7 @@ void scene_render(const Scene *s) {
   }
 }
 
-color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t depth) {
+color ray_color(const Ray *r, const color *bg, Hittable *world, u_int16_t depth) {
   if (depth <= 0)
     return (color){0, 0, 0};
 
@@ -111,7 +112,7 @@ color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t depth)
     return *bg;
 
   Material *m = rec.sm ? rec.sm->m : NULL;
-  ray scattered;
+  Ray scattered;
   color attenuation;
   color emitted = m->emitted(m);
 
@@ -121,7 +122,7 @@ color ray_color(const ray *r, const color *bg, Hittable *world, u_int16_t depth)
   return vec3_add(emitted, vec3_prod(attenuation, ray_color(&scattered, bg, world, depth - 1)));
 }
 
-camera parse_camera_line(char *c) {
+Camera parse_camera_line(char *c) {
   char *p = c + 7; // skip 'camera:'
 
   // camera properties

@@ -1,6 +1,9 @@
-#include "Triangle.h"
+#include <stdlib.h>
 
-bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+#include "Triangle.h"
+#include "Box.h"
+
+bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 void triangle_destroy(Hittable *h);
 Box *triangle_bbox(const Hittable *h);
 
@@ -32,7 +35,7 @@ Hittable *triangle_init(point p1, point p2, point p3, spmat *sm) {
   return (Hittable *)self;
 }
 
-bool triangle_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
   Triangle *self = (Triangle *)_self;
 
   vec3 normal = cross(vec3_sub(self->p2, self->p1), vec3_sub(self->p3, self->p1));

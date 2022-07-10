@@ -1,8 +1,7 @@
 #include "Plane.h"
-
 #include "Box.h"
 
-bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
+bool plane_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 void plane_destroy(Hittable *h);
 Box *plane_bbox(const Hittable *h) { return NULL; }
 
@@ -26,7 +25,7 @@ Hittable *plane_init(point origin, vec3 normal, spmat *sm) {
   return (Hittable *)p;
 }
 
-bool plane_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
+bool plane_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
   Plane *self = (Plane *)_self;
 
   if (perpendicular(r->direction, self->normal))

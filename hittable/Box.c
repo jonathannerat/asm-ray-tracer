@@ -1,6 +1,7 @@
 #include "Box.h"
+#include "List.h"
+#include "Plane.h"
 
-bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr);
 void box_destroy(Hittable *box);
 Box *box_bbox(const Hittable *h);
 
@@ -43,25 +44,6 @@ Hittable *box_init(point p1, point p2, spmat *sm) {
   list_push(b->faces, plane_init(b->cfront, z, sm));
 
   return (Hittable *)b;
-}
-
-bool box_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
-  Box *self = (Box *)_self;
-  size_t i;
-  bool hit_anything = false;
-  double closest_so_far = t_max;
-  Record tmp;
-
-  for (i = 0; i < self->faces->size; i++) {
-    Hittable *h = list_get(self->faces, i);
-    if (h->hit(h, r, t_min, closest_so_far, &tmp) && box_is_inside(self, tmp.p)) {
-      hit_anything = true;
-      closest_so_far = tmp.t;
-      *hr = tmp;
-    }
-  }
-
-  return hit_anything;
 }
 
 void box_destroy(Hittable *h) {

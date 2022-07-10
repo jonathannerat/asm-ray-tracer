@@ -2,9 +2,9 @@
 #define UTIL_H
 
 #include <math.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include <sys/types.h>
+
+#include "core.h"
 
 void d(const char *fmt, ...);
 
@@ -16,11 +16,12 @@ void d(const char *fmt, ...);
 
 #define EPS 1e-8
 #define M_PI 3.14159265358979323846f
+#define MAX_BUF_SIZE 256
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
-
-#define MAX_BUF_SIZE 256
+#define DESTROY(e) ((Hittable *)(e))->destroy((Hittable *)e)
+#define HIT(e, ...) ((Hittable *)(e))->hit((Hittable *)(e), __VA_ARGS__)
 
 inline double degrees_to_radians(double degrees) { return degrees * M_PI / 180.0; }
 
@@ -35,5 +36,7 @@ inline double clamp(double x, double min, double max) {
 }
 
 char* strfind(char *c, char f);
+vec3 parse_vec3(char *c, char **t);
+void write_color(color pixel, unsigned int spp);
 
 #endif // UTIL_H

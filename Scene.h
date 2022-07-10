@@ -1,7 +1,6 @@
 #include <sys/types.h>
 
-#include "camera.h"
-#include "Hittable.h"
+#include "core.h"
 
 typedef struct {
   u_int16_t width;
@@ -11,7 +10,7 @@ typedef struct {
 } output;
 
 typedef struct {
-  camera camera;
+  Camera camera;
   output output;
   Hittable *world;
 } Scene;

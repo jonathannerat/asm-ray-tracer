@@ -1,18 +1,8 @@
 #ifndef HITTABLE_BOX_H
 #define HITTABLE_BOX_H
 
-#include "List.h"
-#include "Plane.h"
-
-struct _box {
-  Hittable _hittable;
-  point cback;
-  point cfront;
-  List *faces;
-  spmat *sm;
-};
-
-typedef struct _box Box;
+#include "core.h"
+#include "util.h"
 
 /** Initialize a new axis aligned box delimited by two (*distinct) points
  *

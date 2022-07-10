@@ -1,13 +1,13 @@
-#include "List.h"
+#include <stdio.h>
+#include <string.h>
 
+#include "List.h"
 #include "Box.h"
 #include "Triangle.h"
 #include "array.h"
-#include <string.h>
 
 #define LIST_INITIAL_CAPACITY 16
 
-bool list_hit(const Hittable *o, const ray *r, double t_min, double t_max, Record *hr);
 void list_destroy(Hittable *self);
 Box *list_bbox(const Hittable *h);
 
@@ -28,7 +28,7 @@ Hittable *list_init() {
 
 List *list_copy(List *l) {
   List *other = malloc(sizeof(List));
-  size_t bytes = sizeof(Hittable *) * l->cap;
+  uint bytes = sizeof(Hittable *) * l->cap;
 
   other->size = l->size;
   other->cap = l->cap;
@@ -84,35 +84,16 @@ bool list_push(List *self, Hittable *h) {
   return true;
 }
 
-Hittable *list_get(List *l, size_t i) {
+Hittable *list_get(List *l, uint i) {
   if (i >= l->size)
     return NULL;
 
   return l->list[i];
 }
 
-bool list_hit(const Hittable *_self, const ray *r, double t_min, double t_max, Record *hr) {
-  List *self = (List *)_self;
-  Record tmp;
-  u_int32_t i;
-  bool hit_anything = false;
-  double closest_so_far = t_max;
-
-  for (i = 0; i < self->size; i++) {
-    Hittable *h = self->list[i];
-    if (h->hit(h, r, t_min, closest_so_far, &tmp)) {
-      hit_anything = true;
-      closest_so_far = tmp.t;
-      *hr = tmp;
-    }
-  }
-
-  return hit_anything;
-}
-
 void list_destroy(Hittable *h) {
   List *self = (List *)h;
-  size_t i;
+  uint i;
 
   for (i = 0; i < self->size; i++)
     DESTROY(self->list[i]);
@@ -158,7 +139,7 @@ Hittable *list_parse_obj(const char *path, spmat *sm) {
     case 'f':
       if (c[1] == ' ') {
         c += 2; // skip to values
-        size_t i, j, k;
+        uint i, j, k;
 
         i = strtold(c, &c);
         c = strfind(c, ' ') + 1; // skip vn index

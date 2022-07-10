@@ -1,7 +1,7 @@
 #include "util.h"
+#include <stdio.h>
 
 #ifdef DEBUG
-#include <stdio.h>
 #include <stdarg.h>
 void d(const char *fmt, ...) {
   va_list args;
@@ -17,4 +17,35 @@ char* strfind(char *c, char f) {
   while(*c && *c != f) c++;
 
   return c;
+}
+
+vec3 parse_vec3(char *c, char **t) {
+  vec3 v;
+
+  v.x = strtod(c, &c);
+  c++;
+
+  v.y = strtod(c, &c);
+  c++;
+
+  v.z = strtod(c, &c);
+
+  if (t)
+    *t = c;
+
+  return v;
+}
+
+void write_color(color pixel, unsigned int spp) {
+  double r = pixel.x;
+  double g = pixel.y;
+  double b = pixel.z;
+  double scale = 1.0 / spp;
+
+  r = sqrt(r * scale);
+  g = sqrt(g * scale);
+  b = sqrt(b * scale);
+
+  printf("%d %d %d\n", (int)(256 * clamp(r, 0, 1)), (int)(256 * clamp(g, 0, 1)),
+         (int)(256 * clamp(b, 0, 1)));
 }

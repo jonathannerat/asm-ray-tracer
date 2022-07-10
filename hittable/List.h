@@ -1,18 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "../Hittable.h"
-#include "../Material.h"
-
-typedef struct {
-  Hittable _hittable;
-  Hittable **list;
-  size_t size;
-  size_t cap;
-  point refpsum;
-  spmat *sm;
-  struct _box *bbox;
-} List;
+#include "core.h"
 
 Hittable *list_init();
 
@@ -24,6 +13,6 @@ Hittable *list_parse_obj(const char *, spmat *);
 
 bool list_push(List *l, Hittable *h);
 
-Hittable *list_get(List *l, size_t i);
+Hittable *list_get(List *l, uint i);
 
 #endif // LIST_H
