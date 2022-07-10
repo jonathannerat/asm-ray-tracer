@@ -44,9 +44,35 @@ struct _material {
   Color (*emitted)(const struct _material *m);
 };
 
+struct _lambertian {
+  struct _material _material;
+  Color albedo;
+};
+
+struct _metal {
+  struct _material _material;
+  Color albedo;
+  double fuzz;
+};
+
+struct _dielectric {
+  struct _material _material;
+  Color albedo;
+  double ir;
+};
+
+struct _diffuse_light {
+  struct _material _material;
+  Color albedo;
+};
+
 typedef struct _spmat spmat;
 typedef struct _record Record;
 typedef struct _material Material;
+typedef struct _lambertian Lambertian;
+typedef struct _metal Metal;
+typedef struct _dielectric Dielectric;
+typedef struct _diffuse_light DiffuseLight;
 
 // Hittables
 
@@ -135,32 +161,34 @@ struct _camera {
 
 typedef struct _camera Camera;
 
+// Vec3 methods
+
 Vec3 vec3_add(const Vec3 a, const Vec3 b);
 Vec3 vec3_inv(const Vec3 v);
 Vec3 vec3_prod(const Vec3 a, const Vec3 b);
-Vec3 vec3_scale(double s, const Vec3 v);
 Vec3 vec3_unscale(const Vec3 v, double s);
 Vec3 vec3_sub(const Vec3 a, const Vec3 b);
-Vec3 cross(const Vec3 a, const Vec3 b);
-double dot(const Vec3 a, const Vec3 b);
 double vec3_norm2(const Vec3 a);
-bool perpendicular(const Vec3 a, const Vec3 b);
-Vec3 normalized(const Vec3 v);
-bool vec3_near_zero(const Vec3 v);
-Vec3 reflect(const Vec3 v, const Vec3 n);
-Vec3 refract(const Vec3 uv, const Vec3 n, double etai_over_etat);
-Vec3 vec3_random_in_unit_sphere();
-Vec3 vec3_random();
-Vec3 vec3_random_between(double min, double max);
-Point ray_at(const Ray *r, double t);
+
+// Object hit methods
 
 bool box_hit(const Hittable *_self, const Ray *ray, double t_min, double t_max, Record *hr);
 bool plane_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 bool sphere_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 
-void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
+// Material scatter methods
 
+bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                        Ray *scattered);
+bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                   Ray *scattered);
+bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                        Ray *scattered);
+
+// Other
+
+void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 Camera camera_init(Point from, Point to, Vec3 vup, double vfov, double aspect_ratio,
                    double aperture, double focus_dist);
 Ray camera_get_ray(const Camera *c, double s, double t);

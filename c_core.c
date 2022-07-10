@@ -1,6 +1,73 @@
 #include "core.h"
+#include "util.h"
 #include "hittable/Box.h"
 #include "hittable/List.h"
+
+Vec3 vec3_add(const Vec3 a, const Vec3 b) { return (Vec3){a.x + b.x, a.y + b.y, a.z + b.z}; }
+
+Vec3 vec3_inv(const Vec3 v) { return (Vec3){-v.x, -v.y, -v.z}; }
+
+Vec3 vec3_prod(const Vec3 a, const Vec3 b) { return (Vec3){a.x * b.x, a.y * b.y, a.z * b.z}; }
+
+Vec3 vec3_scale(double s, const Vec3 v) { return (Vec3){v.x * s, v.y * s, v.z * s}; }
+
+Vec3 vec3_unscale(const Vec3 v, double s) { return (Vec3){v.x / s, v.y / s, v.z / s}; }
+
+Vec3 vec3_sub(const Vec3 a, const Vec3 b) { return (Vec3){a.x - b.x, a.y - b.y, a.z - b.z}; }
+
+Vec3 cross(const Vec3 a, const Vec3 b) {
+  return (Vec3){
+    a.y * b.z - b.y * a.z,
+    b.x * a.z - a.x * b.z,
+    a.x * b.y - b.x * a.y,
+  };
+}
+
+double dot(const Vec3 a, const Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+double vec3_norm2(const Vec3 v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
+
+bool perpendicular(const Vec3 a, const Vec3 b) { return fabs(dot(a, b)) < EPS; }
+
+Vec3 normalized(const Vec3 v) { return vec3_scale(1.0 / sqrt(vec3_norm2(v)), v); }
+
+bool vec3_near_zero(const Vec3 v) { return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS; }
+
+Vec3 refract(const Vec3 uv, const Vec3 n, double etai_over_etat) {
+  double cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
+  Vec3 r_out_perp = vec3_scale(etai_over_etat, vec3_add(uv, vec3_scale(cos_theta, n)));
+  Vec3 r_out_par = vec3_scale(-sqrt(fabs(1.0 - vec3_norm2(r_out_perp))), n);
+  return vec3_add(r_out_perp, r_out_par);
+}
+
+Vec3 reflect(const Vec3 v, const Vec3 n) { return vec3_sub(v, vec3_scale(2 * dot(v, n), n)); }
+
+double reflectance(double cosine, double ref_idx) {
+  // Use Schlick's approximation for reflectance.
+  double r0 = (1 - ref_idx) / (1 + ref_idx);
+  r0 = r0 * r0;
+  return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+Vec3 vec3_random_between(double min, double max) {
+  return (Vec3){random_double_between(min, max), random_double_between(min, max),
+                random_double_between(min, max)};
+}
+
+Vec3 vec3_random_in_unit_sphere() {
+  while (1) {
+    Vec3 p = vec3_random_between(-1, 1);
+
+    if (vec3_norm2(p) >= 1)
+      continue;
+
+    return p;
+  }
+}
+
+Vec3 vec3_random() { return (Vec3){random_double(), random_double(), random_double()}; }
+
+Point ray_at(const Ray *r, double t) { return vec3_add(r->origin, vec3_scale(t, r->direction)); }
 
 bool box_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
   Box *self = (Box *)_self;
@@ -98,64 +165,53 @@ bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_ma
   return false;
 }
 
-Vec3 vec3_add(const Vec3 a, const Vec3 b) { return (Vec3){a.x + b.x, a.y + b.y, a.z + b.z}; }
+bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                        Ray *scattered) {
+  Lambertian *self = (Lambertian *)m;
+  Vec3 scatter_direction = vec3_add(hr->normal, vec3_random_in_unit_sphere());
 
-Vec3 vec3_inv(const Vec3 v) { return (Vec3){-v.x, -v.y, -v.z}; }
+  if (vec3_near_zero(scatter_direction))
+    scatter_direction = hr->normal;
 
-Vec3 vec3_prod(const Vec3 a, const Vec3 b) { return (Vec3){a.x * b.x, a.y * b.y, a.z * b.z}; }
+  *scattered = (Ray){hr->p, scatter_direction};
+  *attenuation = self->albedo;
+  return true;
+}
 
-Vec3 vec3_scale(double s, const Vec3 v) { return (Vec3){v.x * s, v.y * s, v.z * s}; }
+bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                   Ray *scattered) {
+  Metal *self = (Metal *)m;
+  Vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
 
-Vec3 vec3_unscale(const Vec3 v, double s) { return (Vec3){v.x / s, v.y / s, v.z / s}; }
-
-Vec3 vec3_sub(const Vec3 a, const Vec3 b) { return (Vec3){a.x - b.x, a.y - b.y, a.z - b.z}; }
-
-double vec3_norm2(const Vec3 v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
-
-Vec3 cross(const Vec3 a, const Vec3 b) {
-  return (Vec3){
-    a.y * b.z - b.y * a.z,
-    b.x * a.z - a.x * b.z,
-    a.x * b.y - b.x * a.y,
+  *scattered = (Ray){
+    hr->p,
+    vec3_add(reflected, vec3_scale(self->fuzz, vec3_random_in_unit_sphere())),
   };
+  *attenuation = self->albedo;
+
+  return dot(reflected, hr->normal) > 0;
 }
 
-double dot(const Vec3 a, const Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
+                        Ray *scattered) {
+  Dielectric *self = (Dielectric *)m;
+  double ref_ratio = hr->front_face ? 1 / self->ir : self->ir;
+  Vec3 unit_dir = normalized(r_in->direction);
+  double cos_theta = fmin(dot(vec3_inv(unit_dir), hr->normal), 1);
+  double sin_theta = sqrt(1 - cos_theta * cos_theta);
+  bool cannot_refract = ref_ratio * sin_theta > 1;
+  Vec3 direction;
 
-bool perpendicular(const Vec3 a, const Vec3 b) { return fabs(dot(a, b)) < EPS; }
+  if (cannot_refract || reflectance(cos_theta, ref_ratio) > random_double())
+    direction = reflect(unit_dir, hr->normal);
+  else
+    direction = refract(unit_dir, hr->normal, ref_ratio);
 
-Vec3 normalized(const Vec3 v) { return vec3_scale(1.0 / sqrt(vec3_norm2(v)), v); }
+  *attenuation = self->albedo;
+  *scattered = (Ray){hr->p, direction};
 
-bool vec3_near_zero(const Vec3 v) { return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS; }
-
-Vec3 reflect(const Vec3 v, const Vec3 n) { return vec3_sub(v, vec3_scale(2 * dot(v, n), n)); }
-
-Vec3 refract(const Vec3 uv, const Vec3 n, double etai_over_etat) {
-  double cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
-  Vec3 r_out_perp = vec3_scale(etai_over_etat, vec3_add(uv, vec3_scale(cos_theta, n)));
-  Vec3 r_out_par = vec3_scale(-sqrt(fabs(1.0 - vec3_norm2(r_out_perp))), n);
-  return vec3_add(r_out_perp, r_out_par);
+  return true;
 }
-
-Vec3 vec3_random_in_unit_sphere() {
-  while (1) {
-    Vec3 p = vec3_random_between(-1, 1);
-
-    if (vec3_norm2(p) >= 1)
-      continue;
-
-    return p;
-  }
-}
-
-Vec3 vec3_random() { return (Vec3){random_double(), random_double(), random_double()}; }
-
-Vec3 vec3_random_between(double min, double max) {
-  return (Vec3){random_double_between(min, max), random_double_between(min, max),
-                random_double_between(min, max)};
-}
-
-Point ray_at(const Ray *r, double t) { return vec3_add(r->origin, vec3_scale(t, r->direction)); }
 
 Camera camera_init(Point from, Point to, Vec3 vup, double vfov, double aspect_ratio,
                    double aperture, double focus_dist) {
