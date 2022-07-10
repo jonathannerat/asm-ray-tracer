@@ -12,14 +12,14 @@ typedef struct {
   double x;
   double y;
   double z;
-} vec3;
+} Vec3;
 
-typedef vec3 point;
-typedef vec3 color;
+typedef Vec3 Point;
+typedef Vec3 Color;
 
 typedef struct {
-  point origin;
-  vec3 direction;
+  Point origin;
+  Vec3 direction;
 } Ray;
 
 // Materials
@@ -32,16 +32,16 @@ struct _spmat {
 
 struct _record {
   double t;
-  point p;
-  vec3 normal;
+  Point p;
+  Vec3 normal;
   bool front_face;
   struct _spmat *sm;
 };
 
 struct _material {
   bool (*scatter)(const struct _material *m, const Ray *r_in, const struct _record *hr,
-                  color *attenuation, Ray *scattered);
-  color (*emitted)(const struct _material *m);
+                  Color *attenuation, Ray *scattered);
+  Color (*emitted)(const struct _material *m);
 };
 
 typedef struct _spmat spmat;
@@ -58,7 +58,7 @@ struct _hittable {
 
   struct _box *(*bbox)(const struct _hittable *);
 
-  point refp;
+  Point refp;
 };
 
 struct _list {
@@ -66,29 +66,29 @@ struct _list {
   struct _hittable **list;
   uint size;
   uint cap;
-  point refpsum;
+  Point refpsum;
   spmat *sm;
   struct _box *bbox;
 };
 
 struct _box {
   struct _hittable _hittable;
-  point cback;
-  point cfront;
+  Point cback;
+  Point cfront;
   struct _list *faces;
   spmat *sm;
 };
 
 struct _plane {
   struct _hittable _hittable;
-  point origin;
-  vec3 normal;
+  Point origin;
+  Vec3 normal;
   spmat *sm;
 };
 
 struct _sphere {
   struct _hittable _hittable;
-  point center;
+  Point center;
   double radius;
   struct _box *bbox;
   spmat *sm;
@@ -96,7 +96,7 @@ struct _sphere {
 
 struct _triangle {
   struct _hittable _hittable;
-  point p1, p2, p3;
+  Point p1, p2, p3;
   struct _box *bbox;
   spmat *sm;
 };
@@ -125,43 +125,43 @@ typedef struct _kdtree KDTree;
 // Camera
 
 struct _camera {
-  point origin;
-  point bl_corner;
-  vec3 horizontal;
-  vec3 vertical;
-  vec3 u, v, w;
+  Point origin;
+  Point bl_corner;
+  Vec3 horizontal;
+  Vec3 vertical;
+  Vec3 u, v, w;
   double lens_radius;
 };
 
 typedef struct _camera Camera;
 
-vec3 vec3_add(const vec3 a, const vec3 b);
-vec3 vec3_inv(const vec3 v);
-vec3 vec3_prod(const vec3 a, const vec3 b);
-vec3 vec3_scale(double s, const vec3 v);
-vec3 vec3_unscale(const vec3 v, double s);
-vec3 vec3_sub(const vec3 a, const vec3 b);
-vec3 cross(const vec3 a, const vec3 b);
-double dot(const vec3 a, const vec3 b);
-double vec3_norm2(const vec3 a);
-bool perpendicular(const vec3 a, const vec3 b);
-vec3 normalized(const vec3 v);
-bool vec3_near_zero(const vec3 v);
-vec3 reflect(const vec3 v, const vec3 n);
-vec3 refract(const vec3 uv, const vec3 n, double etai_over_etat);
-vec3 vec3_random_in_unit_sphere();
-vec3 vec3_random();
-vec3 vec3_random_between(double min, double max);
-point ray_at(const Ray *r, double t);
+Vec3 vec3_add(const Vec3 a, const Vec3 b);
+Vec3 vec3_inv(const Vec3 v);
+Vec3 vec3_prod(const Vec3 a, const Vec3 b);
+Vec3 vec3_scale(double s, const Vec3 v);
+Vec3 vec3_unscale(const Vec3 v, double s);
+Vec3 vec3_sub(const Vec3 a, const Vec3 b);
+Vec3 cross(const Vec3 a, const Vec3 b);
+double dot(const Vec3 a, const Vec3 b);
+double vec3_norm2(const Vec3 a);
+bool perpendicular(const Vec3 a, const Vec3 b);
+Vec3 normalized(const Vec3 v);
+bool vec3_near_zero(const Vec3 v);
+Vec3 reflect(const Vec3 v, const Vec3 n);
+Vec3 refract(const Vec3 uv, const Vec3 n, double etai_over_etat);
+Vec3 vec3_random_in_unit_sphere();
+Vec3 vec3_random();
+Vec3 vec3_random_between(double min, double max);
+Point ray_at(const Ray *r, double t);
 
-bool box_hit(const Hittable *hittable, const Ray *ray, double t_min, double t_max,
-             Record *hitrecord);
-bool list_hit(const Hittable *hittable, const Ray *ray, double t_min, double t_max,
-              Record *hitrecord);
+bool box_hit(const Hittable *_self, const Ray *ray, double t_min, double t_max, Record *hr);
+bool plane_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
+bool sphere_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
+bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
 
-void hr_set_face_normal(Record *hr, const Ray *r, vec3 n);
+void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 
-Camera camera_init(point from, point to, vec3 vup, double vfov, double aspect_ratio,
+Camera camera_init(Point from, Point to, Vec3 vup, double vfov, double aspect_ratio,
                    double aperture, double focus_dist);
 Ray camera_get_ray(const Camera *c, double s, double t);
 

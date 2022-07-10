@@ -1,15 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "List.h"
 #include "Box.h"
+#include "List.h"
 #include "Triangle.h"
 #include "array.h"
 
 #define LIST_INITIAL_CAPACITY 16
 
+bool list_hit(const Hittable *hittable, const Ray *ray, double t_min, double t_max,
+              Record *hitrecord);
 void list_destroy(Hittable *self);
 Box *list_bbox(const Hittable *h);
+
 
 Hittable *list_init() {
   List *self = malloc(sizeof(List));
@@ -21,7 +24,7 @@ Hittable *list_init() {
   self->list = malloc(sizeof(Hittable *) * self->cap);
   self->bbox = NULL;
   self->sm = NULL;
-  self->refpsum = (point){0, 0, 0};
+  self->refpsum = (Point){0, 0, 0};
 
   return (Hittable *)self;
 }
@@ -70,7 +73,7 @@ bool list_push(List *self, Hittable *h) {
 
   self->list[self->size++] = h;
 
-  // update reference point
+  // update reference Point
   self->refpsum = vec3_add(self->refpsum, h->refp);
   self->_hittable.refp = vec3_unscale(self->refpsum, self->size);
 
@@ -89,6 +92,25 @@ Hittable *list_get(List *l, uint i) {
     return NULL;
 
   return l->list[i];
+}
+
+bool list_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
+  List *self = (List *)_self;
+  Record tmp;
+  uint i;
+  bool hit_anything = false;
+  double closest_so_far = t_max;
+
+  for (i = 0; i < self->size; i++) {
+    Hittable *h = self->list[i];
+    if (h->hit(h, r, t_min, closest_so_far, &tmp)) {
+      hit_anything = true;
+      closest_so_far = tmp.t;
+      *hr = tmp;
+    }
+  }
+
+  return hit_anything;
 }
 
 void list_destroy(Hittable *h) {

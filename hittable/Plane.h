@@ -3,6 +3,6 @@
 
 #include "core.h"
 
-Hittable *plane_init(point origin, vec3 normal, spmat *sm);
+Hittable *plane_init(Point origin, Vec3 normal, spmat *sm);
 
 #endif // HITTABLE_PLANE_H

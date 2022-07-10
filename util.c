@@ -19,8 +19,8 @@ char* strfind(char *c, char f) {
   return c;
 }
 
-vec3 parse_vec3(char *c, char **t) {
-  vec3 v;
+Vec3 parse_vec3(char *c, char **t) {
+  Vec3 v;
 
   v.x = strtod(c, &c);
   c++;
@@ -36,7 +36,7 @@ vec3 parse_vec3(char *c, char **t) {
   return v;
 }
 
-void write_color(color pixel, unsigned int spp) {
+void write_color(Color pixel, uint spp) {
   double r = pixel.x;
   double g = pixel.y;
   double b = pixel.z;

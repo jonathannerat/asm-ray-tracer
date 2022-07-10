@@ -5,7 +5,7 @@
 void box_destroy(Hittable *box);
 Box *box_bbox(const Hittable *h);
 
-Hittable *box_init(point p1, point p2, spmat *sm) {
+Hittable *box_init(Point p1, Point p2, spmat *sm) {
   Box *b = malloc(sizeof(Box));
 
   b->_hittable = (Hittable){
@@ -14,13 +14,13 @@ Hittable *box_init(point p1, point p2, spmat *sm) {
     box_bbox,
   };
 
-  b->cback = (point){
+  b->cback = (Point){
     MIN(p1.x, p2.x),
     MIN(p1.y, p2.y),
     MIN(p1.z, p2.z),
   };
 
-  b->cfront = (point){
+  b->cfront = (Point){
     MAX(p1.x, p2.x),
     MAX(p1.y, p2.y),
     MAX(p1.z, p2.z),
@@ -32,7 +32,7 @@ Hittable *box_init(point p1, point p2, spmat *sm) {
     sm->c++;
   b->sm = sm;
 
-  vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
+  Vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
 
   b->faces = (List *)list_init();
 
@@ -62,8 +62,8 @@ void box_destroy(Hittable *h) {
 Box *box_bbox(const Hittable *h) { return (Box *)h; }
 
 Box *box_join(const Box *a, const Box *b) {
-  point cb = a->cback, cf = a->cfront;
-  point bcb = b->cback, bcf = b->cfront;
+  Point cb = a->cback, cf = a->cfront;
+  Point bcb = b->cback, bcf = b->cfront;
   bool changed = false;
 
   if (!box_is_inside(a, bcb)) {

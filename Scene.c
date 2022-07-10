@@ -25,10 +25,10 @@ typedef enum {
 
 Camera parse_camera_line(char *c);
 output parse_output_line(char *c);
-color ray_color(const Ray *r, const color *bg, Hittable *world, u_int16_t max_depth);
+Color ray_color(const Ray *r, const Color *bg, Hittable *world, u_int16_t max_depth);
 spmat *parse_material_line(char *c);
 Hittable *parse_object_line(const array_gen *materials, char *c);
-void write_color(color pixel, uint spp);
+void write_color(Color pixel, uint spp);
 
 Scene *_scene_init(FILE *fp) {
   Scene *s = malloc(sizeof(Scene));
@@ -80,7 +80,7 @@ Scene *scene_init_file(const char *path) {
 
 void scene_render(const Scene *s) {
   int16_t i, j, k;
-  color bg_color = {0,0,0};
+  Color bg_color = {0,0,0};
   printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
 
   for (j = s->output.height - 1; j >= 0; j--) {
@@ -88,7 +88,7 @@ void scene_render(const Scene *s) {
     fflush(stderr);
 
     for (i = 0; i < s->output.width; i++) {
-      color pixel = {0, 0, 0};
+      Color pixel = {0, 0, 0};
 
       for (k = 0; k < s->output.samples_per_pixel; k++) {
         double u = (i + random_double()) / (s->output.width - 1);
@@ -102,9 +102,9 @@ void scene_render(const Scene *s) {
   }
 }
 
-color ray_color(const Ray *r, const color *bg, Hittable *world, u_int16_t depth) {
+Color ray_color(const Ray *r, const Color *bg, Hittable *world, u_int16_t depth) {
   if (depth <= 0)
-    return (color){0, 0, 0};
+    return (Color){0, 0, 0};
 
   Record rec;
 
@@ -113,8 +113,8 @@ color ray_color(const Ray *r, const color *bg, Hittable *world, u_int16_t depth)
 
   Material *m = rec.sm ? rec.sm->m : NULL;
   Ray scattered;
-  color attenuation;
-  color emitted = m->emitted(m);
+  Color attenuation;
+  Color emitted = m->emitted(m);
 
   if (!m->scatter(m, r, &rec, &attenuation, &scattered))
     return emitted;
@@ -126,8 +126,8 @@ Camera parse_camera_line(char *c) {
   char *p = c + 7; // skip 'camera:'
 
   // camera properties
-  point from = {0, 1, -1}, to = {0, 0, 0};
-  vec3 vup = {0, 1, 0};
+  Point from = {0, 1, -1}, to = {0, 0, 0};
+  Vec3 vup = {0, 1, 0};
   double vfov = 45, aspect_ratio = 16.0 / 9.0, aperture = 0;
   double focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
 
@@ -198,10 +198,10 @@ spmat *parse_material_line(char *c) {
 
     if (!strncmp(c, "lambertian=", 11)) {
       c += 11;
-      vec3 albedo = parse_vec3(c, NULL);
+      Vec3 albedo = parse_vec3(c, NULL);
       m = lambertian_init(albedo);
     } else if (!strncmp(c, "dielectric:", 11)) {
-      vec3 albedo = {1, 1, 1};
+      Vec3 albedo = {1, 1, 1};
       float ir = 1;
 
       c += 11;
@@ -220,7 +220,7 @@ spmat *parse_material_line(char *c) {
 
       m = dielectric_init(albedo, ir);
     } else if (!strncmp(c, "metal:", 6)) {
-      vec3 albedo = {1, 1, 1};
+      Vec3 albedo = {1, 1, 1};
       float fuzz = 0;
 
       c += 6;
@@ -240,7 +240,7 @@ spmat *parse_material_line(char *c) {
       m = metal_init(albedo, fuzz);
     } else if (!strncmp(c, "light=", 6)) {
       c += 6;
-      vec3 albedo = parse_vec3(c, NULL);
+      Vec3 albedo = parse_vec3(c, NULL);
       m = diffuse_light_init(albedo);
     }
   }
@@ -255,7 +255,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
     SKIPBLANK(c);
 
     if (!strncmp(c, "sphere:", 7)) {
-      vec3 center = {0, 0, 0};
+      Vec3 center = {0, 0, 0};
       float radius = 1;
       size_t i = 0;
 
@@ -278,7 +278,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
 
       h = sphere_init(center, radius, array_gen_get(materials, i));
     } else if (!strncmp(c, "box:", 4)) {
-      vec3 cback = {0, 0, 0}, cfront = {1, 1, 1};
+      Vec3 cback = {0, 0, 0}, cfront = {1, 1, 1};
       size_t i = 0;
 
       c += 4;
@@ -300,7 +300,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
 
       h = box_init(cback, cfront, array_gen_get(materials, i));
     } else if (!strncmp(c, "plane:", 6)) {
-      vec3 origin = {0, 0, 0}, normal = {0, 1, 0};
+      Vec3 origin = {0, 0, 0}, normal = {0, 1, 0};
       size_t i = 0;
 
       c += 6;
@@ -322,7 +322,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
 
       h = plane_init(origin, normal, array_gen_get(materials, i));
     } else if (!strncmp(c, "triangle:", 9)) {
-      vec3 triangle_vertex[3] = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}};
+      Vec3 triangle_vertex[3] = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}};
       size_t i = 0, j = 0;
 
       c += 9;

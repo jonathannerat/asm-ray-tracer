@@ -3,6 +3,6 @@
 
 #include "core.h"
 
-Hittable *triangle_init(point p1, point p2, point p3, spmat *sm);
+Hittable *triangle_init(Point p1, Point p2, Point p3, spmat *sm);
 
 #endif // TRIANGLE_H

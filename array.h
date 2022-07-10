@@ -6,7 +6,7 @@
 #define ARRAY_INITIAL_CAPACITY 16
 
 typedef struct {
-  vec3 *data;
+  Vec3 *data;
   uint size;
   uint cap;
 } array_vec3;
@@ -18,8 +18,8 @@ typedef struct {
 } array_gen;
 
 array_vec3 *array_vec3_init();
-bool array_vec3_push(array_vec3 *arr, vec3 v);
-vec3 array_vec3_get(const array_vec3 *arr, uint i);
+bool array_vec3_push(array_vec3 *arr, Vec3 v);
+Vec3 array_vec3_get(const array_vec3 *arr, uint i);
 void array_vec3_destroy(array_vec3 *arr);
 
 array_gen *array_gen_init();

@@ -36,7 +36,7 @@ inline double clamp(double x, double min, double max) {
 }
 
 char* strfind(char *c, char f);
-vec3 parse_vec3(char *c, char **t);
-void write_color(color pixel, unsigned int spp);
+Vec3 parse_vec3(char *c, char **t);
+void write_color(Color pixel, uint spp);
 
 #endif // UTIL_H

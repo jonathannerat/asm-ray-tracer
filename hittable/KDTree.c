@@ -50,7 +50,7 @@ void node_split(Node *n, size_t leaf_size) {
 
   // get axis with max diff
   Box *bbox = n->objects->bbox;
-  point cb = bbox->cback, cf = bbox->cfront;
+  Point cb = bbox->cback, cf = bbox->cfront;
   double maxdiff = cf.x - cb.x;
 
   if (cf.y - cb.y > maxdiff) {

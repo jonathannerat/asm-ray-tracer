@@ -8,14 +8,14 @@ array_vec3 *array_vec3_init() {
 
   arr->size = 0;
   arr->cap = ARRAY_INITIAL_CAPACITY;
-  arr->data = malloc(sizeof(vec3) * arr->cap);
+  arr->data = malloc(sizeof(Vec3) * arr->cap);
 
   return arr;
 }
 
-bool array_vec3_push(array_vec3 *arr, vec3 v) {
+bool array_vec3_push(array_vec3 *arr, Vec3 v) {
   if (arr->size == arr->cap) {
-    vec3 *data = realloc(arr->data, sizeof(vec3) * arr->cap * 2);
+    Vec3 *data = realloc(arr->data, sizeof(Vec3) * arr->cap * 2);
     if (!data)
       return false;
 
@@ -29,9 +29,9 @@ bool array_vec3_push(array_vec3 *arr, vec3 v) {
   return true;
 }
 
-vec3 array_vec3_get(const array_vec3 *arr, uint i) {
+Vec3 array_vec3_get(const array_vec3 *arr, uint i) {
   if (i >= arr->size)
-    return (vec3){NAN, NAN, NAN};
+    return (Vec3){NAN, NAN, NAN};
 
   return arr->data[i];
 }
