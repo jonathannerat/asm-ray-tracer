@@ -237,6 +237,10 @@ spmat *parse_material_line(char *c) {
       }
 
       m = metal_init(albedo, fuzz);
+    } else if (!strncmp(c, "light=", 6)) {
+      c += 6;
+      vec3 albedo = parse_vec3(c, NULL);
+      m = diffuse_light_init(albedo);
     }
   }
 
