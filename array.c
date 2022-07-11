@@ -31,7 +31,7 @@ bool array_vec3_push(array_vec3 *arr, Vec3 v) {
 
 Vec3 array_vec3_get(const array_vec3 *arr, uint i) {
   if (i >= arr->size)
-    return (Vec3){NAN, NAN, NAN};
+    return V(NAN, NAN, NAN);
 
   return arr->data[i];
 }

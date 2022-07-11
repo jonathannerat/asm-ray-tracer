@@ -22,16 +22,17 @@ void d(const char *fmt, ...);
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
 #define DESTROY(e) ((Hittable *)(e))->destroy((Hittable *)e)
 #define HIT(e, ...) ((Hittable *)(e))->hit((Hittable *)(e), __VA_ARGS__)
+#define V(vx, vy, vz) ((Vec3) {.x = (vx), .y = (vy), .z = (vz), ._ = 0})
 
-inline double degrees_to_radians(double degrees) { return degrees * M_PI / 180.0; }
+inline real degrees_to_radians(real degrees) { return degrees * M_PI / 180.0; }
 
-inline double random_double() { return rand() / (RAND_MAX + 1.0); }
+inline real rnd() { return rand() / (RAND_MAX + 1.0); }
 
-inline double random_double_between(double min, double max) {
-  return min + random_double() * (max - min);
+inline real rnd_between(real min, real max) {
+  return min + rnd() * (max - min);
 }
 
-inline double clamp(double x, double min, double max) {
+inline real clamp(real x, real min, real max) {
   return x < min ? min : (x > max ? max : x);
 }
 

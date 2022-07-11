@@ -20,7 +20,7 @@ spmat *lambertian_init(Color albedo) {
   return sm;
 }
 
-spmat *metal_init(Color albedo, double fuzz) {
+spmat *metal_init(Color albedo, real fuzz) {
   Metal *mat = malloc(sizeof(Metal));
   spmat *sm = malloc(sizeof(spmat));
 
@@ -35,7 +35,7 @@ spmat *metal_init(Color albedo, double fuzz) {
   return sm;
 }
 
-spmat *dielectric_init(Color albedo, double ir) {
+spmat *dielectric_init(Color albedo, real ir) {
   Dielectric *mat = malloc(sizeof(Dielectric));
   spmat *sm = malloc(sizeof(spmat));
 

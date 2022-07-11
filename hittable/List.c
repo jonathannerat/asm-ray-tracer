@@ -8,7 +8,7 @@
 
 #define LIST_INITIAL_CAPACITY 16
 
-bool list_hit(const Hittable *hittable, const Ray *ray, double t_min, double t_max,
+bool list_hit(const Hittable *hittable, const Ray *ray, real t_min, real t_max,
               Record *hitrecord);
 void list_destroy(Hittable *self);
 Box *list_bbox(const Hittable *h);
@@ -94,12 +94,12 @@ Hittable *list_get(List *l, uint i) {
   return l->list[i];
 }
 
-bool list_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr) {
+bool list_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr) {
   List *self = (List *)_self;
   Record tmp;
   uint i;
   bool hit_anything = false;
-  double closest_so_far = t_max;
+  real closest_so_far = t_max;
 
   for (i = 0; i < self->size; i++) {
     Hittable *h = self->list[i];

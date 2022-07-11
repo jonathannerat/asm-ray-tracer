@@ -37,10 +37,10 @@ Vec3 parse_vec3(char *c, char **t) {
 }
 
 void write_color(Color pixel, uint spp) {
-  double r = pixel.x;
-  double g = pixel.y;
-  double b = pixel.z;
-  double scale = 1.0 / spp;
+  real r = pixel.x;
+  real g = pixel.y;
+  real b = pixel.z;
+  real scale = 1.0 / spp;
 
   r = sqrt(r * scale);
   g = sqrt(g * scale);

@@ -4,8 +4,8 @@
 #include "core.h"
 
 spmat *lambertian_init(Color albedo);
-spmat *metal_init(Color albedo, double fuzz);
-spmat *dielectric_init(Color albedo, double ir);
+spmat *metal_init(Color albedo, real fuzz);
+spmat *dielectric_init(Color albedo, real ir);
 spmat *diffuse_light_init(Color albedo);
 
 #endif // MATERIAL_H

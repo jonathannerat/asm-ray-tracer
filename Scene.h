@@ -1,12 +1,10 @@
-#include <sys/types.h>
-
 #include "core.h"
 
 typedef struct {
-  u_int16_t width;
-  u_int16_t height;
-  u_int16_t samples_per_pixel;
-  u_int16_t max_depth;
+  int width;
+  int height;
+  int samples_per_pixel;
+  int max_depth;
 } output;
 
 typedef struct {

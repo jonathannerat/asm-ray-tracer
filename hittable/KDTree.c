@@ -5,7 +5,7 @@
 #include "List.h"
 #include "util.h"
 
-bool node_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr);
+bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr);
 void node_destroy(Hittable *o);
 Box *node_bbox(const Hittable *o) { return ((Node *)o)->bbox; }
 
@@ -51,7 +51,7 @@ void node_split(Node *n, size_t leaf_size) {
   // get axis with max diff
   Box *bbox = n->objects->bbox;
   Point cb = bbox->cback, cf = bbox->cfront;
-  double maxdiff = cf.x - cb.x;
+  real maxdiff = cf.x - cb.x;
   axis = 'x';
 
   if (cf.y - cb.y > maxdiff) {
@@ -91,7 +91,7 @@ void node_split(Node *n, size_t leaf_size) {
     node_split(n->right, leaf_size);
 }
 
-bool node_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr) {
+bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr) {
   Box *bbox = o->bbox(o);
   Node *self = (Node *)o;
   List *objects = self->objects;
@@ -138,7 +138,7 @@ void node_destroy(Hittable *h) {
   free(self);
 }
 
-bool kdtree_hit(const Hittable *o, const Ray *r, double t_min, double t_max, Record *hr) {
+bool kdtree_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr) {
   return HIT(((KDTree *)o)->root, r, t_min, t_max, hr);
 }
 

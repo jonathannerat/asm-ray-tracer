@@ -6,7 +6,7 @@
 void sphere_destroy(Hittable *h);
 Box *sphere_bbox(const Hittable *h);
 
-Hittable *sphere_init(Point center, double radius, spmat *sm) {
+Hittable *sphere_init(Point center, real radius, spmat *sm) {
   Sphere *s = malloc(sizeof(Sphere));
 
   s->_hittable = (Hittable){

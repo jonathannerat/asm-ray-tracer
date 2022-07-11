@@ -25,7 +25,7 @@ typedef enum {
 
 Camera parse_camera_line(char *c);
 output parse_output_line(char *c);
-Color ray_color(const Ray *r, const Color *bg, Hittable *world, u_int16_t max_depth);
+Color ray_color(const Ray *r, const Color *bg, Hittable *world, uint max_depth);
 spmat *parse_material_line(char *c);
 Hittable *parse_object_line(const array_gen *materials, char *c);
 void write_color(Color pixel, uint spp);
@@ -79,7 +79,7 @@ Scene *scene_init_file(const char *path) {
 }
 
 void scene_render(const Scene *s) {
-  int16_t i, j, k;
+  int i, j, k;
   Color bg_color = {0,0,0};
   printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
 
@@ -91,8 +91,8 @@ void scene_render(const Scene *s) {
       Color pixel = {0, 0, 0};
 
       for (k = 0; k < s->output.samples_per_pixel; k++) {
-        double u = (i + random_double()) / (s->output.width - 1);
-        double v = (j + random_double()) / (s->output.height - 1);
+        real u = (i + rnd()) / (s->output.width - 1);
+        real v = (j + rnd()) / (s->output.height - 1);
         Ray r = camera_get_ray(&s->camera, u, v);
         pixel = vec3_add(pixel, ray_color(&r, &bg_color, s->world, s->output.max_depth));
       }
@@ -102,7 +102,7 @@ void scene_render(const Scene *s) {
   }
 }
 
-Color ray_color(const Ray *r, const Color *bg, Hittable *world, u_int16_t depth) {
+Color ray_color(const Ray *r, const Color *bg, Hittable *world, uint depth) {
   if (depth <= 0)
     return (Color){0, 0, 0};
 
@@ -128,8 +128,8 @@ Camera parse_camera_line(char *c) {
   // camera properties
   Point from = {0, 1, -1}, to = {0, 0, 0};
   Vec3 vup = {0, 1, 0};
-  double vfov = 45, aspect_ratio = 16.0 / 9.0, aperture = 0;
-  double focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
+  real vfov = 45, aspect_ratio = 16.0 / 9.0, aperture = 0;
+  real focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
 
   while (*p) {
     while (*p == ' ' || *p == '\n')
@@ -174,16 +174,16 @@ output parse_output_line(char *c) {
 
     if (!strncmp(p, "width=", 6)) {
       p += 6;
-      o.width = (u_int16_t)strtof(p, &p);
+      o.width = strtoul(p, &p, 10);
     } else if (!strncmp(p, "height=", 7)) {
       p += 7;
-      o.height = (u_int16_t)strtof(p, &p);
+      o.height = strtoul(p, &p, 10);
     } else if (!strncmp(p, "spp=", 4)) {
       p += 4;
-      o.samples_per_pixel = (u_int16_t)strtof(p, &p);
+      o.samples_per_pixel = strtoul(p, &p, 10);
     } else if (!strncmp(p, "depth=", 6)) {
       p += 6;
-      o.max_depth = (u_int16_t)strtof(p, &p);
+      o.max_depth = strtoul(p, &p, 10);
     }
   }
 
@@ -355,6 +355,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
           c += 8;
           end = strfind(c, ' ');
           strncpy(objpath, c, end - c);
+          objpath[end-c] = '\0';
           c = end;
         } else if (!strncmp(c, "leafs=", 6)) {
           c += 6;

@@ -1,17 +1,24 @@
+// vi: fdm=marker
 #ifndef CORE_H
 #define CORE_H
 
 typedef unsigned int uint;
+typedef double real;
+
 typedef int bool;
 #define true 1
 #define false 0
 
-// Vectors and Rays
+
+// TYPES {{{
+
+// Vectors and Rays {{{
 
 typedef struct {
-  double x;
-  double y;
-  double z;
+  real x;
+  real y;
+  real z;
+  real _; // padding
 } Vec3;
 
 typedef Vec3 Point;
@@ -22,7 +29,9 @@ typedef struct {
   Vec3 direction;
 } Ray;
 
-// Materials
+// }}}
+
+// Materials {{{
 struct _material;
 
 struct _spmat {
@@ -31,7 +40,7 @@ struct _spmat {
 };
 
 struct _record {
-  double t;
+  real t;
   Point p;
   Vec3 normal;
   bool front_face;
@@ -52,13 +61,13 @@ struct _lambertian {
 struct _metal {
   struct _material _material;
   Color albedo;
-  double fuzz;
+  real fuzz;
 };
 
 struct _dielectric {
   struct _material _material;
   Color albedo;
-  double ir;
+  real ir;
 };
 
 struct _diffuse_light {
@@ -74,10 +83,12 @@ typedef struct _metal Metal;
 typedef struct _dielectric Dielectric;
 typedef struct _diffuse_light DiffuseLight;
 
-// Hittables
+// }}}
+
+// Hittables {{{
 
 struct _hittable {
-  bool (*hit)(const struct _hittable *o, const Ray *r, double t_min, double t_max,
+  bool (*hit)(const struct _hittable *o, const Ray *r, real t_min, real t_max,
               struct _record *hr);
 
   void (*destroy)(struct _hittable *);
@@ -115,7 +126,7 @@ struct _plane {
 struct _sphere {
   struct _hittable _hittable;
   Point center;
-  double radius;
+  real radius;
   struct _box *bbox;
   spmat *sm;
 };
@@ -148,7 +159,9 @@ typedef struct _triangle Triangle;
 typedef struct _node Node;
 typedef struct _kdtree KDTree;
 
-// Camera
+// }}}
+
+// Camera {{{
 
 struct _camera {
   Point origin;
@@ -156,28 +169,36 @@ struct _camera {
   Vec3 horizontal;
   Vec3 vertical;
   Vec3 u, v, w;
-  double lens_radius;
+  real lens_radius;
 };
 
 typedef struct _camera Camera;
 
-// Vec3 methods
+// }}}
+
+// }}}
+
+// Vec3 methods {{{
 
 Vec3 vec3_add(const Vec3 a, const Vec3 b);
 Vec3 vec3_inv(const Vec3 v);
 Vec3 vec3_prod(const Vec3 a, const Vec3 b);
-Vec3 vec3_unscale(const Vec3 v, double s);
+Vec3 vec3_unscale(const Vec3 v, real s);
 Vec3 vec3_sub(const Vec3 a, const Vec3 b);
-double vec3_norm2(const Vec3 a);
+real vec3_norm2(const Vec3 a);
 
-// Object hit methods
+// }}}
 
-bool box_hit(const Hittable *_self, const Ray *ray, double t_min, double t_max, Record *hr);
-bool plane_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
-bool sphere_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
-bool triangle_hit(const Hittable *_self, const Ray *r, double t_min, double t_max, Record *hr);
+// Object hit methods {{{
 
-// Material scatter methods
+bool box_hit(const Hittable *_self, const Ray *ray, real t_min, real t_max, Record *hr);
+bool plane_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
+bool sphere_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
+bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
+
+// }}}
+
+// Material scatter methods {{{
 
 bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
                         Ray *scattered);
@@ -186,11 +207,15 @@ bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *
 bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
                         Ray *scattered);
 
-// Other
+// }}}
+
+// Other {{{
 
 void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
-Camera camera_init(Point from, Point to, Vec3 vup, double vfov, double aspect_ratio,
-                   double aperture, double focus_dist);
-Ray camera_get_ray(const Camera *c, double s, double t);
+Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
+                   real aperture, real focus_dist);
+Ray camera_get_ray(const Camera *c, real s, real t);
+
+// }}}
 
 #endif // CORE_H
