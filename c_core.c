@@ -205,7 +205,7 @@ Ray camera_get_ray(const Camera *c, real s, real t) {
 
   Ray r = {.origin = vec3_add(c->origin, offset),
            .direction = vec3_add(vec3_add(c->bl_corner, vec3_scale(s, c->horizontal)),
-                                 vec3_add(vec3_scale(t, c->vertical), vec3_inv(r.origin)))};
+                                 vec3_sub(vec3_scale(t, c->vertical), r.origin))};
 
   return r;
 }

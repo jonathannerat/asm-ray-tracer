@@ -36,6 +36,10 @@ Vec3 parse_vec3(char *c, char **t) {
   return v;
 }
 
+static real clamp(real x, real min, real max) {
+  return x < min ? min : (x > max ? max : x);
+}
+
 void write_color(Color pixel, uint spp) {
   real r = pixel.x;
   real g = pixel.y;

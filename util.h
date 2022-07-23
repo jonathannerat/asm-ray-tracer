@@ -14,7 +14,7 @@ void d(const char *fmt, ...);
 #define D(...) d(NULL)
 #endif
 
-#define EPS 1e-8
+#define EPS 1e-4
 #define M_PI 3.14159265358979323846f
 #define MAX_BUF_SIZE 256
 
@@ -30,10 +30,6 @@ inline real rnd() { return rand() / (RAND_MAX + 1.0); }
 
 inline real rnd_between(real min, real max) {
   return min + rnd() * (max - min);
-}
-
-inline real clamp(real x, real min, real max) {
-  return x < min ? min : (x > max ? max : x);
 }
 
 char* strfind(char *c, char f);

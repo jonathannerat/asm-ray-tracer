@@ -17,21 +17,8 @@
  */
 Hittable *box_init(Point p1, Point p2, spmat *sm);
 
-/** Free the box instance */
-void box_destroy(Hittable *box);
-
 Box *box_join(const Box *a, const Box *b);
 
-/** Checks if the point p is inside box
- *
- * @param box box boundary
- * @param p point to check
- * @return true iff it's inside
- */
-inline bool box_is_inside(const Box *self, Point p) {
-  return self->cback.x - EPS <= p.x && p.x <= self->cfront.x + EPS &&
-         self->cback.y - EPS <= p.y && p.y <= self->cfront.y + EPS &&
-         self->cback.z - EPS <= p.z && p.z <= self->cfront.z + EPS;
-}
+bool box_is_inside(const Box *self, Point p);
 
 #endif // HITTABLE_BOX_H

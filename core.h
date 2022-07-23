@@ -3,7 +3,7 @@
 #define CORE_H
 
 typedef unsigned int uint;
-typedef double real;
+typedef float real;
 
 typedef int bool;
 #define true 1
@@ -40,11 +40,11 @@ struct _spmat {
 };
 
 struct _record {
-  real t;
   Point p;
   Vec3 normal;
-  bool front_face;
   struct _spmat *sm;
+  real t;
+  bool front_face;
 };
 
 struct _material {
@@ -181,7 +181,6 @@ typedef struct _camera Camera;
 // Vec3 methods {{{
 
 Vec3 vec3_add(const Vec3 a, const Vec3 b);
-Vec3 vec3_inv(const Vec3 v);
 Vec3 vec3_prod(const Vec3 a, const Vec3 b);
 Vec3 vec3_unscale(const Vec3 v, real s);
 Vec3 vec3_sub(const Vec3 a, const Vec3 b);
@@ -193,6 +192,7 @@ real vec3_norm2(const Vec3 a);
 
 bool box_hit(const Hittable *_self, const Ray *ray, real t_min, real t_max, Record *hr);
 bool plane_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
+#ifndef DEBUG_ASM
 bool sphere_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
 bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
 
@@ -217,5 +217,5 @@ Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
 Ray camera_get_ray(const Camera *c, real s, real t);
 
 // }}}
-
+#endif
 #endif // CORE_H

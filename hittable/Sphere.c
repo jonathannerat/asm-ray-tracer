@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#include "Sphere.h"
 #include "Box.h"
+#include "Sphere.h"
 
 void sphere_destroy(Hittable *h);
 Box *sphere_bbox(const Hittable *h);
@@ -19,8 +19,9 @@ Hittable *sphere_init(Point center, real radius, spmat *sm) {
   s->center = center;
   s->radius = radius;
 
-  Vec3 r = {radius, radius, radius};
-  s->bbox = (Box *)box_init(vec3_sub(center, r), vec3_add(center, r), NULL);
+  Vec3 cback = {center.x - radius, center.y - radius, center.z - radius};
+  Vec3 cfront = {center.x + radius, center.y + radius, center.z + radius};
+  s->bbox = (Box *)box_init(cback, cfront, NULL);
 
   sm->c++;
   s->sm = sm;

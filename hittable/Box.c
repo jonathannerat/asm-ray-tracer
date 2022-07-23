@@ -5,6 +5,18 @@
 void box_destroy(Hittable *box);
 Box *box_bbox(const Hittable *h);
 
+/** Checks if the point p is inside box
+ *
+ * @param box box boundary
+ * @param p point to check
+ * @return true iff it's inside
+ */
+bool box_is_inside(const Box *self, Point p) {
+  return self->cback.x - EPS <= p.x && p.x <= self->cfront.x + EPS &&
+         self->cback.y - EPS <= p.y && p.y <= self->cfront.y + EPS &&
+         self->cback.z - EPS <= p.z && p.z <= self->cfront.z + EPS;
+}
+
 Hittable *box_init(Point p1, Point p2, spmat *sm) {
   Box *b = malloc(sizeof(Box));
 
@@ -32,16 +44,14 @@ Hittable *box_init(Point p1, Point p2, spmat *sm) {
     sm->c++;
   b->sm = sm;
 
-  Vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
-
   b->faces = (List *)list_init();
 
-  list_push(b->faces, plane_init(b->cback, vec3_inv(x), sm));
-  list_push(b->faces, plane_init(b->cback, vec3_inv(y), sm));
-  list_push(b->faces, plane_init(b->cback, vec3_inv(z), sm));
-  list_push(b->faces, plane_init(b->cfront, x, sm));
-  list_push(b->faces, plane_init(b->cfront, y, sm));
-  list_push(b->faces, plane_init(b->cfront, z, sm));
+  list_push(b->faces, plane_init(b->cback, V(-1,0,0), sm));
+  list_push(b->faces, plane_init(b->cback, V(0,-1,0), sm));
+  list_push(b->faces, plane_init(b->cback, V(0,0,-1), sm));
+  list_push(b->faces, plane_init(b->cfront, V(1,0,0), sm));
+  list_push(b->faces, plane_init(b->cfront, V(0,1,0), sm));
+  list_push(b->faces, plane_init(b->cfront, V(0,0,1), sm));
 
   return (Hittable *)b;
 }
