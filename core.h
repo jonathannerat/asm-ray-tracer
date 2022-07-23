@@ -9,7 +9,6 @@ typedef int bool;
 #define true 1
 #define false 0
 
-
 // TYPES {{{
 
 // Vectors and Rays {{{
@@ -88,54 +87,55 @@ typedef struct _diffuse_light DiffuseLight;
 // Hittables {{{
 
 struct _hittable {
-  bool (*hit)(const struct _hittable *o, const Ray *r, real t_min, real t_max,
-              struct _record *hr);
-
+  bool (*hit)(const struct _hittable *o, const Ray *r, real t_min, real t_max, struct _record *hr);
   void (*destroy)(struct _hittable *);
-
   struct _box *(*bbox)(const struct _hittable *);
-
   Point refp;
 };
 
 struct _list {
   struct _hittable _hittable;
+  struct _box *bbox;
+  spmat *sm;
+  Point refpsum;
+
   struct _hittable **list;
   uint size;
   uint cap;
-  Point refpsum;
-  spmat *sm;
-  struct _box *bbox;
 };
 
 struct _box {
   struct _hittable _hittable;
+  spmat *sm;
+
   Point cback;
   Point cfront;
   struct _list *faces;
-  spmat *sm;
 };
 
 struct _plane {
   struct _hittable _hittable;
+  spmat *sm;
+
   Point origin;
   Vec3 normal;
-  spmat *sm;
 };
 
 struct _sphere {
   struct _hittable _hittable;
-  Point center;
-  real radius;
   struct _box *bbox;
   spmat *sm;
+
+  Point center;
+  real radius;
 };
 
 struct _triangle {
   struct _hittable _hittable;
-  Point p1, p2, p3;
   struct _box *bbox;
   spmat *sm;
+
+  Point p1, p2, p3;
 };
 
 struct _node {
@@ -212,8 +212,8 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
 // Other {{{
 
 void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
-Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
-                   real aperture, real focus_dist);
+Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
+                   real focus_dist);
 Ray camera_get_ray(const Camera *c, real s, real t);
 
 // }}}

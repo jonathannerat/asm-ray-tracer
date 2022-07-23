@@ -15,9 +15,11 @@ extern list_get
 %define REAL_SIZE 4 ; float
 %define VEC3_SIZE (REAL_SIZE * 4)
 
-%define RAY_DIR_OFFS VEC3_SIZE
+%define RAY_ORIG_OFFS   0
+%define RAY_DIR_OFFS    VEC3_SIZE
 
 ; Hittable {{{
+%define HITTABLE_HIT_OFFS        0
 %define HITTABLE_DESTROY_OFFS    8
 %define HITTABLE_BBOX_OFFS      16
 %define HITTABLE_REFP_OFFS      24
@@ -33,30 +35,31 @@ extern list_get
 %define RECORD_SIZE         48 ; size is aligned to largest property
 ; }}}
 
-; Box {{{
-%define BOX_HITTABLE_OFFS   0
-%define BOX_CBACK_OFFS      HITTABLE_SIZE
-%define BOX_CFRONT_OFFS     (BOX_CBACK_OFFS+VEC3_SIZE)
-%define BOX_FACES_OFFS      (BOX_CFRONT_OFFS+VEC3_SIZE)
-%define BOX_SM_OFFS         (BOX_FACES_OFFS+8)
-; }}}
-
 ; List {{{
 %define LIST_HITTABLE_OFFS   0
-%define LIST_LIST_OFFS       HITTABLE_SIZE
+%define LIST_BBOX_OFFS       HITTABLE_SIZE
+%define LIST_SM_OFFS         (LIST_BBOX_OFFS+8)
+%define LIST_REFPSUM_OFFS    (LIST_SM_OFFS+8)
+%define LIST_LIST_OFFS       (LIST_REFPSUM_OFFS+VEC3_SIZE)
 %define LIST_SIZE_OFFS       (LIST_LIST_OFFS+8)
-%define LIST_REFPSUM_OFFS    (LIST_SIZE_OFFS+8)
-%define LIST_SM_OFFS         (LIST_REFPSUM_OFFS+VEC3_SIZE)
-%define LIST_BBOX_OFFS       (LIST_SM_OFFS+8)
-%define LIST_SIZE            (LIST_BBOX_OFFS+8)
+%define LIST_CAP_OFFS        (LIST_SIZE_OFFS+4)
+%define LIST_SIZE            (LIST_CAP_OFFS+4)
+; }}}
+
+; Box {{{
+%define BOX_HITTABLE_OFFS   0
+%define BOX_SM_OFFS         HITTABLE_SIZE
+%define BOX_CBACK_OFFS      BOX_SM_OFFS+8
+%define BOX_CFRONT_OFFS     (BOX_CBACK_OFFS+VEC3_SIZE)
+%define BOX_FACES_OFFS      (BOX_CFRONT_OFFS+VEC3_SIZE)
 ; }}}
 
 ; Plane {{{
 %define PLANE_HITTABLE_OFFS 0
-%define PLANE_ORIGIN_OFFS HITTABLE_SIZE
-%define PLANE_NORMAL_OFFS (PLANE_ORIGIN_OFFS+VEC3_SIZE)
-%define PLANE_SM_OFFS (PLANE_NORMAL_OFFS+VEC3_SIZE)
-%define PLANE_SIZE (PLANE_SM_OFFS+8)
+%define PLANE_SM_OFFS       HITTABLE_SIZE
+%define PLANE_ORIGIN_OFFS   (PLANE_SM_OFFS+8)
+%define PLANE_NORMAL_OFFS   (PLANE_ORIGIN_OFFS+VEC3_SIZE)
+%define PLANE_SIZE          (PLANE_NORMAL_OFFS+VEC3_SIZE)
 ;}}}
 ;}}}
 
@@ -181,7 +184,7 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 		vmovaps xmm0, [rbp-(RECORD_SIZE+0x10)]
 		vmovaps xmm1, [rbp-(RECORD_SIZE+0x20)]
 		lea rdx, [rbp-RECORD_SIZE]
-		call [rax]
+		call [rdi+BOX_HITTABLE_OFFS+HITTABLE_HIT_OFFS]
 		test al, al
 		jz .box_face_loop_continue ; no hit
 
@@ -239,7 +242,7 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	jbe .plane_hit_return ; if it is, return false (no plane hit)
 
 	vmovups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
-	vmovups xmm5, [rsi] ; r->origin
+	vmovups xmm5, [rsi+RAY_ORIG_OFFS] ; r->origin
 	vsubps xmm4, xmm5
 	v3p_dot xmm4, xmm3
 	v3p_dot xmm2, xmm3
@@ -278,7 +281,7 @@ ray_at: ; Ray *r, real t {{{
 
 	vmovups xmm1, [rdi+RAY_DIR_OFFS] ;xmm1 = r->direction
 	v3p_scale xmm0, xmm0, xmm1 ; xmm0 = t * r->direction
-	vaddps xmm0, [rdi]
+	vaddps xmm0, [rdi+RAY_ORIG_OFFS]
 
 	vmovaps xmm1, [rsp] ; restore xmm1
 	add rsp, 0x18
