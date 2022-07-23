@@ -2,6 +2,7 @@
 #include "Box.h"
 
 Box *plane_bbox(const Hittable *h) { return NULL; }
+void plane_destroy(Hittable *h);
 
 Hittable *plane_init(Point origin, Vec3 normal, spmat *sm) {
   Plane *p = malloc(sizeof(Plane));
