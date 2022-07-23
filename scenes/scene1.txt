@@ -1,0 +1,13 @@
+output: width=360 height=240 spp=15 depth=5
+camera: from=.5,2.3,5 to=0,0,0
+materials:
+    light=1,.85,.36
+    lambertian=.2,.4,.1
+    lambertian=.8,.3,.6
+    dielectric: ir=1.5
+objects:
+    plane: material=1
+    box: cback=-1,1,1 cfront=0,4,2 material=2
+    sphere: center=-3,1,0 material=3
+    mesh: objpath=./models/cow.obj material=2
+    plane: origin=0,6,0 normal=0,-1,0 material=0
