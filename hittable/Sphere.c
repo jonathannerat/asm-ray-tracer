@@ -23,7 +23,8 @@ Hittable *sphere_init(Point center, real radius, spmat *sm) {
   Vec3 cfront = {center.x + radius, center.y + radius, center.z + radius};
   s->bbox = (Box *)box_init(cback, cfront, NULL);
 
-  sm->c++;
+  if (sm)
+    sm->c++;
   s->sm = sm;
 
   return (Hittable *)s;
