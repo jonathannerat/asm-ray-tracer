@@ -193,11 +193,11 @@ real vec3_norm2(const Vec3 a);
 bool box_hit(const Hittable *_self, const Ray *ray, real t_min, real t_max, Record *hr);
 bool plane_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
 bool sphere_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
-#ifndef DEBUG_ASM
 bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr);
 
 // }}}
 
+#ifndef DEBUG_ASM
 // Material scatter methods {{{
 
 bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,

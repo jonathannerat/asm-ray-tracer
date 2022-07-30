@@ -8,6 +8,7 @@ global vec3_norm2
 global box_hit
 global plane_hit
 global sphere_hit
+global triangle_hit
 
 extern list_get
 ; }}}
@@ -71,6 +72,16 @@ extern list_get
 %define SPHERE_RADIUS_OFFS     (SPHERE_CENTER_OFFS+VEC3_SIZE)
 %define SPHERE_SIZE            (SPHERE_RADIUS_OFFS+REAL_SIZE)
 ;}}}
+
+; Triangle {{{
+%define TRIANGLE_HITTABLE_OFFS   0
+%define TRIANGLE_BBOX_OFFS       HITTABLE_SIZE
+%define TRIANGLE_SM_OFFS         TRIANGLE_BBOX_OFFS+8
+%define TRIANGLE_P1_OFFS         (TRIANGLE_SM_OFFS+8)
+%define TRIANGLE_P2_OFFS         (TRIANGLE_P1_OFFS+VEC3_SIZE)
+%define TRIANGLE_P3_OFFS         (TRIANGLE_P2_OFFS+VEC3_SIZE)
+%define TRIANGLE_SIZE            (TRIANGLE_P3_OFFS+VEC3_SIZE)
+;}}}
 ;}}}
 
 ; MACROS {{{
@@ -81,6 +92,16 @@ extern list_get
 %macro v3p_scale 3 ; v1, t, v2 -> v1=t*v2
 	vshufps %2, %2, 0b00000000
 	vmulps %1, %2, %3
+%endmacro
+
+%macro v3p_cross 3 ; v1 = v2 x v3 ; v2 = (x2,y2,z2,_), v3 = (x3,y3,z3,_)
+	vshufps xmm6, %2, %2, 0b11001001                        ; (y2,z2,x2)
+	vshufps xmm7, %3, %3, 0b11010010                        ; (z3,x3,y3)
+	vmulps %1, xmm6, xmm7 ; v1 = (y2*z3, z2*x3, x2*y3)
+	vshufps xmm6, %2, %2, 0b11010010                        ; (z2,x2,y2)
+	vshufps xmm7, %3, %3, 0b11001001                        ; (y3,z3,x3)
+	vmulps xmm6, xmm7    ; (z2*y3, x2*z3, y2*x3)
+	vsubps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
 %endmacro
 ;}}}
 
@@ -346,6 +367,80 @@ sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	pop rbp
 	ret
 
+;}}}
+
+triangle_hit: ; {{{
+	push rbp
+	mov rbp, rsp
+
+	xor rax, rax
+
+	vmovups xmm2, [rdi+TRIANGLE_P1_OFFS]
+	vmovups xmm3, [rdi+TRIANGLE_P2_OFFS]
+	vmovups xmm4, [rdi+TRIANGLE_P3_OFFS]
+	vsubps xmm8, xmm3, xmm2
+	vsubps xmm9, xmm4, xmm2
+	v3p_cross xmm5, xmm8, xmm9 ; xmm5 = normal
+
+	; perpendicular(normal, r->direction)
+	vmovups xmm6, [rsi+RAY_DIR_OFFS] ; r->direction
+	vdpps xmm7, xmm5, xmm6, 0xF1
+	vandps xmm7, [fabs_mask]
+	vcomiss xmm7, [eps] ; xmm7 < EPS
+	jb .triangle_hit_return
+
+	; check if ray intersection is outside of t_range
+	vsubps xmm8, xmm2, [rsi+RAY_ORIG_OFFS]
+	vdpps xmm8, xmm5, 0xF1 ; t_nom
+	vdpps xmm6, xmm5, 0xF1 ; t_denom
+	vdivss xmm8, xmm6 ; t
+	vcomiss xmm8, xmm0
+	jb .triangle_hit_return
+	vcomiss xmm1, xmm8
+	jb .triangle_hit_return
+
+	mov rcx, [rdi+TRIANGLE_SM_OFFS] ; save sm, since we'll overwrite rdi
+
+	mov rdi, rsi
+	vmovaps xmm0, xmm8
+	call ray_at
+
+	; first boundary check
+	vsubps xmm9, xmm3, xmm2 ; (p2 - p1)
+	vsubps xmm10, xmm0, xmm2 ; (p - p1)
+	v3p_cross xmm1, xmm9, xmm10
+	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+	vcomiss xmm1, [zero]
+	jbe .triangle_hit_return ; dot(...) <= 0
+
+	;second boundary check
+	vsubps xmm9, xmm4, xmm3 ; (p3 - p2)
+	vsubps xmm10, xmm0, xmm3 ; (p - p2)
+	v3p_cross xmm1, xmm9, xmm10
+	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+	vcomiss xmm1, [zero]
+	jbe .triangle_hit_return ; dot(...) <= 0
+
+	;third boundary check
+	vsubps xmm9, xmm2, xmm4 ; (p1 - p3)
+	vsubps xmm10, xmm0, xmm4 ; (p - p3)
+	v3p_cross xmm1, xmm9, xmm10
+	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+	vcomiss xmm1, [zero]
+	jbe .triangle_hit_return ; dot(...) <= 0
+
+	; triangle hit
+	inc rax
+	vmovss [rdx+RECORD_T_OFFS], xmm8
+	vmovups [rdx+RECORD_P_OFFS], xmm0
+	mov [rdx+RECORD_SM_OFFS], rcx
+	mov rdi, rdx
+	vmovaps xmm0, xmm5
+	call record_set_face_normal
+
+	.triangle_hit_return:
+	pop rbp
+	ret
 ;}}}
 ;}}}
 ;}}}

@@ -1,9 +1,7 @@
 TARGET=rt
 CC=gcc
 NASM=nasm
-SRC=main.c util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittable/Sphere.c # Scene.c Material.c \
-    hittable/Triangle.c \
-    hittable/KDTree.c
+SRC=main.c util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittable/Sphere.c hittable/Triangle.c # Scene.c Material.c hittable/KDTree.c
 OBJ=${SRC:.c=.o}
 CFLAGS=-std=c99 -pedantic -Wall
 LDFLAGS=-lm -no-pie
