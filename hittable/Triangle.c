@@ -28,7 +28,8 @@ Hittable *triangle_init(Point p1, Point p2, Point p3, spmat *sm) {
 
   self->bbox = (Box *)box_init(cback, cfront, NULL);
 
-  sm->c++;
+  if (sm)
+    sm->c++;
   self->sm = sm;
 
   return (Hittable *)self;
