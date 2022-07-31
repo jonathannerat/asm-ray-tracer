@@ -13,6 +13,7 @@ Vec3 reflect(const Vec3 v, const Vec3 n);
 real reflectance(real cosine, real ref_idx);
 Vec3 vec3_rnd_between(real min, real max);
 Vec3 vec3_rnd_unit_sphere();
+void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 
 // Declared in header
 

@@ -197,7 +197,6 @@ bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, R
 
 // }}}
 
-#ifndef DEBUG_ASM
 // Material scatter methods {{{
 
 bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
@@ -209,9 +208,9 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
 
 // }}}
 
+#ifndef DEBUG_ASM
 // Other {{{
 
-void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
                    real focus_dist);
 Ray camera_get_ray(const Camera *c, real s, real t);

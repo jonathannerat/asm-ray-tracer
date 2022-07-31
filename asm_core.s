@@ -10,6 +10,10 @@ global plane_hit
 global sphere_hit
 global triangle_hit
 
+global lambertian_scatter
+global metal_scatter
+global dielectric_scatter
+
 extern list_get
 ; }}}
 
@@ -82,6 +86,17 @@ extern list_get
 %define TRIANGLE_P3_OFFS         (TRIANGLE_P2_OFFS+VEC3_SIZE)
 %define TRIANGLE_SIZE            (TRIANGLE_P3_OFFS+VEC3_SIZE)
 ;}}}
+
+; Materials {{{
+%define MATERIAL_SCATTER_OFFS 0
+%define MATERIAL_EMITTED_OFFS 8
+%define MATERIAL_SIZE         (2*8)
+
+; All materials share the same structure
+%define MATALL_MATERIAL_OFFS 0
+%define MATALL_ALBEDO_OFFS   MATERIAL_SIZE
+%define MATALL_ALPHA_OFFS    (MATALL_ALBEDO_OFFS+VEC3_SIZE)
+;}}}
 ;}}}
 
 ; MACROS {{{
@@ -103,6 +118,22 @@ extern list_get
 	vmulps xmm6, xmm7    ; (z2*y3, x2*z3, y2*x3)
 	vsubps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
 %endmacro
+
+%macro v3p_reflect 4
+	vdpps %1, %2, %3, 0xF1
+	vmovss %4, [two]
+	vmulss %1, %4
+	vshufps %1, %1, 0b00000000
+	vmulps %1, %3
+	vsubps %1, %2, %1
+%endmacro
+
+%macro v3p_normalized  2
+	vdpps %2, %1, %1, 0xF1 ; norm2
+	vrsqrtss %2, %2        ; 1/sqrt(norm2)
+	vshufps %2, %2, 0b00000000 ;normalize
+	vmulps %1, %2
+%endmacro
 ;}}}
 
 section .data
@@ -110,10 +141,13 @@ section .data
 ;DATA {{{
 ; 32-bit absolute value mask 
 fabs_mask: dd 0x7FFFFFFF
-fnabs_mask: dd 0x8000000
-ones_mask: dd 0xFFFFFFFF
+rand_mask:
+fnabs_mask: dd 0x80000000
+ones_mask:  dd 0xFFFFFFFF
 eps:  dd 1.0e-4
 zero: dd 0.0e0
+one:  dd 1.0e0
+two:  dd 2.0e0
 ;}}}
 
 section .text
@@ -176,6 +210,87 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 	v3p_dot xmm0, xmm0 ; F -> use all packed floats, 1 -> store result in least significant dword
 
 	pop rbp
+	ret
+;}}}
+
+; Random vec3 in unit sphere
+vec3_rnd_unit: ;{{{
+	sub rsp, 0x18
+	vmovaps [rsp], xmm1
+
+	.vec3_rnd_loop:
+		call randvec
+		vdpps xmm1, xmm0, xmm0, 0xF1
+		vcomiss xmm1, [one]
+		jae .vec3_rnd_loop
+
+	vmovaps xmm1, [rsp]
+	add rsp, 0x18
+	ret
+;}}}
+;}}}
+
+; Random {{{
+; inspired by: https://xoofx.com/blog/2009/10/25/random-float-number-using-x86-asm-code/#v3
+randf: ; store a random float in (-1;1] range in xmm0 {{{
+	push rax
+	push rcx
+	sub rsp, 0x18
+	vmovaps [rsp], xmm1
+
+	mov ecx, 10 ; retries
+	.randf_retry:
+		rdseed eax
+		jc .randf_done
+		loop .randf_retry
+
+	.randf_done:
+	imul eax, 16007
+	vxorps xmm0, xmm0
+	vcvtsi2ss xmm0, eax
+	vcvtsi2ss xmm1, dword [rand_mask]
+	vdivss xmm0, xmm1 ; scale float down to (-1;1]
+
+	vmovaps xmm1, [rsp]
+	add rsp, 0x18
+	pop rcx
+	pop rax
+	ret
+;}}}
+
+randvec: ; store 3 random floats in range (-1;1] in xmm0 {{{
+	sub rsp, 0x18
+	vmovaps [rsp], xmm1
+
+	call randf ; random x
+	vmovaps xmm1, xmm0
+
+	call randf ; random y
+	vpslldq xmm0, 4
+	vorps xmm1, xmm0
+
+	call randf ; random z
+	vpslldq xmm0, 8
+	vorps xmm0, xmm1
+
+	vmovaps xmm1, [rsp]
+	add rsp, 0x18
+	ret
+;}}}
+
+randf01: ;{{{ store a random float in [0;1) range in xmm0
+	sub rsp, 0x18
+	vmovups [rsp], xmm1
+
+	call randf
+	vxorps xmm1, xmm1
+	vsubss xmm1, [one] ; -1
+	vaddss xmm0, xmm1 ; move range to (-2;0]
+	vaddss xmm1, xmm2 ; -2
+	vdivss xmm0, xmm1 ; move range to [0;1)
+
+	vmovups xmm1, [rsp]
+	add rsp, 0x18
 	ret
 ;}}}
 ;}}}
@@ -373,6 +488,8 @@ triangle_hit: ; {{{
 	push rbp
 	mov rbp, rsp
 
+	call vec3_rnd_unit
+
 	xor rax, rax
 
 	vmovups xmm2, [rdi+TRIANGLE_P1_OFFS]
@@ -439,6 +556,174 @@ triangle_hit: ; {{{
 	call record_set_face_normal
 
 	.triangle_hit_return:
+	pop rbp
+	ret
+;}}}
+;}}}
+
+; Scatter Functions {{{
+lambertian_scatter: ; {{{
+	push rbp
+	mov rbp, rsp
+
+	mov rax, 1 ; return value
+
+	call vec3_rnd_unit
+	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+	vaddps xmm3, xmm0, xmm1 ; scatter_dir
+	vmovaps xmm4, xmm3      ; save scatter_dir
+
+	; check if scatter_dir is near zero
+	vmovss xmm2, [fabs_mask]
+	vshufps xmm2, xmm2, 0b00000000
+	vorps xmm4, xmm2 ; fabs(scatter_dir)
+
+	vmovss xmm2, [eps]
+	vshufps xmm2, xmm2, 0b00000000
+	cmpltps xmm4, xmm2 ; xmm4 < (eps, eps, eps, eps)?
+
+	vmovss xmm2, [ones_mask]
+	vshufps xmm2, xmm2, 0b00000000
+	vptest xmm4, xmm2 ; if xmm4 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
+	jnc .lambertian_scatter_not_near_zero ; if CF=0, scatter is not near zero
+
+	vmovaps xmm3, xmm1 ; scatter_dir = rec->normal
+
+	.lambertian_scatter_not_near_zero:
+	; *scattered = Ray(p, scatter_dir)
+	vmovups xmm5, [rdx+RECORD_P_OFFS]
+	vmovups [r8+RAY_ORIG_OFFS], xmm5
+	vmovups [r8+RAY_DIR_OFFS], xmm3
+
+	; *attenuation = self->albedo
+	vmovups xmm5, [rdi+MATALL_ALBEDO_OFFS]
+	vmovups [rcx], xmm5
+
+	pop rbp
+	ret
+;}}}
+
+metal_scatter: ; {{{
+	push rbp
+	mov rbp, rsp
+
+	xor rax, rax
+
+	vmovups xmm0, [rsi+RAY_DIR_OFFS]
+	v3p_normalized xmm0, xmm2
+	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+	v3p_reflect xmm4, xmm1, xmm2, xmm3     ; reflected
+
+	; scattered->orig = rec->p
+	vmovups xmm2, [rdx+RECORD_P_OFFS]
+	vmovups [r8+RAY_ORIG_OFFS], xmm2
+
+	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit()
+	call vec3_rnd_unit
+	vmovss xmm3, [rdi+MATALL_ALPHA_OFFS]
+	vshufps xmm3, xmm3, 0b00000000
+	vmulps xmm0, xmm3
+	vaddps xmm0, xmm4
+	vmovups [r8+RAY_DIR_OFFS], xmm0
+
+	; *attenuation = self->albedo
+	vmovups xmm2, [rdi+MATALL_ALBEDO_OFFS]
+	vmovups [rcx], xmm2
+
+	vdpps xmm1, xmm4, 0xF1
+	vcomiss xmm1, [zero]
+
+	jbe .metal_scatter_return ; dot(...) <= 0
+	inc rax
+	
+	.metal_scatter_return:
+	pop rbp
+	ret
+;}}}
+
+dielectric_scatter: ; {{{
+	push rbp
+	mov rbp, rsp
+
+	vmovups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
+	mov ax, [rdx+RECORD_FFACE_OFFS]
+	test ax, ax
+	jz .dielectric_scatter_not_fface
+
+	vrcpss xmm1, xmm1
+
+	.dielectric_scatter_not_fface:
+	vmovups xmm2, [rsi+RAY_DIR_OFFS]
+	v3p_normalized xmm2, xmm3 ; unit_dir
+
+	vxorps xmm3, xmm3
+	vsubps xmm5, xmm3, xmm2 ; -unit_dir
+	vmovups xmm9, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+	vdpps xmm5, xmm9, 0xF1
+	vmovss xmm3, [one]
+	vminss xmm5, xmm3 ; cos_theta = min(dot(-unit_dir, rec->normal), 1)
+	vmulss xmm6, xmm5, xmm5
+	vsubss xmm6, xmm3, xmm6
+	vsqrtss xmm6, xmm6 ; sin_theta
+	vmulss xmm6, xmm1
+
+	vcomiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
+	ja .dielectric_scatter_do_reflect ; cannot refract
+
+	; Use Schlick's approximation for reflectance.
+	vsubss xmm6, xmm3, xmm1
+	vaddss xmm7, xmm3, xmm1
+	vdivss xmm6, xmm7 ; r0
+	vmulss xmm6, xmm6 ; r0 *= r0
+
+	vsubss xmm5, xmm3, xmm5 ; (1-cos_theta)
+	vmovss xmm6, xmm5
+	vmulss xmm5, xmm5 ; (1-cos_theta)^2
+	vmulss xmm5, xmm5 ; (1-cos_theta)^4
+	vmulss xmm5, xmm6 ; (1-cos_theta)^5
+	vsubss xmm7, xmm3, xmm6 ; (1-r0)
+	vmulss xmm7, xmm5
+	vaddss xmm6, xmm7
+
+	call randf01
+	vcomiss xmm6, xmm0
+	jbe .dielectric_scatter_do_refract  ; reflectance <= rnd
+
+	.dielectric_scatter_do_reflect:
+	v3p_reflect xmm0, xmm2, xmm9, xmm5
+	jmp .dielectric_scatter_return
+
+	.dielectric_scatter_do_refract:
+	vxorps xmm4, xmm4
+	vsubps xmm4, xmm2
+	vdpps xmm4, xmm9, 0xF1
+	vminss xmm4, xmm3 ; cos_theta
+	vshufps xmm4, xmm4, 0b00000000
+	vmulps xmm5, xmm4, xmm9
+	vaddps xmm5, xmm2
+	vshufps xmm1, xmm1, 0b00000000
+	vmulps xmm5, xmm1 ; r_out_perp
+
+	vdpps xmm6, xmm5, xmm5, 0xF1
+	vsubss xmm6, xmm3, xmm6
+	vandps xmm6, [fabs_mask]
+	vsqrtss xmm6, xmm6
+	vshufps xmm6, xmm6, 0b00000000
+	vmulps xmm6, xmm9
+	vsubps xmm0, xmm5, xmm6 ; sub instead of add, because we use sqrt instead of -sqrt
+
+	.dielectric_scatter_return:
+	; *attenuation = self->albedo
+	vmovups xmm1, [rdi+MATALL_ALBEDO_OFFS]
+	vmovups [rcx], xmm1
+
+	vmovups xmm1, [rdx+RECORD_P_OFFS]
+	vmovups [rsi+RAY_ORIG_OFFS], xmm1
+	vmovups [rsi+RAY_DIR_OFFS], xmm0
+
+	xor rax, rax
+	inc rax
+
 	pop rbp
 	ret
 ;}}}
