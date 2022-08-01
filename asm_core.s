@@ -15,6 +15,7 @@ global metal_scatter
 global dielectric_scatter
 
 global camera_init
+global camera_get_ray
 
 extern list_get
 extern tanf
@@ -112,7 +113,6 @@ extern tanf
 %define CAMERA_LR_OFFS     (CAMERA_W_OFFS+VEC3_SIZE)
 %define CAMERA_SIZE        (CAMERA_LR_OFFS+REAL_SIZE)
 ;}}}
-
 ;}}}
 
 ; MACROS {{{
@@ -748,7 +748,7 @@ dielectric_scatter: ; {{{
 ;}}}
 
 ; Camera Functions {{{
-camera_init:
+camera_init: ;{{{
 	push rbp
 	mov rbp, rsp
 	sub rsp, 0x60
@@ -827,6 +827,38 @@ camera_init:
 	add rsp, 0x60
 	pop rbp
 	ret
+;}}}
+
+camera_get_ray: ;{{{
+	push rbp
+	mov rbp, rsp
+
+	vmovss xmm2, xmm0
+	call vec3_rnd_unit ; xmm0=rand_unit
+	vshufps xmm3, [rsi+CAMERA_LR_OFFS], 0b00000000
+	vmulps xmm0, xmm3 ; rd
+
+	vshufps xmm3, xmm0, 0b00000000
+	vmulps xmm3, [rsi+CAMERA_U_OFFS]
+
+	vshufps xmm4, xmm0, 0b01010101
+	vmulps xmm4, [rsi+CAMERA_V_OFFS]
+	vaddps xmm3, xmm4 ; offset
+
+	vaddps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
+	vmovups [rdi+RAY_ORIG_OFFS], xmm3
+	vshufps xmm2, xmm2, 0b00000000
+	vmulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
+	vaddps xmm2, [rsi+CAMERA_BLCORN_OFFS]
+	vshufps xmm1, xmm1, 0b00000000
+	vmulps xmm1, [rsi+CAMERA_VERTI_OFFS]
+	vsubps xmm1, xmm3
+	vaddps xmm1, xmm2
+	vmovups [rdi+RAY_DIR_OFFS], xmm1
+
+	pop rbp
+	ret
+;}}}
 ;}}}
 ;}}}
 

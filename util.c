@@ -13,6 +13,8 @@ void d(const char *fmt, ...) {
 void d(const char *fmt, ...) {}
 #endif
 
+real rnd() { return rand() / (RAND_MAX + 1.0); }
+
 char* strfind(char *c, char f) {
   while(*c && *c != f) c++;
 

@@ -136,7 +136,6 @@ void list_destroy(Hittable *h) {
 
 Box *list_bbox(const Hittable *h) { return ((const List *)h)->bbox; }
 
-#ifndef DEBUG_ASM
 Hittable *list_parse_obj(const char *path, spmat *sm) {
   List *objects = (List *)list_init();
 
@@ -183,4 +182,3 @@ Hittable *list_parse_obj(const char *path, spmat *sm) {
 
   return (Hittable *)objects;
 }
-#endif

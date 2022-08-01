@@ -212,9 +212,6 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
 
 Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
                    real focus_dist);
-#ifndef DEBUG_ASM
 Ray camera_get_ray(const Camera *c, real s, real t);
-
 // }}}
-#endif
 #endif // CORE_H

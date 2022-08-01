@@ -26,7 +26,7 @@ void d(const char *fmt, ...);
 
 inline real degrees_to_radians(real degrees) { return degrees * M_PI / 180.0; }
 
-inline real rnd() { return rand() / (RAND_MAX + 1.0); }
+real rnd();
 
 inline real rnd_between(real min, real max) {
   return min + rnd() * (max - min);
