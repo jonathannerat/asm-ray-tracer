@@ -14,7 +14,10 @@ global lambertian_scatter
 global metal_scatter
 global dielectric_scatter
 
+global camera_init
+
 extern list_get
+extern tanf
 ; }}}
 
 ; OFFSETS {{{
@@ -97,6 +100,19 @@ extern list_get
 %define MATALL_ALBEDO_OFFS   MATERIAL_SIZE
 %define MATALL_ALPHA_OFFS    (MATALL_ALBEDO_OFFS+VEC3_SIZE)
 ;}}}
+
+; Camera {{{
+%define CAMERA_ORIGIN_OFFS 0
+%define CAMERA_BLCORN_OFFS (CAMERA_ORIGIN_OFFS+VEC3_SIZE)
+%define CAMERA_HORIZ_OFFS  (CAMERA_BLCORN_OFFS+VEC3_SIZE)
+%define CAMERA_VERTI_OFFS  (CAMERA_HORIZ_OFFS+VEC3_SIZE)
+%define CAMERA_U_OFFS      (CAMERA_VERTI_OFFS+VEC3_SIZE)
+%define CAMERA_V_OFFS      (CAMERA_U_OFFS+VEC3_SIZE)
+%define CAMERA_W_OFFS      (CAMERA_V_OFFS+VEC3_SIZE)
+%define CAMERA_LR_OFFS     (CAMERA_W_OFFS+VEC3_SIZE)
+%define CAMERA_SIZE        (CAMERA_LR_OFFS+REAL_SIZE)
+;}}}
+
 ;}}}
 
 ; MACROS {{{
@@ -146,8 +162,10 @@ fnabs_mask: dd 0x80000000
 ones_mask:  dd 0xFFFFFFFF
 eps:  dd 1.0e-4
 zero: dd 0.0e0
+half: dd 0.5e0
 one:  dd 1.0e0
 two:  dd 2.0e0
+degtorad: dd 0.017453292519943295
 ;}}}
 
 section .text
@@ -727,6 +745,88 @@ dielectric_scatter: ; {{{
 	pop rbp
 	ret
 ;}}}
+;}}}
+
+; Camera Functions {{{
+camera_init:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 0x60
+
+	vpslldq xmm1, 0x8
+	vorps xmm0, xmm1 ; from
+	vmovups [rdi+CAMERA_ORIGIN_OFFS], xmm0 ; c->origin = from
+
+	vpslldq xmm3, 0x8
+	vorps xmm1, xmm2, xmm3 ; to
+	vsubps xmm1, xmm0, xmm1 ; from-to
+
+	vpslldq xmm5, 0x8
+	vorps xmm2, xmm4, xmm5 ; vup
+
+	vmovss xmm3, [rbp+0x10] ; aperture
+	vmulss xmm3, [half]
+	vmovss [rdi+CAMERA_LR_OFFS], xmm3 ; c->lens_radius = aperture/2.0
+
+	vmovss xmm3, [rbp+0x18] ; focus_dist
+
+	vmovaps [rsp], xmm0      ; from
+	vmovaps [rsp+0x10], xmm1 ; from-to
+	vmovaps [rsp+0x20], xmm2 ; vup
+	vmovaps [rsp+0x30], xmm6 ; vfov
+	vmovaps [rsp+0x40], xmm7 ; aspect_ratio
+	vmovaps [rsp+0x50], xmm3 ; focus_dist
+	push rdi
+	sub rsp, 8
+
+	vmulss xmm6, [degtorad] ; theta
+	vmulss xmm0, xmm6, [half]
+	call tanf
+
+	add rsp, 8
+	pop rdi
+	vmovaps xmm1, [rsp+0x10] ; from-to
+	vmovaps xmm2, [rsp+0x20] ; vup
+	vmovaps xmm6, [rsp+0x30] ; vfov
+	vmovaps xmm7, [rsp+0x40] ; aspect_ratio
+	vmovaps xmm3, [rsp+0x50] ; focus_dist
+
+	vmulss xmm4, xmm0, [two] ; vp_height
+	vmulss xmm7, xmm4 ; vp_width
+
+	v3p_normalized xmm1, xmm8
+	vmovups [rdi+CAMERA_W_OFFS], xmm1
+
+	v3p_cross xmm8, xmm2, xmm1
+	vmovups [rdi+CAMERA_U_OFFS], xmm8
+
+	v3p_cross xmm9, xmm1, xmm8
+	vmovups [rdi+CAMERA_V_OFFS], xmm9
+
+	vmulss xmm5, xmm3
+	vshufps xmm5, xmm5, 0b00000000
+	vmulps xmm5, xmm8
+	vmovups [rdi+CAMERA_HORIZ_OFFS], xmm5
+
+	vmulss xmm4, xmm3
+	vshufps xmm4, xmm4, 0b00000000
+	vmulps xmm4, xmm9
+	vmovups [rdi+CAMERA_VERTI_OFFS], xmm4
+
+	vmovaps xmm0, [rsp]
+	vaddps xmm4, xmm5
+	vmovss xmm5, [half]
+	vshufps xmm5, xmm5, 0b00000000
+	vmulps xmm4, xmm5
+	vshufps xmm3, xmm3, 0b00000000
+	vmulps xmm1, xmm3
+	vaddps xmm1, xmm4
+	vsubps xmm0, xmm1
+	vmovups [rdi+CAMERA_BLCORN_OFFS], xmm0
+
+	add rsp, 0x60
+	pop rbp
+	ret
 ;}}}
 ;}}}
 
