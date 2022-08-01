@@ -211,12 +211,12 @@ Ray camera_get_ray(const Camera *c, real s, real t) {
   return r;
 }
 
+// Internal
+
 void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n) {
   hr->front_face = dot(r->direction, n) < 0;
   hr->normal = hr->front_face ? n : vec3_inv(n);
 }
-
-// Internal
 
 Vec3 cross(const Vec3 a, const Vec3 b) {
   return V(a.y * b.z - b.y * a.z, b.x * a.z - a.x * b.z, a.x * b.y - b.x * a.y);
