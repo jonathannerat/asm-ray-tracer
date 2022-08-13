@@ -5,7 +5,7 @@ SRC=main.c util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittab
 OBJ=${SRC:.c=.o}
 CFLAGS=-std=c99 -pedantic -Wall
 LDFLAGS=-lm -no-pie
-NASMFLAGS=-f elf64 -F DWARF -Wall
+NASMFLAGS=-f elf64 -Wall
 
 all: options targets
 
@@ -35,8 +35,8 @@ ${TARGET}-asm: ${OBJ} asm_core.o
 debug-c: CFLAGS += -g -DDEBUG
 debug-c: rt-c
 
-debug-asm: CFLAGS += -g -DDEBUG -DDEBUG_ASM
-debug-asm: NASMFLAGS += -g
+debug-asm: CFLAGS += -g -DDEBUG
+debug-asm: NASMFLAGS += -gdwarf
 debug-asm: rt-asm
 
 debug: debug-c debug-asm
