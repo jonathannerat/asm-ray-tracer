@@ -19,6 +19,7 @@ global camera_get_ray
 
 extern list_get
 extern tanf
+extern rand
 ; }}}
 
 ; OFFSETS {{{
@@ -157,7 +158,7 @@ section .data
 ;DATA {{{
 ; 32-bit absolute value mask 
 fabs_mask: dd 0x7FFFFFFF
-rand_mask:
+rand_max:  dd 2.147483647e9
 fnabs_mask: dd 0x80000000
 ones_mask:  dd 0xFFFFFFFF
 eps:  dd 1.0e-4
@@ -233,8 +234,7 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 
 ; Random vec3 in unit sphere
 vec3_rnd_unit: ;{{{
-	sub rsp, 0x18
-	vmovaps [rsp], xmm1
+	sub rsp, 8
 
 	.vec3_rnd_loop:
 		call randvec
@@ -242,73 +242,45 @@ vec3_rnd_unit: ;{{{
 		vcomiss xmm1, [one]
 		jae .vec3_rnd_loop
 
-	vmovaps xmm1, [rsp]
-	add rsp, 0x18
+	add rsp, 8
 	ret
 ;}}}
 ;}}}
 
 ; Random {{{
-; inspired by: https://xoofx.com/blog/2009/10/25/random-float-number-using-x86-asm-code/#v3
-randf: ; store a random float in (-1;1] range in xmm0 {{{
-	push rax
-	push rcx
-	sub rsp, 0x18
-	vmovaps [rsp], xmm1
-
-	mov ecx, 10 ; retries
-	.randf_retry:
-		rdseed eax
-		jc .randf_done
-		loop .randf_retry
-
-	.randf_done:
-	imul eax, 16007
-	vxorps xmm0, xmm0
-	vcvtsi2ss xmm0, eax
-	vcvtsi2ss xmm1, dword [rand_mask]
-	vdivss xmm0, xmm1 ; scale float down to (-1;1]
-
-	vmovaps xmm1, [rsp]
-	add rsp, 0x18
-	pop rcx
-	pop rax
-	ret
-;}}}
-
 randvec: ; store 3 random floats in range (-1;1] in xmm0 {{{
 	sub rsp, 0x18
-	vmovaps [rsp], xmm1
 
-	call randf ; random x
-	vmovaps xmm1, xmm0
+    call rand
+    mov [rsp], eax
 
-	call randf ; random y
-	vpslldq xmm0, 4
-	vorps xmm1, xmm0
+	call rand
+    mov [rsp+0x04], eax
 
-	call randf ; random z
-	vpslldq xmm0, 8
-	vorps xmm0, xmm1
+	call rand
+    mov [rsp+0x08], eax
 
-	vmovaps xmm1, [rsp]
+    xor eax, eax
+    mov [rsp+0x0C], eax
+
+    vcvtdq2ps xmm0, [rsp]
+    vmovss xmm1, [rand_max]
+    vshufps xmm1, xmm1, 0
+    vdivps xmm0, xmm1
+
 	add rsp, 0x18
 	ret
 ;}}}
 
 randf01: ;{{{ store a random float in [0;1) range in xmm0
-	sub rsp, 0x18
-	vmovups [rsp], xmm1
+	sub rsp, 8
 
-	call randf
-	vxorps xmm1, xmm1
-	vsubss xmm1, [one] ; -1
-	vaddss xmm0, xmm1 ; move range to (-2;0]
-	vaddss xmm1, xmm2 ; -2
-	vdivss xmm0, xmm1 ; move range to [0;1)
+	call rand
+	vxorps xmm0, xmm0
+	vcvtsi2ss xmm0, eax
+	vdivss xmm0, [rand_max]
 
-	vmovups xmm1, [rsp]
-	add rsp, 0x18
+    add rsp, 8
 	ret
 ;}}}
 ;}}}
@@ -505,8 +477,21 @@ sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 triangle_hit: ; {{{
 	push rbp
 	mov rbp, rsp
+    sub rsp, 0x20
+
+    mov [rsp], rdi
+    mov [rsp+0x08], rsi
+    mov [rsp+0x10], rdx
+    vmovss [rsp+0x18], xmm0
+    vmovss [rsp+0x1C], xmm1
 
 	call vec3_rnd_unit
+
+    mov rdi, [rsp]
+    mov rsi, [rsp+0x08]
+    mov rdx, [rsp+0x10]
+    vmovss xmm0, [rsp+0x18]
+    vmovss xmm1, [rsp+0x1C]
 
 	xor rax, rax
 
@@ -574,6 +559,7 @@ triangle_hit: ; {{{
 	call record_set_face_normal
 
 	.triangle_hit_return:
+    add rsp, 0x20
 	pop rbp
 	ret
 ;}}}
@@ -583,10 +569,24 @@ triangle_hit: ; {{{
 lambertian_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
+    sub rsp, 0x30
+
+    mov [rsp], rdi
+    mov [rsp+0x08], rsi
+    mov [rsp+0x10], rdx
+    mov [rsp+0x18], rcx
+    mov [rsp+0x20], r8
+
+	call vec3_rnd_unit
+
+    mov rdi, [rsp]
+    mov rsi, [rsp+0x08]
+    mov rdx, [rsp+0x10]
+    mov rcx, [rsp+0x18]
+    mov r8, [rsp+0x20]
 
 	mov rax, 1 ; return value
 
-	call vec3_rnd_unit
 	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
 	vaddps xmm3, xmm0, xmm1 ; scatter_dir
 	vmovaps xmm4, xmm3      ; save scatter_dir
@@ -617,6 +617,7 @@ lambertian_scatter: ; {{{
 	vmovups xmm5, [rdi+MATALL_ALBEDO_OFFS]
 	vmovups [rcx], xmm5
 
+    add rsp, 0x30
 	pop rbp
 	ret
 ;}}}
@@ -624,6 +625,22 @@ lambertian_scatter: ; {{{
 metal_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
+    sub rsp, 0x30
+    
+    mov [rsp], rdi
+    mov [rsp+0x08], rsi
+    mov [rsp+0x10], rdx
+    mov [rsp+0x18], rcx
+    mov [rsp+0x20], r8
+
+	call vec3_rnd_unit
+    vmovaps xmm5, xmm0
+
+    mov rdi, [rsp]
+    mov rsi, [rsp+0x08]
+    mov rdx, [rsp+0x10]
+    mov rcx, [rsp+0x18]
+    mov r8, [rsp+0x20]
 
 	xor rax, rax
 
@@ -637,10 +654,9 @@ metal_scatter: ; {{{
 	vmovups [r8+RAY_ORIG_OFFS], xmm2
 
 	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit()
-	call vec3_rnd_unit
 	vmovss xmm3, [rdi+MATALL_ALPHA_OFFS]
 	vshufps xmm3, xmm3, 0b00000000
-	vmulps xmm0, xmm3
+	vmulps xmm0, xmm5, xmm3
 	vaddps xmm0, xmm4
 	vmovups [r8+RAY_DIR_OFFS], xmm0
 
@@ -833,9 +849,22 @@ camera_init: ;{{{
 camera_get_ray: ;{{{
 	push rbp
 	mov rbp, rsp
+    sub rsp, 0x20
 
 	vmovss xmm2, xmm0
+
+    mov [rsp], rdi
+    mov [rsp+0x08], rsi
+    vmovss [rsp+0x10], xmm2
+    vmovss [rsp+0x14], xmm1
+
 	call vec3_rnd_unit ; xmm0=rand_unit
+
+    mov rdi, [rsp]
+    mov rsi, [rsp+0x08]
+    vmovss xmm2, [rsp+0x10]
+    vmovss xmm1, [rsp+0x14]
+
 	vmovss xmm3, [rsi+CAMERA_LR_OFFS]
 	vshufps xmm3, xmm3, 0b00000000
 	vmulps xmm0, xmm3 ; rd
@@ -859,6 +888,7 @@ camera_get_ray: ;{{{
 	vaddps xmm1, xmm2
 	vmovups [rdi+RAY_DIR_OFFS], xmm1
 
+    add rsp, 0x20
 	pop rbp
 	ret
 ;}}}
