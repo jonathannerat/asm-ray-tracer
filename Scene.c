@@ -129,7 +129,7 @@ Camera parse_camera_line(char *c) {
   Point from = {0, 1, -1}, to = {0, 0, 0};
   Vec3 vup = {0, 1, 0};
   real vfov = 45, aspect_ratio = 16.0 / 9.0, aperture = 0;
-  real focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
+  real focus_dist = -1;
 
   while (*p) {
     while (*p == ' ' || *p == '\n')
@@ -157,6 +157,10 @@ Camera parse_camera_line(char *c) {
       p += 6;
       focus_dist = strtod(p, &p);
     }
+  }
+
+  if (focus_dist < 0) {
+    focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
   }
 
   return camera_init(from, to, vup, vfov, aspect_ratio, aperture, focus_dist);
