@@ -792,12 +792,13 @@ camera_init: ;{{{
 	vmovaps xmm3, [rsp+0x50] ; focus_dist
 
 	vmulss xmm4, xmm0, [two] ; vp_height
-	vmulss xmm7, xmm4 ; vp_width
+	vmulss xmm5, xmm7, xmm4 ; vp_width
 
 	v3p_normalized xmm1, xmm8
 	vmovups [rdi+CAMERA_W_OFFS], xmm1
 
 	v3p_cross xmm8, xmm2, xmm1
+	v3p_normalized xmm8, xmm2
 	vmovups [rdi+CAMERA_U_OFFS], xmm8
 
 	v3p_cross xmm9, xmm1, xmm8
@@ -835,18 +836,20 @@ camera_get_ray: ;{{{
 
 	vmovss xmm2, xmm0
 	call vec3_rnd_unit ; xmm0=rand_unit
-	vshufps xmm3, [rsi+CAMERA_LR_OFFS], 0b00000000
+	vmovss xmm3, [rsi+CAMERA_LR_OFFS]
+	vshufps xmm3, xmm3, 0b00000000
 	vmulps xmm0, xmm3 ; rd
 
-	vshufps xmm3, xmm0, 0b00000000
+	vshufps xmm3, xmm0, xmm0, 0b00000000
 	vmulps xmm3, [rsi+CAMERA_U_OFFS]
 
-	vshufps xmm4, xmm0, 0b01010101
+	vshufps xmm4, xmm0, xmm0, 0b01010101
 	vmulps xmm4, [rsi+CAMERA_V_OFFS]
 	vaddps xmm3, xmm4 ; offset
 
 	vaddps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
 	vmovups [rdi+RAY_ORIG_OFFS], xmm3
+
 	vshufps xmm2, xmm2, 0b00000000
 	vmulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
 	vaddps xmm2, [rsi+CAMERA_BLCORN_OFFS]
