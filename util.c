@@ -24,6 +24,8 @@ char* strfind(char *c, char f) {
 Vec3 parse_vec3(char *c, char **t) {
   Vec3 v;
 
+  v._ = 0;
+
   v.x = strtod(c, &c);
   c++;
 
