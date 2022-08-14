@@ -1,6 +1,0 @@
-output: width=360 height=240 spp=10 depth=5
-camera: from=2,1,2 to=0,0,0
-materials:
-    lambertian=1,.85,.36
-objects:
-    box: cback=0,0,0 cfront=1,1,2 material=0

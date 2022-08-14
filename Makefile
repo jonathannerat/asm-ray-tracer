@@ -41,8 +41,22 @@ debug-asm: rt-asm
 
 debug: debug-c debug-asm
 
+scenes: options targets
+	[ -d out ] || mkdir out
+	for core in c asm; do \
+		printf "\nUsing core %s" "$$core" ; \
+		for f in scenes/*; do \
+			name="$${f#*/}" ; \
+			printf '\n\t- Generating scene "%s"...\n' "$$name" ; \
+			./rt-"$$core" "$$f" | convert ppm:- "out/$${core}_core-$${name}.png" ; \
+		done ; \
+	done
+	echo
+	sxiv out &
+
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm
 	-rm ${OBJ} c_core.o asm_core.o
+	[ -d out ] && rm -r out
 
-.PHONY: all clean options
+.PHONY: all clean options targets debub debug-c debug-asm
