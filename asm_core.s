@@ -389,8 +389,8 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	jb .ph_return  ; t_max < t
 
 	vmovss [rdx+RECORD_T_OFFS], xmm4 ; record->t = t
-	mov r8, [rdi+BOX_SM_OFFS]
-	mov [rdx+RECORD_SM_OFFS], r8 ; record->sm = box->xm
+	mov r8, [rdi+PLANE_SM_OFFS]
+	mov [rdx+RECORD_SM_OFFS], r8 ; record->sm = plane->xm
 
 	mov rdi, rsi
 	vmovaps xmm0, xmm4
