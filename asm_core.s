@@ -236,11 +236,11 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 vec3_rnd_unit: ;{{{
 	sub rsp, 8
 
-	.vec3_rnd_loop:
+	.vru_loop:
 		call randvec
 		vdpps xmm1, xmm0, xmm0, 0xF1
 		vcomiss xmm1, [one]
-		jae .vec3_rnd_loop
+		jae .vru_loop
 
 	add rsp, 8
 	ret
@@ -309,7 +309,7 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 	mov r13d, [r12+LIST_SIZE_OFFS] ; self->faces->size
 	mov r14, rsi ; ray
 
-	.box_face_loop:
+	.bh_face_loop:
 		; Hittable *h = list_get(self->faces, i)
 		mov rdi, r12
 		mov esi, ebx
@@ -323,14 +323,14 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 		lea rdx, [rbp-RECORD_SIZE]
 		call [rdi+BOX_HITTABLE_OFFS+HITTABLE_HIT_OFFS]
 		test al, al
-		jz .box_face_loop_continue ; no hit
+		jz .bh_face_loop_continue ; no hit
 
 		; box_is_inside(self, tmp.p)
 		mov rdi, [rbp-(RECORD_SIZE+0x30)]
 		vmovups xmm0, [rbp-(RECORD_SIZE-RECORD_P_OFFS)]
 		call box_is_inside
 		test al, al
-		jz .box_face_loop_continue ; not inside
+		jz .bh_face_loop_continue ; not inside
 
 		mov byte [rbp-(RECORD_SIZE+0x31)], 1 ; hit_anything = true
 		vmovss xmm0, [rbp-(RECORD_SIZE-RECORD_T_OFFS)] ; xmm0 = tmp->t
@@ -348,10 +348,10 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 		mov [rdx+RECORD_SM_OFFS], r8
 		mov [rdx+RECORD_T_OFFS], r9
 
-	.box_face_loop_continue:
+	.bh_face_loop_continue:
 	inc ebx ; i++
 	cmp ebx, r13d ; i < self->size
-	jl .box_face_loop
+	jl .bh_face_loop
 
 	mov al, [rbp-(RECORD_SIZE+0x31)]
 
@@ -376,7 +376,7 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	vdpps xmm4, xmm2, xmm3, 0xF1
 	vandps xmm4, [fabs_mask]
 	vcomiss xmm4, [eps] ; xmm2 < EPS
-	jbe .plane_hit_return ; if it is, return false (no plane hit)
+	jbe .ph_return ; if it is, return false (no plane hit)
 
 	vmovups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
 	vmovups xmm5, [rsi+RAY_ORIG_OFFS] ; r->origin
@@ -385,9 +385,9 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	v3p_dot xmm2, xmm3
 	vdivss xmm4, xmm2 ; xmm4 = t
 	vcomiss xmm4, xmm0
-	jb .plane_hit_return  ; t < t_min
+	jb .ph_return  ; t < t_min
 	vcomiss xmm1, xmm4
-	jb .plane_hit_return  ; t_max < t
+	jb .ph_return  ; t_max < t
 
 	vmovss [rdx+RECORD_T_OFFS], xmm4 ; record->t = t
 	mov r8, [rdi+BOX_SM_OFFS]
@@ -404,7 +404,7 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 
 	inc rax ; return true
 
-	.plane_hit_return:
+	.ph_return:
 	pop rbp
 	ret
 ;}}}
@@ -507,7 +507,7 @@ triangle_hit: ; {{{
 	vdpps xmm7, xmm5, xmm6, 0xF1
 	vandps xmm7, [fabs_mask]
 	vcomiss xmm7, [eps] ; xmm7 < EPS
-	jb .triangle_hit_return
+	jb .th_return
 
 	; check if ray intersection is outside of t_range
 	vsubps xmm8, xmm2, [rsi+RAY_ORIG_OFFS]
@@ -515,9 +515,9 @@ triangle_hit: ; {{{
 	vdpps xmm6, xmm5, 0xF1 ; t_denom
 	vdivss xmm8, xmm6 ; t
 	vcomiss xmm8, xmm0
-	jb .triangle_hit_return
+	jb .th_return
 	vcomiss xmm1, xmm8
-	jb .triangle_hit_return
+	jb .th_return
 
 	mov rcx, [rdi+TRIANGLE_SM_OFFS] ; save sm, since we'll overwrite rdi
 
@@ -531,7 +531,7 @@ triangle_hit: ; {{{
 	v3p_cross xmm1, xmm9, xmm10
 	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
 	vcomiss xmm1, [zero]
-	jbe .triangle_hit_return ; dot(...) <= 0
+	jbe .th_return ; dot(...) <= 0
 
 	;second boundary check
 	vsubps xmm9, xmm4, xmm3 ; (p3 - p2)
@@ -539,7 +539,7 @@ triangle_hit: ; {{{
 	v3p_cross xmm1, xmm9, xmm10
 	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
 	vcomiss xmm1, [zero]
-	jbe .triangle_hit_return ; dot(...) <= 0
+	jbe .th_return ; dot(...) <= 0
 
 	;third boundary check
 	vsubps xmm9, xmm2, xmm4 ; (p1 - p3)
@@ -547,7 +547,7 @@ triangle_hit: ; {{{
 	v3p_cross xmm1, xmm9, xmm10
 	vdpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
 	vcomiss xmm1, [zero]
-	jbe .triangle_hit_return ; dot(...) <= 0
+	jbe .th_return ; dot(...) <= 0
 
 	; triangle hit
 	inc rax
@@ -558,7 +558,7 @@ triangle_hit: ; {{{
 	vmovaps xmm0, xmm5
 	call record_set_face_normal
 
-	.triangle_hit_return:
+	.th_return:
     add rsp, 0x20
 	pop rbp
 	ret
@@ -603,11 +603,11 @@ lambertian_scatter: ; {{{
 	vmovss xmm2, [ones_mask]
 	vshufps xmm2, xmm2, 0b00000000
 	vptest xmm4, xmm2 ; if xmm4 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
-	jnc .lambertian_scatter_not_near_zero ; if CF=0, scatter is not near zero
+	jnc .ls_not_near_zero ; if CF=0, scatter is not near zero
 
 	vmovaps xmm3, xmm1 ; scatter_dir = rec->normal
 
-	.lambertian_scatter_not_near_zero:
+	.ls_not_near_zero:
 	; *scattered = Ray(p, scatter_dir)
 	vmovups xmm5, [rdx+RECORD_P_OFFS]
 	vmovups [r8+RAY_ORIG_OFFS], xmm5
@@ -667,10 +667,10 @@ metal_scatter: ; {{{
 	vdpps xmm1, xmm4, 0xF1
 	vcomiss xmm1, [zero]
 
-	jbe .metal_scatter_return ; dot(...) <= 0
+	jbe .ms_return ; dot(...) <= 0
 	inc rax
 	
-	.metal_scatter_return:
+	.ms_return:
 	pop rbp
 	ret
 ;}}}
@@ -682,11 +682,11 @@ dielectric_scatter: ; {{{
 	vmovups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
 	mov ax, [rdx+RECORD_FFACE_OFFS]
 	test ax, ax
-	jz .dielectric_scatter_not_fface
+	jz .ds_not_fface
 
 	vrcpss xmm1, xmm1
 
-	.dielectric_scatter_not_fface:
+	.ds_not_fface:
 	vmovups xmm2, [rsi+RAY_DIR_OFFS]
 	v3p_normalized xmm2, xmm3 ; unit_dir
 
@@ -702,7 +702,7 @@ dielectric_scatter: ; {{{
 	vmulss xmm6, xmm1
 
 	vcomiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
-	ja .dielectric_scatter_do_reflect ; cannot refract
+	ja .ds_do_reflect ; cannot refract
 
 	; Use Schlick's approximation for reflectance.
 	vsubss xmm6, xmm3, xmm1
@@ -721,13 +721,13 @@ dielectric_scatter: ; {{{
 
 	call randf01
 	vcomiss xmm6, xmm0
-	jbe .dielectric_scatter_do_refract  ; reflectance <= rnd
+	jbe .ds_do_refract ; reflectance <= rnd
 
-	.dielectric_scatter_do_reflect:
+	.ds_do_reflect:
 	v3p_reflect xmm0, xmm2, xmm9, xmm5
-	jmp .dielectric_scatter_return
+	jmp .ds_return
 
-	.dielectric_scatter_do_refract:
+	.ds_do_refract:
 	vxorps xmm4, xmm4
 	vsubps xmm4, xmm2
 	vdpps xmm4, xmm9, 0xF1
@@ -746,7 +746,7 @@ dielectric_scatter: ; {{{
 	vmulps xmm6, xmm9
 	vsubps xmm0, xmm5, xmm6 ; sub instead of add, because we use sqrt instead of -sqrt
 
-	.dielectric_scatter_return:
+	.ds_return:
 	; *attenuation = self->albedo
 	vmovups xmm1, [rdi+MATALL_ALBEDO_OFFS]
 	vmovups [rcx], xmm1
@@ -954,11 +954,11 @@ box_is_inside: ; Box *self, Vec3 p {{{
 	vmovss xmm2, [ones_mask]
 	vshufps xmm2, xmm2, 0b00000000
 	vptest xmm1, xmm2 ; if xmm1 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
-	jc .box_is_inside_return ; if CF=1, function returns true
+	jc .bii_return ; if CF=1, function returns true
 
 	xor eax, eax ; false
 
-	.box_is_inside_return:
+	.bii_return:
 	vmovaps xmm3, [rsp+0x20]
 	vmovaps xmm2, [rsp+0x10]
 	vmovaps xmm1, [rsp]
