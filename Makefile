@@ -57,6 +57,6 @@ scenes: options targets
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm
 	-rm ${OBJ} c_core.o asm_core.o
-	[ -d out ] && rm -r out
+	[ -d out ] && rm -r out || true
 
 .PHONY: all clean options targets debub debug-c debug-asm
