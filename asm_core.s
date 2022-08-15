@@ -588,12 +588,11 @@ lambertian_scatter: ; {{{
 
 	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
 	vaddps xmm3, xmm0, xmm1 ; scatter_dir
-	vmovaps xmm4, xmm3      ; save scatter_dir
 
 	; check if scatter_dir is near zero
 	vmovss xmm2, [fabs_mask]
 	vshufps xmm2, xmm2, 0b00000000
-	vorps xmm4, xmm2 ; fabs(scatter_dir)
+	vandps xmm4, xmm3, xmm2 ; fabs(scatter_dir)
 
 	vmovss xmm2, [eps]
 	vshufps xmm2, xmm2, 0b00000000
