@@ -379,8 +379,7 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	jbe .ph_return ; if it is, return false (no plane hit)
 
 	vmovups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
-	vmovups xmm5, [rsi+RAY_ORIG_OFFS] ; r->origin
-	vsubps xmm4, xmm5
+	vsubps xmm4, [rsi+RAY_ORIG_OFFS] ; - r->origin
 	v3p_dot xmm4, xmm3
 	v3p_dot xmm2, xmm3
 	vdivss xmm4, xmm2 ; xmm4 = t
