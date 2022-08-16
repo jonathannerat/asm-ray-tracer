@@ -158,7 +158,7 @@ section .data
 ;DATA {{{
 ; 32-bit absolute value mask 
 fabs_mask: dd 0x7FFFFFFF
-rand_max:  dd 2.147483647e9
+rand_descale:  dd 4.656612873077393e-10
 fnabs_mask: dd 0x80000000
 ones_mask:  dd 0xFFFFFFFF
 eps:  dd 1.0e-4
@@ -264,9 +264,21 @@ randvec: ; store 3 random floats in range (-1;1] in xmm0 {{{
     mov [rsp+0x0C], eax
 
     vcvtdq2ps xmm0, [rsp]
-    vmovss xmm1, [rand_max]
-    vshufps xmm1, xmm1, 0
-    vdivps xmm0, xmm1
+
+    ; rand() * (1/RAND_MAX)
+    vmovss xmm1, [rand_descale]
+    vshufps xmm1, xmm1, 0x80
+    vmulps xmm0, xmm1
+
+    ; _ * 2.0
+    vmovss xmm1, [two]
+    vshufps xmm1, xmm1, 0x80
+    vmulps xmm0, xmm1
+
+    ; _ - 1.0
+    vmovss xmm1, [one]
+    vshufps xmm1, xmm1, 0x80
+    vsubps xmm0, xmm1
 
 	add rsp, 0x18
 	ret
@@ -278,7 +290,7 @@ randf01: ;{{{ store a random float in [0;1) range in xmm0
 	call rand
 	vxorps xmm0, xmm0
 	vcvtsi2ss xmm0, eax
-	vdivss xmm0, [rand_max]
+	vmulss xmm0, [rand_descale]
 
     add rsp, 8
 	ret
@@ -965,4 +977,4 @@ box_is_inside: ; Box *self, Vec3 p {{{
 ;}}}
 ;}}}
 
-; vi: fdm=marker
+; vi: fdm=marker ts=4 sw=4 et
