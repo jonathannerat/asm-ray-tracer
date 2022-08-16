@@ -1,0 +1,9 @@
+* Ray Tracer implemented in x64 ASM using SIMD Instructions
+
+  This is a project intended to be presented as a final work for the Computer's
+  Architecture and Organization course at FCEN - UBA.
+
+** TODO
+   - [ ] Implement every vec3-operation heavy method in ASM
+     - [ ] `scene_render`
+     - [ ] `ray_color`
