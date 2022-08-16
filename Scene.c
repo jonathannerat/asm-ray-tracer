@@ -237,8 +237,8 @@ spmat *parse_material_line(char *c) {
         if (!strncmp(c, "albedo=", 7)) {
           c += 7;
           albedo = parse_vec3(c, &c);
-        } else if (!strncmp(c, "fuzz=", 3)) {
-          c += 3;
+        } else if (!strncmp(c, "fuzz=", 5)) {
+          c += 5;
           fuzz = strtof(c, &c);
         }
       }
