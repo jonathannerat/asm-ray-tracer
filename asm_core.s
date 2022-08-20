@@ -307,13 +307,12 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 	sub rsp, RECORD_SIZE+0x40
 
 	xor rax, rax
-	; first RECORD_SIZE bytes are for a tmp Record struct
-	; we can vmovaps since RECORD_SIZE is aligned to 16 bytes
-	vmovaps [rbp-(RECORD_SIZE+0x10)], xmm0 ; t_min
-	vmovaps [rbp-(RECORD_SIZE+0x20)], xmm1 ; t_max
-	mov [rbp-(RECORD_SIZE+0x28)], rdx ; rec
-	mov [rbp-(RECORD_SIZE+0x30)], rdi ; self
-	mov [rbp-(RECORD_SIZE+0x31)], al ; hit_anything = false
+
+	vmovups [rsp], xmm0 ; t_min
+	vmovups [rsp+0x10], xmm1 ; t_max
+	mov [rsp+0x20], rdx ; rec
+	mov [rsp+0x28], rdi ; self
+	mov [rsp+0x30], al ; hit_anything = false
 
 	xor ebx, ebx ; i = 0
 	mov r12, [rdi+BOX_FACES_OFFS] ; self->faces
@@ -329,31 +328,31 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 		; h->hit(h, ray, t_min, t_max, tmp)
 		mov rdi, rax
 		mov rsi, r14
-		vmovaps xmm0, [rbp-(RECORD_SIZE+0x10)]
-		vmovaps xmm1, [rbp-(RECORD_SIZE+0x20)]
-		lea rdx, [rbp-RECORD_SIZE]
+		vmovaps xmm0, [rsp]
+		vmovaps xmm1, [rsp+0x10]
+		lea rdx, [rsp+0x40]
 		call [rdi+BOX_HITTABLE_OFFS+HITTABLE_HIT_OFFS]
 		test al, al
 		jz .bh_face_loop_continue ; no hit
 
 		; box_is_inside(self, tmp.p)
-		mov rdi, [rbp-(RECORD_SIZE+0x30)]
-		vmovups xmm0, [rbp-(RECORD_SIZE-RECORD_P_OFFS)]
+		mov rdi, [rsp+0x28]
+		vmovups xmm0, [rsp+0x40+RECORD_P_OFFS]
 		call box_is_inside
 		test al, al
 		jz .bh_face_loop_continue ; not inside
 
-		mov byte [rbp-(RECORD_SIZE+0x31)], 1 ; hit_anything = true
-		vmovss xmm0, [rbp-(RECORD_SIZE-RECORD_T_OFFS)] ; xmm0 = tmp->t
-		vmovss [rbp-(RECORD_SIZE+0x20)], xmm0 ; t_max = xmm0
+		mov byte [rsp+0x30], 1 ; hit_anything = true
+		vmovss xmm0, [rsp+0x40+RECORD_T_OFFS] ; xmm0 = tmp->t
+		vmovss [rsp+0x10], xmm0 ; t_max = xmm0
 
 		; *rec = tmp
-		vmovups xmm0, [rbp-(RECORD_SIZE-RECORD_P_OFFS)]
-		vmovups xmm1, [rbp-(RECORD_SIZE-RECORD_NORMAL_OFFS)]
-		mov r8, [rbp-(RECORD_SIZE-RECORD_SM_OFFS)]
-		mov r9, [rbp-(RECORD_SIZE-RECORD_T_OFFS)]
+		vmovups xmm0, [rsp+0x40+RECORD_P_OFFS]
+		vmovups xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
+		mov r8, [rsp+0x40+RECORD_SM_OFFS]
+		mov r9, [rsp+0x40+RECORD_T_OFFS]
 
-		mov rdx, [rbp-(RECORD_SIZE+0x28)] ; rec
+		mov rdx, [rsp+0x20] ; rec
 		vmovups [rdx+RECORD_P_OFFS], xmm0
 		vmovups [rdx+RECORD_NORMAL_OFFS], xmm1
 		mov [rdx+RECORD_SM_OFFS], r8
@@ -364,7 +363,7 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 	cmp ebx, r13d ; i < self->size
 	jl .bh_face_loop
 
-	mov al, [rbp-(RECORD_SIZE+0x31)]
+	mov al, [rsp+0x30]
 
 	add rsp, RECORD_SIZE+0x40
 	pop r14
