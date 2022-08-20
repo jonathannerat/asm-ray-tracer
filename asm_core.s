@@ -136,10 +136,9 @@ extern rand
 	vsubps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
 %endmacro
 
-%macro v3p_reflect 4
+%macro v3p_reflect 3 ; u = v - 2 * (v . n) * n, w aux
 	vdpps %1, %2, %3, 0xF1
-	vmovss %4, [two]
-	vmulss %1, %4
+	vmulss %1, %1, [two]
 	vshufps %1, %1, 0b00000000
 	vmulps %1, %3
 	vsubps %1, %2, %1
@@ -636,7 +635,7 @@ metal_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
     sub rsp, 0x30
-    
+
     mov [rsp], rdi
     mov [rsp+0x08], rsi
     mov [rsp+0x10], rdx
@@ -657,7 +656,7 @@ metal_scatter: ; {{{
 	vmovups xmm0, [rsi+RAY_DIR_OFFS]
 	v3p_normalized xmm0, xmm2
 	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
-	v3p_reflect xmm4, xmm1, xmm2, xmm3     ; reflected
+	v3p_reflect xmm4, xmm0, xmm1           ; reflected
 
 	; scattered->orig = rec->p
 	vmovups xmm2, [rdx+RECORD_P_OFFS]
@@ -681,6 +680,7 @@ metal_scatter: ; {{{
 	inc rax
 	
 	.ms_return:
+    add rsp, 0x30
 	pop rbp
 	ret
 ;}}}
@@ -688,6 +688,21 @@ metal_scatter: ; {{{
 dielectric_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
+    sub rsp, 0x30
+
+    mov [rsp], rdi
+    mov [rsp+0x08], rsi
+    mov [rsp+0x10], rdx
+    mov [rsp+0x18], rcx
+    mov [rsp+0x20], r8
+
+	call randf01
+
+    mov rdi, [rsp]
+    mov rsi, [rsp+0x08]
+    mov rdx, [rsp+0x10]
+    mov rcx, [rsp+0x18]
+    mov r8, [rsp+0x20]
 
 	vmovups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
 	mov ax, [rdx+RECORD_FFACE_OFFS]
@@ -721,20 +736,19 @@ dielectric_scatter: ; {{{
 	vmulss xmm6, xmm6 ; r0 *= r0
 
 	vsubss xmm5, xmm3, xmm5 ; (1-cos_theta)
-	vmovss xmm6, xmm5
+	vmovss xmm8, xmm5
 	vmulss xmm5, xmm5 ; (1-cos_theta)^2
 	vmulss xmm5, xmm5 ; (1-cos_theta)^4
-	vmulss xmm5, xmm6 ; (1-cos_theta)^5
+	vmulss xmm5, xmm8 ; (1-cos_theta)^5
 	vsubss xmm7, xmm3, xmm6 ; (1-r0)
 	vmulss xmm7, xmm5
 	vaddss xmm6, xmm7
 
-	call randf01
 	vcomiss xmm6, xmm0
 	jbe .ds_do_refract ; reflectance <= rnd
 
 	.ds_do_reflect:
-	v3p_reflect xmm0, xmm2, xmm9, xmm5
+	v3p_reflect xmm0, xmm2, xmm9
 	jmp .ds_return
 
 	.ds_do_refract:
@@ -762,12 +776,12 @@ dielectric_scatter: ; {{{
 	vmovups [rcx], xmm1
 
 	vmovups xmm1, [rdx+RECORD_P_OFFS]
-	vmovups [rsi+RAY_ORIG_OFFS], xmm1
-	vmovups [rsi+RAY_DIR_OFFS], xmm0
+	vmovups [r8+RAY_ORIG_OFFS], xmm1
+	vmovups [r8+RAY_DIR_OFFS], xmm0
 
-	xor rax, rax
-	inc rax
+    mov rax, 1
 
+    add rsp, 0x30
 	pop rbp
 	ret
 ;}}}
