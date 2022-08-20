@@ -1,0 +1,10 @@
+output: width=200 height=200 spp=50 depth=20
+camera: from=3,3,3 to=0,1,0
+materials:
+    light=1,1,1
+    lambertian=.41,.38,.43
+    metal: albedo=.4,1,.5 fuzz=.9
+objects:
+    plane: origin=0,6,0 normal=0,-1,0 material=0
+    plane: material=1
+    box: cfront=.9,.9,.9 material=2
