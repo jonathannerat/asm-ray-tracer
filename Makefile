@@ -3,6 +3,7 @@ CC=gcc
 NASM=nasm
 SRC=main.c util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittable/Sphere.c hittable/Triangle.c Scene.c Material.c hittable/KDTree.c
 OBJ=${SRC:.c=.o}
+IMAGES=$(patsubst scenes/%,out/%.png,$(wildcard scenes/*))
 CFLAGS=-std=c99 -pedantic -Wall
 LDFLAGS=-lm -no-pie
 NASMFLAGS=-f elf64 -Wall
@@ -41,22 +42,26 @@ debug-asm: rt-asm
 
 debug: debug-c debug-asm
 
-scenes: options targets
+images: outdir options targets ${IMAGES}
+	@sxiv out &
+
+outdir:
 	[ -d out ] || mkdir out
-	for core in c asm; do \
-		printf "\nUsing core %s" "$$core" ; \
-		for f in scenes/*; do \
-			name="$${f#*/}" ; \
-			printf '\n\t- Generating scene "%s"...\n' "$$name" ; \
-			./rt-"$$core" "$$f" | convert ppm:- "out/$${core}_core-$${name}.png" ; \
-		done ; \
-	done
-	echo
-	sxiv out &
+
+out/%.png: scenes/%
+	@scene="$<" ; \
+	name="$${scene#*/}" ; \
+	echo ;\
+	echo "- Generating scene \"$$name\"" ; \
+	echo "\t- C: " ; \
+	./rt-c   "$$scene" | convert ppm:- "out/$$name-c.png" ; \
+	echo ; \
+	echo "\t- ASM: " ; \
+	./rt-asm "$$scene" | convert ppm:- "out/$$name-asm.png" ;
 
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm
 	-rm ${OBJ} c_core.o asm_core.o
 	[ -d out ] && rm -r out || true
 
-.PHONY: all clean options targets debub debug-c debug-asm
+.PHONY: all clean options targets outdir debub debug-c debug-asm

@@ -100,8 +100,6 @@ void scene_render(const Scene *s) {
       write_color(pixel, s->output.samples_per_pixel);
     }
   }
-
-  fprintf(stderr, ".\nDone\n");
 }
 
 Color ray_color(const Ray *r, const Color *bg, Hittable *world, uint depth) {
