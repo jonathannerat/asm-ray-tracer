@@ -11,7 +11,6 @@ bool vec3_near_zero(const Vec3 v);
 Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat);
 Vec3 reflect(const Vec3 v, const Vec3 n);
 real reflectance(real cosine, real ref_idx);
-Vec3 vec3_rnd_between(real min, real max);
 Vec3 vec3_rnd_unit_sphere();
 void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 
@@ -179,7 +178,7 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
 
 Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
                    real aperture, real focus_dist) {
-  real theta = degrees_to_radians(vfov);
+  real theta = vfov * M_PI / 180.0; // to radians
   real h = tan(theta / 2);
   real vp_height = 2.0 * h;
   real vp_width = vp_height * aspect_ratio;
@@ -246,14 +245,9 @@ real reflectance(real cosine, real ref_idx) {
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-Vec3 vec3_rnd_between(real min, real max) {
-  return V(rnd_between(min, max), rnd_between(min, max),
-                rnd_between(min, max));
-}
-
 Vec3 vec3_rnd_unit_sphere() {
   while (1) {
-    Vec3 p = vec3_rnd_between(-1, 1);
+    Vec3 p = V(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1);
 
     if (vec3_norm2(p) >= 1)
       continue;

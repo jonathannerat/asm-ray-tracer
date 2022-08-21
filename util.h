@@ -24,14 +24,7 @@ void d(const char *fmt, ...);
 #define HIT(e, ...) ((Hittable *)(e))->hit((Hittable *)(e), __VA_ARGS__)
 #define V(vx, vy, vz) ((Vec3) {.x = (vx), .y = (vy), .z = (vz), ._ = 0})
 
-inline real degrees_to_radians(real degrees) { return degrees * M_PI / 180.0; }
-
 real rnd();
-
-inline real rnd_between(real min, real max) {
-  return min + rnd() * (max - min);
-}
-
 char* strfind(char *c, char f);
 Vec3 parse_vec3(char *c, char **t);
 void write_color(Color pixel, uint spp);
