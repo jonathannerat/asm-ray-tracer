@@ -10,43 +10,11 @@ NASMFLAGS=-f elf64 -Wall
 
 all: options targets
 
-options:
-	@echo ${TARGET} build options:
-	@echo "CFLAGS     = ${CFLAGS}"
-	@echo "LDFLAGS    = ${LDFLAGS}"
-	@echo "NASMFLAGS  = ${NASMFLAGS}"
-	@echo "CC         = ${CC}"
-	@echo "OBJ        = ${OBJ}"
-
 asm_core.o: asm_core.s
 	${NASM} $< -o $@ ${NASMFLAGS}
 
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<
-
-targets: ${TARGET}-c ${TARGET}-asm
-
-${TARGET}-c: CFLAGS += -O2
-${TARGET}-c: ${OBJ} c_core.o
-	${CC} -o $@ ${OBJ} c_core.o ${LDFLAGS}
-
-${TARGET}-asm: ${OBJ} asm_core.o
-	${CC} -o $@ ${OBJ} asm_core.o ${LDFLAGS}
-
-debug-c: CFLAGS += -g -DDEBUG
-debug-c: rt-c
-
-debug-asm: CFLAGS += -g -DDEBUG
-debug-asm: NASMFLAGS += -gdwarf
-debug-asm: rt-asm
-
-debug: debug-c debug-asm
-
-images: outdir options targets ${IMAGES}
-	@sxiv out &
-
-outdir:
-	[ -d out ] || mkdir out
 
 out/%.png: scenes/%
 	@scene="$<" ; \
@@ -59,9 +27,36 @@ out/%.png: scenes/%
 	echo "\t- ASM: " ; \
 	./rt-asm "$$scene" | convert ppm:- "out/$$name-asm.png" ;
 
+${TARGET}-c: CFLAGS += -O2
+${TARGET}-c: ${OBJ} c_core.o
+	${CC} -o $@ ${OBJ} c_core.o ${LDFLAGS}
+
+${TARGET}-asm: ${OBJ} asm_core.o
+	${CC} -o $@ ${OBJ} asm_core.o ${LDFLAGS}
+
+options:
+	@echo ${TARGET} build options:
+	@echo "CFLAGS     = ${CFLAGS}"
+	@echo "LDFLAGS    = ${LDFLAGS}"
+	@echo "NASMFLAGS  = ${NASMFLAGS}"
+	@echo "CC         = ${CC}"
+	@echo "OBJ        = ${OBJ}"
+
+targets: ${TARGET}-c ${TARGET}-asm
+
+debug: CFLAGS += -g -DDEBUG
+debug: NASMFLAGS += -gdwarf
+debug: targets
+
+images: outdir options targets ${IMAGES}
+	sxiv out &
+
+outdir:
+	mkdir -p out
+
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm
 	-rm ${OBJ} c_core.o asm_core.o
 	[ -d out ] && rm -r out || true
 
-.PHONY: all clean options targets outdir debub debug-c debug-asm
+.PHONY: all options targets debug images outdir clean
