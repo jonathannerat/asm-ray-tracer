@@ -540,7 +540,7 @@ triangle_hit: ; {{{
 	jbe .th_return ; dot(...) <= 0
 
 	; triangle hit
-    mov rax, 1
+    inc rax
 	vmovss [rdx+RECORD_T_OFFS], xmm8
 	vmovups [rdx+RECORD_P_OFFS], xmm0
 	mov [rdx+RECORD_SM_OFFS], rcx
@@ -558,23 +558,22 @@ triangle_hit: ; {{{
 lambertian_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
-    sub rsp, 0x30
+    sub rsp, 0x10
 
-    mov [rsp], rdi
-    mov [rsp+0x08], rsi
-    mov [rsp+0x10], rdx
-    mov [rsp+0x18], rcx
-    mov [rsp+0x20], r8
+	; *attenuation = self->albedo
+	vmovups xmm0, [rdi+MATALL_ALBEDO_OFFS]
+	vmovups [rcx], xmm0
+
+    mov [rsp], rdx
+    mov [rsp+0x08], r8
 
 	call vec3_rnd_unit_sphere
 
-    mov rdi, [rsp]
-    mov rsi, [rsp+0x08]
-    mov rdx, [rsp+0x10]
-    mov rcx, [rsp+0x18]
-    mov r8, [rsp+0x20]
+    mov rdx, [rsp]
+    mov r8, [rsp+0x08]
 
-	mov rax, 1 ; return value
+    xor rax, rax
+    inc rax
 
 	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
 	vaddps xmm3, xmm0, xmm1 ; scatter_dir
@@ -586,11 +585,9 @@ lambertian_scatter: ; {{{
 
 	vmovss xmm2, [eps]
 	vshufps xmm2, xmm2, 0b00000000
-	cmpltps xmm4, xmm2 ; xmm4 < (eps, eps, eps, eps)?
+    vminps xmm5, xmm4, xmm2 ; xmm5 = min(fabs(scatter_dir), (eps,eps,eps,eps))
 
-	vmovss xmm2, [ones_mask]
-	vshufps xmm2, xmm2, 0b00000000
-	vptest xmm4, xmm2 ; if xmm4 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
+	vptest xmm5, xmm4 ; set CF if xmm5 = xmm4 (i.e. fabs(scatter_dir) < (eps,...))
 	jnc .ls_not_near_zero ; if CF=0, scatter is not near zero
 
 	vmovaps xmm3, xmm1 ; scatter_dir = rec->normal
@@ -601,11 +598,7 @@ lambertian_scatter: ; {{{
 	vmovups [r8+RAY_ORIG_OFFS], xmm5
 	vmovups [r8+RAY_DIR_OFFS], xmm3
 
-	; *attenuation = self->albedo
-	vmovups xmm5, [rdi+MATALL_ALBEDO_OFFS]
-	vmovups [rcx], xmm5
-
-    add rsp, 0x30
+    add rsp, 0x10
 	pop rbp
 	ret
 ;}}}
@@ -613,53 +606,52 @@ lambertian_scatter: ; {{{
 metal_scatter: ; {{{
 	push rbp
 	mov rbp, rsp
-    sub rsp, 0x30
+    sub rsp, 0x20
+
+	; *attenuation = self->albedo
+	vmovups xmm0, [rdi+MATALL_ALBEDO_OFFS]
+	vmovups [rcx], xmm0
+
+	; scattered->orig = rec->p
+	vmovups xmm0, [rdx+RECORD_P_OFFS]
+	vmovups [r8+RAY_ORIG_OFFS], xmm0
 
     mov [rsp], rdi
     mov [rsp+0x08], rsi
     mov [rsp+0x10], rdx
-    mov [rsp+0x18], rcx
-    mov [rsp+0x20], r8
+    mov [rsp+0x18], r8
 
 	call vec3_rnd_unit_sphere
-    vmovaps xmm5, xmm0
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]
     mov rdx, [rsp+0x10]
-    mov rcx, [rsp+0x18]
-    mov r8, [rsp+0x20]
+    mov r8, [rsp+0x18]
 
-	xor rax, rax
-
-	vmovups xmm0, [rsi+RAY_DIR_OFFS]
-	v3p_normalized xmm0, xmm2
-	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
-	v3p_reflect xmm4, xmm0, xmm1           ; reflected
-
-	; scattered->orig = rec->p
-	vmovups xmm2, [rdx+RECORD_P_OFFS]
-	vmovups [r8+RAY_ORIG_OFFS], xmm2
+    ; reflected
+	vmovups xmm3, [rsi+RAY_DIR_OFFS]
+	v3p_normalized xmm3, xmm2
+	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS]
+	v3p_reflect xmm4, xmm3, xmm1
 
 	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit_sphere()
 	vmovss xmm3, [rdi+MATALL_ALPHA_OFFS]
 	vshufps xmm3, xmm3, 0b00000000
-	vmulps xmm0, xmm5, xmm3
+	vmulps xmm0, xmm3
 	vaddps xmm0, xmm4
 	vmovups [r8+RAY_DIR_OFFS], xmm0
 
-	; *attenuation = self->albedo
-	vmovups xmm2, [rdi+MATALL_ALBEDO_OFFS]
-	vmovups [rcx], xmm2
+	xor rax, rax
 
 	vdpps xmm1, xmm4, 0xF1
-	vcomiss xmm1, [zero]
+    vxorps xmm2, xmm2
+	vcomiss xmm1, xmm2
 
 	jbe .ms_return ; dot(...) <= 0
 	inc rax
 	
 	.ms_return:
-    add rsp, 0x30
+    add rsp, 0x20
 	pop rbp
 	ret
 ;}}}
@@ -684,8 +676,8 @@ dielectric_scatter: ; {{{
     mov r8, [rsp+0x20]
 
 	vmovups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
-	mov ax, [rdx+RECORD_FFACE_OFFS]
-	test ax, ax
+	mov al, [rdx+RECORD_FFACE_OFFS]
+	test al, al
 	jz .ds_not_fface
 
 	vrcpss xmm1, xmm1
@@ -758,7 +750,8 @@ dielectric_scatter: ; {{{
 	vmovups [r8+RAY_ORIG_OFFS], xmm1
 	vmovups [r8+RAY_DIR_OFFS], xmm0
 
-    mov rax, 1
+    xor al, al
+    inc al
 
     add rsp, 0x30
 	pop rbp
@@ -900,24 +893,30 @@ camera_get_ray: ;{{{
 
 record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{
 	push rax
-	sub rsp, 0x10
+	sub rsp, 0x20
 	vmovaps [rsp], xmm1
+	vmovaps [rsp+0x10], xmm2
 
-	mov al, 1 ; front_face = true
+    xor al, al ; front_face = false
 	vmovups xmm1, [rsi+RAY_DIR_OFFS]
 	vdpps xmm1, xmm0, 0xF1
-	vcomiss xmm1, [zero]
-	jb .record_front_face
-	xor al, al ; front_face = false
-	vxorps xmm1, xmm1
-	vsubps xmm0, xmm1, xmm0 ; xmm0 = -xmm0
+    vxorps xmm2, xmm2
+	vcomiss xmm1, xmm2
+	jae .record_no_front_face
 
-	.record_front_face:
+	inc al ; front_face = true
+    jmp .record_return
+
+	.record_no_front_face:
+	vsubps xmm0, xmm2, xmm0 ; xmm0 = -xmm0
+
+	.record_return:
 	mov [rdi+RECORD_FFACE_OFFS], al
 	vmovups [rdi+RECORD_NORMAL_OFFS], xmm0
 
 	vmovaps xmm1, [rsp]
-	add rsp, 0x10
+	vmovaps xmm2, [rsp+0x10]
+	add rsp, 0x20
 	pop rax
 	ret
 ;}}}
@@ -927,7 +926,8 @@ box_is_inside: ; Box *self, Vec3 p {{{
 	vmovaps [rsp], xmm1
 	vmovaps [rsp+0x10], xmm2
 	vmovaps [rsp+0x20], xmm3
-	mov eax, 1 ; true
+    xor al, al
+    inc al ; true
 
 	vmovups xmm1, [rdi+BOX_CBACK_OFFS] ; xmm0 = cb.x cb.y cb.z 0
 	vmovss xmm2, [eps]
@@ -945,7 +945,7 @@ box_is_inside: ; Box *self, Vec3 p {{{
 	vptest xmm1, xmm2 ; if xmm1 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
 	jc .bii_return ; if CF=1, function returns true
 
-	xor eax, eax ; false
+	xor al, al ; false
 
 	.bii_return:
 	vmovaps xmm3, [rsp+0x20]
@@ -953,7 +953,6 @@ box_is_inside: ; Box *self, Vec3 p {{{
 	vmovaps xmm1, [rsp]
 	add rsp, 0x38
 	ret
-;}}}
 ;}}}
 
 ; vi: fdm=marker ts=4 sw=4 et
