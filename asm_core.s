@@ -150,6 +150,12 @@ extern rand
 	vshufps %2, %2, 0b00000000 ;normalize
 	vmulps %1, %2
 %endmacro
+
+%macro ray_at 3 ; ray_at(r, t) : p = r->origin + r->direction * t
+    vmovups %1, [%2+RAY_DIR_OFFS]
+    v3p_scale %1, %3, %1
+    vaddps %1, [%2+RAY_ORIG_OFFS]
+%endmacro
 ;}}}
 
 section .data
@@ -402,9 +408,7 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	mov r8, [rdi+PLANE_SM_OFFS]
 	mov [rdx+RECORD_SM_OFFS], r8 ; record->sm = plane->xm
 
-	mov rdi, rsi
-	vmovaps xmm0, xmm4
-	call ray_at
+	ray_at xmm0, rsi, xmm4
 	vmovups [rdx+RECORD_P_OFFS], xmm0 ; record->p = ray_at(ray, t)
 
 	mov rdi, rdx
@@ -465,10 +469,7 @@ sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	mov r8, [rdi+SPHERE_SM_OFFS]
 	mov [rdx+RECORD_SM_OFFS], r8
 
-	; ray_at(r, rec->t)
-	vmovaps xmm0, xmm7
-	mov rdi, rsi
-	call ray_at
+	ray_at xmm0, rsi, xmm7
 	vmovups [rdx+RECORD_P_OFFS], xmm0
 
 	vshufps xmm8, xmm8, 0b00000000
@@ -486,21 +487,6 @@ sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 triangle_hit: ; {{{
 	push rbp
 	mov rbp, rsp
-    sub rsp, 0x20
-
-    mov [rsp], rdi
-    mov [rsp+0x08], rsi
-    mov [rsp+0x10], rdx
-    vmovss [rsp+0x18], xmm0
-    vmovss [rsp+0x1C], xmm1
-
-	call vec3_rnd_unit
-
-    mov rdi, [rsp]
-    mov rsi, [rsp+0x08]
-    mov rdx, [rsp+0x10]
-    vmovss xmm0, [rsp+0x18]
-    vmovss xmm1, [rsp+0x1C]
 
 	xor rax, rax
 
@@ -530,9 +516,7 @@ triangle_hit: ; {{{
 
 	mov rcx, [rdi+TRIANGLE_SM_OFFS] ; save sm, since we'll overwrite rdi
 
-	mov rdi, rsi
-	vmovaps xmm0, xmm8
-	call ray_at
+	ray_at xmm0, rsi, xmm8
 
 	; first boundary check
 	vsubps xmm9, xmm3, xmm2 ; (p2 - p1)
@@ -559,7 +543,7 @@ triangle_hit: ; {{{
 	jbe .th_return ; dot(...) <= 0
 
 	; triangle hit
-	inc rax
+    mov rax, 1
 	vmovss [rdx+RECORD_T_OFFS], xmm8
 	vmovups [rdx+RECORD_P_OFFS], xmm0
 	mov [rdx+RECORD_SM_OFFS], rcx
@@ -568,7 +552,6 @@ triangle_hit: ; {{{
 	call record_set_face_normal
 
 	.th_return:
-    add rsp, 0x20
 	pop rbp
 	ret
 ;}}}
@@ -916,20 +899,6 @@ camera_get_ray: ;{{{
 	ret
 ;}}}
 ;}}}
-;}}}
-
-; LOCAL Functions {{{
-ray_at: ; Ray *r, real t {{{
-	sub rsp, 0x18
-	vmovaps [rsp], xmm1 ; save xmm1
-
-	vmovups xmm1, [rdi+RAY_DIR_OFFS] ;xmm1 = r->direction
-	v3p_scale xmm0, xmm0, xmm1 ; xmm0 = t * r->direction
-	vaddps xmm0, [rdi+RAY_ORIG_OFFS]
-
-	vmovaps xmm1, [rsp] ; restore xmm1
-	add rsp, 0x18
-	ret
 ;}}}
 
 record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{

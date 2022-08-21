@@ -5,6 +5,7 @@
 
 #include "core.h"
 #include "hittable/Box.h"
+#include "hittable/Triangle.h"
 #include "util.h"
 
 double diffusec(struct timeval *start, struct timeval *end) {
@@ -39,6 +40,18 @@ int main(int argc, char **argv) {
   DESTROY(b);
   gettimeofday(&end, NULL);
   printf("plane_hit avg time (us): %.4f\n", diffusec(&start, &end) / n);
+
+  // TRIANGLE
+  r.direction = V(0, -.5, -.2);
+  b = triangle_init(V(0,-1,-1), V(1,-1,-1), V(.5,.5,0), NULL);
+
+  gettimeofday(&start, NULL);
+  for (i = 0; i < n; i++) {
+    HIT(b, &r, 0, INFINITY, &tmp);
+  }
+  DESTROY(b);
+  gettimeofday(&end, NULL);
+  printf("triangle_hit avg time (us): %.4f\n", diffusec(&start, &end) / n);
 
   return 0;
 }
