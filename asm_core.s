@@ -4,6 +4,7 @@ global vec3_prod
 global vec3_unscale
 global vec3_sub
 global vec3_norm2
+global vec3_rnd_unit_sphere
 
 global box_hit
 global plane_hit
@@ -238,7 +239,7 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 ;}}}
 
 ; Random vec3 in unit sphere
-vec3_rnd_unit: ;{{{
+vec3_rnd_unit_sphere: ;{{{
 	sub rsp, 8
 
 	.vru_loop:
@@ -569,7 +570,7 @@ lambertian_scatter: ; {{{
     mov [rsp+0x18], rcx
     mov [rsp+0x20], r8
 
-	call vec3_rnd_unit
+	call vec3_rnd_unit_sphere
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]
@@ -624,7 +625,7 @@ metal_scatter: ; {{{
     mov [rsp+0x18], rcx
     mov [rsp+0x20], r8
 
-	call vec3_rnd_unit
+	call vec3_rnd_unit_sphere
     vmovaps xmm5, xmm0
 
     mov rdi, [rsp]
@@ -644,7 +645,7 @@ metal_scatter: ; {{{
 	vmovups xmm2, [rdx+RECORD_P_OFFS]
 	vmovups [r8+RAY_ORIG_OFFS], xmm2
 
-	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit()
+	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit_sphere()
 	vmovss xmm3, [rdi+MATALL_ALPHA_OFFS]
 	vshufps xmm3, xmm3, 0b00000000
 	vmulps xmm0, xmm5, xmm3
@@ -864,7 +865,7 @@ camera_get_ray: ;{{{
     vmovss [rsp+0x10], xmm2
     vmovss [rsp+0x14], xmm1
 
-	call vec3_rnd_unit ; xmm0=rand_unit
+	call vec3_rnd_unit_sphere ; xmm0=rand_unit
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]

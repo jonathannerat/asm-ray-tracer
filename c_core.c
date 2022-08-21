@@ -11,7 +11,6 @@ bool vec3_near_zero(const Vec3 v);
 Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat);
 Vec3 reflect(const Vec3 v, const Vec3 n);
 real reflectance(real cosine, real ref_idx);
-Vec3 vec3_rnd_unit_sphere();
 void hr_set_face_normal(Record *hr, const Ray *r, Vec3 n);
 
 // Declared in header
@@ -29,8 +28,6 @@ Vec3 vec3_unscale(const Vec3 v, real s) { return V(v.x / s, v.y / s, v.z / s); }
 Vec3 vec3_sub(const Vec3 a, const Vec3 b) { return V(a.x - b.x, a.y - b.y, a.z - b.z); }
 
 real vec3_norm2(const Vec3 v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
-
-Point ray_at(const Ray *r, real t) { return vec3_add(r->origin, vec3_scale(t, r->direction)); }
 
 bool box_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr) {
   Box *self = (Box *)_self;

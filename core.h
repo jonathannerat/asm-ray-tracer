@@ -185,6 +185,7 @@ Vec3 vec3_prod(const Vec3 a, const Vec3 b);
 Vec3 vec3_unscale(const Vec3 v, real s);
 Vec3 vec3_sub(const Vec3 a, const Vec3 b);
 real vec3_norm2(const Vec3 a);
+Vec3 vec3_rnd_unit_sphere();
 
 // }}}
 

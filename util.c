@@ -15,8 +15,9 @@ void d(const char *fmt, ...) {}
 
 real rnd() { return rand() / (RAND_MAX + 1.0); }
 
-char* strfind(char *c, char f) {
-  while(*c && *c != f) c++;
+char *strfind(char *c, char f) {
+  while (*c && *c != f)
+    c++;
 
   return c;
 }
@@ -40,9 +41,7 @@ Vec3 parse_vec3(char *c, char **t) {
   return v;
 }
 
-static real clamp(real x, real min, real max) {
-  return x < min ? min : (x > max ? max : x);
-}
+static real clamp(real x, real min, real max) { return x < min ? min : (x > max ? max : x); }
 
 void write_color(Color pixel, uint spp) {
   real r = pixel.x;
@@ -56,4 +55,8 @@ void write_color(Color pixel, uint spp) {
 
   printf("%d %d %d\n", (int)(256 * clamp(r, 0, 1)), (int)(256 * clamp(g, 0, 1)),
          (int)(256 * clamp(b, 0, 1)));
+}
+
+Point ray_at(const Ray *r, real t) {
+  return vec3_add(r->origin, vec3_unscale(r->direction, 1 / t));
 }
