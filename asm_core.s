@@ -118,10 +118,6 @@ extern rand
 ;}}}
 
 ; MACROS {{{
-%macro v3p_dot 2 ; v1, v2 -> v1 . v2
-	vdpps %1, %2, 0xF1
-%endmacro
-
 %macro v3p_scale 3 ; v1, t, v2 -> v1=t*v2
 	vshufps %2, %2, 0b00000000
 	vmulps %1, %2, %3
@@ -232,7 +228,7 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 
 	vpslldq xmm1, 0x8 ;xmm1 = 0 0 z 0
 	vorps xmm0, xmm1
-	v3p_dot xmm0, xmm0 ; F -> use all packed floats, 1 -> store result in least significant dword
+	vdpps xmm0, xmm0, 0xF1 ; F -> use all packed floats, 1 -> store result in least significant dword
 
 	pop rbp
 	ret
@@ -397,8 +393,8 @@ plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 
 	vmovups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
 	vsubps xmm4, [rsi+RAY_ORIG_OFFS] ; - r->origin
-	v3p_dot xmm4, xmm3
-	v3p_dot xmm2, xmm3
+	vdpps xmm4, xmm3, 0xF1
+	vdpps xmm2, xmm3, 0xF1
 	vdivss xmm4, xmm2 ; xmm4 = t
 	vcomiss xmm4, xmm0
 	jb .ph_return  ; t < t_min
@@ -909,12 +905,12 @@ record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{
 
 	mov al, 1 ; front_face = true
 	vmovups xmm1, [rsi+RAY_DIR_OFFS]
-	v3p_dot xmm1, xmm0
 	vcomiss xmm1, [zero]
 	jb .record_front_face
 	xor al, al ; front_face = false
 	vxorps xmm1, xmm1
 	vsubps xmm0, xmm1, xmm0 ; xmm0 = -xmm0
+	vdpps xmm1, xmm0, 0xF1
 
 	.record_front_face:
 	mov [rdi+RECORD_FFACE_OFFS], al
