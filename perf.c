@@ -106,26 +106,20 @@ double measure_avg_hit_time(uint times, HittableType type) {
 double measure_avg_scatter_time(uint times, MaterialType type) {
   uint i;
   double total_usec = 0;
-  real rnd_hittable;
   Ray r = {.origin = V(0, 0, 0)}, scattered;
   Record tmp;
   Hittable *h;
   spmat *m;
   struct timeval start, end;
-  Color c = vec3_unscale(vec3_add(vec3_rnd_unit_sphere(), V(1, 1, 1)), 2), attenuation;
+  Color c = V(rnd(), rnd(), rnd()), attenuation;
 
   for (i = 0; i < times; i++) {
-    rnd_hittable = rnd();
     r.direction = vec3_rnd_unit_sphere();
     m = type == LAMBERTIAN   ? lambertian_init(c)
         : type == METAL      ? metal_init(c, rnd())
         : type == DIELECTRIC ? dielectric_init(c, rnd())
                              : diffuse_light_init(c);
-    HittableType htype = type == DIELECTRIC   ? (rnd_hittable < .5 ? SPHERE : BOX)
-                         : rnd_hittable < .25 ? PLANE
-                         : rnd_hittable < .5  ? BOX
-                         : rnd_hittable < .75 ? TRIANGLE
-                                              : SPHERE;
+    HittableType htype = rnd() < .5 ? PLANE : SPHERE;
     h = get_hittable_in_ray_range_with_material(htype, &r, m);
 
     HIT(h, &r, EPS, INFINITY, &tmp);

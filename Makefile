@@ -54,6 +54,7 @@ targets: ${TARGET}-c ${TARGET}-asm
 
 debug: CFLAGS += -g -DDEBUG
 debug: NASMFLAGS += -gdwarf
+debug: options targets
 
 images: outdir options targets ${IMAGES}
 	sxiv out &
