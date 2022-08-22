@@ -112,15 +112,15 @@ double measure_avg_scatter_time(uint times, MaterialType type) {
   spmat *m;
   struct timeval start, end;
   Color c = V(rnd(), rnd(), rnd()), attenuation;
+  real alpha = rnd();
 
   for (i = 0; i < times; i++) {
     r.direction = vec3_rnd_unit_sphere();
     m = type == LAMBERTIAN   ? lambertian_init(c)
-        : type == METAL      ? metal_init(c, rnd())
-        : type == DIELECTRIC ? dielectric_init(c, rnd())
+        : type == METAL      ? metal_init(c, alpha)
+        : type == DIELECTRIC ? dielectric_init(c, alpha)
                              : diffuse_light_init(c);
-    HittableType htype = rnd() < .5 ? PLANE : SPHERE;
-    h = get_hittable_in_ray_range_with_material(htype, &r, m);
+    h = get_hittable_in_ray_range_with_material(SPHERE, &r, m);
 
     HIT(h, &r, EPS, INFINITY, &tmp);
     gettimeofday(&start, NULL);
