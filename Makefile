@@ -57,10 +57,10 @@ debug: NASMFLAGS += -gdwarf
 debug: options targets
 
 images: outdir options targets ${IMAGES}
-	sxiv out &
+	@sxiv out &
 
 outdir:
-	mkdir -p out
+	@mkdir -p out
 
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm perf-*
