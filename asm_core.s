@@ -905,12 +905,12 @@ record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{
 
 	mov al, 1 ; front_face = true
 	vmovups xmm1, [rsi+RAY_DIR_OFFS]
+	vdpps xmm1, xmm0, 0xF1
 	vcomiss xmm1, [zero]
 	jb .record_front_face
 	xor al, al ; front_face = false
 	vxorps xmm1, xmm1
 	vsubps xmm0, xmm1, xmm0 ; xmm0 = -xmm0
-	vdpps xmm1, xmm0, 0xF1
 
 	.record_front_face:
 	mov [rdi+RECORD_FFACE_OFFS], al
