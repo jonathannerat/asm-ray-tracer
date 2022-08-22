@@ -22,10 +22,10 @@ out/%.png: scenes/%
 	echo ;\
 	echo "- Generating scene \"$$name\"" ; \
 	echo "\t- C: " ; \
-	./rt-c   "$$scene" | convert ppm:- "out/$$name-c.png" ; \
-	echo ; \
-	echo "\t- ASM: " ; \
-	./rt-asm "$$scene" | convert ppm:- "out/$$name-asm.png" ;
+	./rt-c   "$$scene" | convert ppm:- "out/$$name-c.png"
+	# echo ; \
+	# echo "\t- ASM: " ; \
+	# ./rt-asm "$$scene" | convert ppm:- "out/$$name-asm.png" ;
 
 ${TARGET}-c: CFLAGS += -O2
 ${TARGET}-c: main.o c_core.o ${OBJ}

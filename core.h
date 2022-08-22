@@ -176,6 +176,19 @@ typedef struct _camera Camera;
 
 // }}}
 
+typedef struct {
+  int width;
+  int height;
+  int samples_per_pixel;
+  int max_depth;
+} Output;
+
+typedef struct {
+  Camera camera;
+  Output output;
+  Hittable *world;
+} Scene;
+
 // }}}
 
 // Vec3 methods {{{
@@ -214,5 +227,8 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
 Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
                    real focus_dist);
 Ray camera_get_ray(const Camera *c, real s, real t);
+
+void scene_render(const Scene *s);
+Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth);
 // }}}
 #endif // CORE_H

@@ -17,10 +17,13 @@ global dielectric_scatter
 
 global camera_init
 global camera_get_ray
+global scene_render
+global ray_color
 
 extern list_get
 extern tanf
 extern rand
+extern printf
 ; }}}
 
 ; OFFSETS {{{
@@ -115,6 +118,19 @@ extern rand
 %define CAMERA_LR_OFFS     (CAMERA_W_OFFS+VEC3_SIZE)
 %define CAMERA_SIZE        (CAMERA_LR_OFFS+REAL_SIZE)
 ;}}}
+
+; Scene & Output {{{
+%define SCENE_CAMERA_OFFS 0
+%define SCENE_OUTPUT_OFFS CAMERA_SIZE
+%define SCENE_WORLD_OFFS  (SCENE_OUTPUT_OFFS+OUTPUT_SIZE)
+%define SCENE_SIZE (SCENE_WORLD_OFFS+8)
+
+%define OUTPUT_WIDTH_OFFS 0
+%define OUTPUT_HEIGHT_OFFS 4
+%define OUTPUT_SPP_OFFS 8
+%define OUTPUT_DEPTH_OFFS 12
+%define OUTPUT_SIZE 16
+;}}}
 ;}}}
 
 ; MACROS {{{
@@ -168,7 +184,10 @@ zero: dd 0.0e0
 half: dd 0.5e0
 one:  dd 1.0e0
 two:  dd 2.0e0
+rgb_max:  dd 2.56e2
 degtorad: dd 0.017453292519943295
+ppm_start_fmt: db "P3\n%d %d\n255\n"
+write_color_fmt: db "%d %d %d\n"
 ;}}}
 
 section .text
@@ -759,7 +778,7 @@ dielectric_scatter: ; {{{
 ;}}}
 ;}}}
 
-; Camera Functions {{{
+; Scene Functions {{{
 camera_init: ;{{{
 	push rbp
 	mov rbp, rsp
@@ -888,6 +907,121 @@ camera_get_ray: ;{{{
 	pop rbp
 	ret
 ;}}}
+
+%define RENDER_WIDTH_OFFS 0
+%define RENDER_HEIGHT_OFFS (RENDER_WIDTH_OFFS+4)
+%define RENDER_RAND1_OFFS (RENDER_HEIGHT_OFFS+4)
+%define RENDER_RAY_OFFS (RENDER_RAND1_OFFS+REAL_SIZE)
+%define RENDER_PIXEL_OFFS (RENDER_RAY_OFFS+2*VEC3_SIZE)
+%define RENDER_ARGS_SIZE (RENDER_PIXEL_OFFS+VEC3_SIZE)
+
+scene_render:
+    push rbp
+    push rbx
+    push r12
+    push r13
+    push r14
+    mov rbp, rsp
+    sub rsp, RENDER_ARGS_SIZE
+
+    mov rbx, rdi ; save scene
+    mov rdi, [ppm_start_fmt]
+    mov rsi, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
+    mov [rsp+RENDER_WIDTH_OFFS], rsi ; width
+    mov rdx, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_HEIGHT_OFFS]
+    mov [rsp+RENDER_HEIGHT_OFFS], rdx ; height
+    mov r8, rdx
+    dec r8
+    mov r12, r8 ; initial j value
+    call printf
+
+    .height_loop: ; {{{
+        xor r13, r13 ; initial i value
+        .width_loop: ; {{{
+            xor r14, r14
+            vxorps xmm0, xmm0
+            vmovups [rsp+RENDER_PIXEL_OFFS], xmm0
+            .spp_loop: ; {{{
+                call randf01
+                vmovss [rsp+RENDER_RAND1_OFFS], xmm0
+                call randf01
+
+                vcvtsi2ss xmm2, r13 ; (float) i
+                mov rdi, [rsp+RENDER_WIDTH_OFFS]
+                dec rdi ; width - 1
+                vcvtsi2ss xmm3, rdi ; (float) (width - 1)
+                vaddss xmm0, xmm2
+                vdivss xmm0, xmm3 ; u = (i + rnd()) / (width - 1)
+
+                vmovss xmm1, [rsp+RENDER_RAND1_OFFS]
+                vcvtsi2ss xmm2, r12 ; (float) j
+                mov rdi, [rsp+RENDER_HEIGHT_OFFS]
+                dec rdi ; height - 1
+                vcvtsi2ss xmm3, rdi ; (float) (height - 1)
+                vaddss xmm1, xmm2
+                vdivss xmm1, xmm3 ; v = (j + rnd()) / (height - 1)
+
+                lea rdi, [rsp+RENDER_RAY_OFFS]
+                lea rsi, [rbx+SCENE_CAMERA_OFFS]
+                call camera_get_ray
+
+                lea rsi, [rbx+SCENE_WORLD_OFFS]
+                vxorps xmm0, xmm0
+                mov rdx, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
+                call ray_color
+
+                vmovups xmm1, [rsp+RENDER_PIXEL_OFFS]
+                vaddps xmm1, xmm0
+                vmovups [rsp+RENDER_PIXEL_OFFS], xmm1
+
+                inc r14
+                cmp r14, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_SPP_OFFS]
+                jl .spp_loop ;}}}
+
+            ; write_color
+            vcvtsi2ss xmm0, r14
+            vrsqrtss xmm0, xmm0
+            vshufps xmm0, xmm0, 0
+            vsqrtps xmm1, xmm1
+            vmulps xmm0, xmm1
+
+            vxorps xmm1, xmm1
+            vmaxps xmm0, xmm1 ; clamp below at 0
+            vmovss xmm1, [one]
+            vshufps xmm1, xmm1, 0
+            vminps xmm0, xmm1 ; clamp above at 1
+            vmovss xmm1, [rgb_max]
+            vshufps xmm1, xmm1, 0
+            vmulps xmm0, xmm1
+
+            cvttps2dq xmm1, xmm0 ; truncate to ints
+            vmovups [rsp+RENDER_PIXEL_OFFS], xmm1
+            mov rdi, [write_color_fmt]
+            mov esi, [rsp+RENDER_RAY_OFFS]
+            mov edx, [rsp+RENDER_RAY_OFFS+0x04]
+            mov ecx, [rsp+RENDER_RAY_OFFS+0x08]
+            call printf
+
+            inc r13
+            cmp r13, [rsp+RENDER_WIDTH_OFFS]
+            jl .width_loop ;}}}
+        dec r12
+        jns .height_loop ; }}}
+
+    add rsp, RENDER_ARGS_SIZE
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
+
+ray_color:
+    push rbp
+    mov rbp, rsp
+
+    pop rbp
+    ret
 ;}}}
 ;}}}
 

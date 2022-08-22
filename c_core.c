@@ -2,6 +2,7 @@
 #include "hittable/Box.h"
 #include "hittable/List.h"
 #include "util.h"
+#include <stdio.h>
 
 Vec3 cross(const Vec3 a, const Vec3 b);
 real dot(const Vec3 a, const Vec3 b);
@@ -205,6 +206,47 @@ Ray camera_get_ray(const Camera *c, real s, real t) {
                                  vec3_sub(vec3_scale(t, c->vertical), r.origin))};
 
   return r;
+}
+
+void scene_render(const Scene *s) {
+  int i, j, k;
+  Color bg_color = {0,0,0};
+  printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
+
+  for (j = s->output.height - 1; j >= 0; j--) {
+    for (i = 0; i < s->output.width; i++) {
+      Color pixel = {0, 0, 0};
+
+      for (k = 0; k < s->output.samples_per_pixel; k++) {
+        real u = (i + rnd()) / (s->output.width - 1);
+        real v = (j + rnd()) / (s->output.height - 1);
+        Ray r = camera_get_ray(&s->camera, u, v);
+        pixel = vec3_add(pixel, ray_color(&r, s->world, bg_color, s->output.max_depth));
+      }
+
+      write_color(pixel, s->output.samples_per_pixel);
+    }
+  }
+}
+
+Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth) {
+  if (depth <= 0)
+    return (Color){0, 0, 0};
+
+  Record rec;
+
+  if (!world->hit(world, r, 0.001, INFINITY, &rec))
+    return bg;
+
+  Material *m = rec.sm ? rec.sm->m : NULL;
+  Ray scattered;
+  Color attenuation;
+  Color emitted = m->emitted(m);
+
+  if (!m->scatter(m, r, &rec, &attenuation, &scattered))
+    return emitted;
+
+  return vec3_add(emitted, vec3_prod(attenuation, ray_color(&scattered, world, bg, depth - 1)));
 }
 
 // Internal

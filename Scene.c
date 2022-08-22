@@ -24,8 +24,7 @@ typedef enum {
 } ParsingStage;
 
 Camera parse_camera_line(char *c);
-output parse_output_line(char *c);
-Color ray_color(const Ray *r, const Color *bg, Hittable *world, uint max_depth);
+Output parse_output_line(char *c);
 spmat *parse_material_line(char *c);
 Hittable *parse_object_line(const array_gen *materials, char *c);
 void write_color(Color pixel, uint spp);
@@ -78,50 +77,6 @@ Scene *scene_init_file(const char *path) {
   return NULL;
 }
 
-void scene_render(const Scene *s) {
-  int i, j, k;
-  Color bg_color = {0,0,0};
-  printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
-
-  for (j = s->output.height - 1; j >= 0; j--) {
-    fprintf(stderr, "\rWriting lines: %d / %d", s->output.height - j, s->output.height);
-    fflush(stderr);
-
-    for (i = 0; i < s->output.width; i++) {
-      Color pixel = {0, 0, 0};
-
-      for (k = 0; k < s->output.samples_per_pixel; k++) {
-        real u = (i + rnd()) / (s->output.width - 1);
-        real v = (j + rnd()) / (s->output.height - 1);
-        Ray r = camera_get_ray(&s->camera, u, v);
-        pixel = vec3_add(pixel, ray_color(&r, &bg_color, s->world, s->output.max_depth));
-      }
-
-      write_color(pixel, s->output.samples_per_pixel);
-    }
-  }
-}
-
-Color ray_color(const Ray *r, const Color *bg, Hittable *world, uint depth) {
-  if (depth <= 0)
-    return (Color){0, 0, 0};
-
-  Record rec;
-
-  if (!world->hit(world, r, 0.001, INFINITY, &rec))
-    return *bg;
-
-  Material *m = rec.sm ? rec.sm->m : NULL;
-  Ray scattered;
-  Color attenuation;
-  Color emitted = m->emitted(m);
-
-  if (!m->scatter(m, r, &rec, &attenuation, &scattered))
-    return emitted;
-
-  return vec3_add(emitted, vec3_prod(attenuation, ray_color(&scattered, bg, world, depth - 1)));
-}
-
 Camera parse_camera_line(char *c) {
   char *p = c + 7; // skip 'camera:'
 
@@ -166,11 +121,11 @@ Camera parse_camera_line(char *c) {
   return camera_init(from, to, vup, vfov, aspect_ratio, aperture, focus_dist);
 }
 
-output parse_output_line(char *c) {
+Output parse_output_line(char *c) {
   char *p = c + 7; // skip 'output:'
 
   // output properties
-  output o = {640, 360, 20, 6};
+  Output o = {640, 360, 20, 6};
 
   while (*p) {
     while (*p == ' ' || *p == '\n')
