@@ -32,6 +32,7 @@ extern printf
 
 %define RAY_ORIG_OFFS   0
 %define RAY_DIR_OFFS    VEC3_SIZE
+%define RAY_SIZE        (RAY_DIR_OFFS+VEC3_SIZE)
 
 ; Hittable {{{
 %define HITTABLE_HIT_OFFS        0
@@ -122,7 +123,7 @@ extern printf
 ; Scene & Output {{{
 %define SCENE_CAMERA_OFFS 0
 %define SCENE_OUTPUT_OFFS CAMERA_SIZE
-%define SCENE_WORLD_OFFS  (SCENE_OUTPUT_OFFS+OUTPUT_SIZE)
+%define SCENE_WORLD_OFFS  (SCENE_OUTPUT_OFFS+OUTPUT_SIZE+4)
 %define SCENE_SIZE (SCENE_WORLD_OFFS+8)
 
 %define OUTPUT_WIDTH_OFFS 0
@@ -169,6 +170,13 @@ extern printf
     v3p_scale %1, %3, %1
     vaddps %1, [%2+RAY_ORIG_OFFS]
 %endmacro
+
+%macro rnd 1
+	call rand
+	vxorps %1, %1
+	vcvtsi2ss %1, eax
+	vmulss %1, [rand_descale]
+%endmacro
 ;}}}
 
 section .data
@@ -180,14 +188,13 @@ rand_descale:  dd 4.656612873077393e-10
 fnabs_mask: dd 0x80000000
 ones_mask:  dd 0xFFFFFFFF
 eps:  dd 1.0e-4
+inf:  dd 0x7F800000
 zero: dd 0.0e0
 half: dd 0.5e0
 one:  dd 1.0e0
 two:  dd 2.0e0
 rgb_max:  dd 2.56e2
 degtorad: dd 0.017453292519943295
-ppm_start_fmt: db "P3\n%d %d\n255\n"
-write_color_fmt: db "%d %d %d\n"
 ;}}}
 
 section .text
@@ -255,7 +262,8 @@ vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
 
 ; Random vec3 in unit sphere
 vec3_rnd_unit_sphere: ;{{{
-	sub rsp, 8
+	sub rsp, 0x18
+    vmovaps [rsp], xmm1
 
 	.vru_loop:
 		call randvec
@@ -263,7 +271,8 @@ vec3_rnd_unit_sphere: ;{{{
 		vcomiss xmm1, [one]
 		jae .vru_loop
 
-	add rsp, 8
+    vmovaps xmm1, [rsp]
+	add rsp, 0x18
 	ret
 ;}}}
 ;}}}
@@ -302,18 +311,6 @@ randvec: ; store 3 random floats in range (-1;1] in xmm0 {{{
     vsubps xmm0, xmm1
 
 	add rsp, 0x18
-	ret
-;}}}
-
-randf01: ;{{{ store a random float in [0;1) range in xmm0
-	sub rsp, 8
-
-	call rand
-	vxorps xmm0, xmm0
-	vcvtsi2ss xmm0, eax
-	vmulss xmm0, [rand_descale]
-
-    add rsp, 8
 	ret
 ;}}}
 ;}}}
@@ -686,7 +683,7 @@ dielectric_scatter: ; {{{
     mov [rsp+0x18], rcx
     mov [rsp+0x20], r8
 
-	call randf01
+	rnd xmm0
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]
@@ -908,120 +905,190 @@ camera_get_ray: ;{{{
 	ret
 ;}}}
 
-%define RENDER_WIDTH_OFFS 0
-%define RENDER_HEIGHT_OFFS (RENDER_WIDTH_OFFS+4)
-%define RENDER_RAND1_OFFS (RENDER_HEIGHT_OFFS+4)
-%define RENDER_RAY_OFFS (RENDER_RAND1_OFFS+REAL_SIZE)
-%define RENDER_PIXEL_OFFS (RENDER_RAY_OFFS+2*VEC3_SIZE)
-%define RENDER_ARGS_SIZE (RENDER_PIXEL_OFFS+VEC3_SIZE)
+%define RENDER_WIDTH_OFFS    0
+%define RENDER_HEIGHT_OFFS   (RENDER_WIDTH_OFFS+4)
+%define RENDER_RAND1_OFFS    (RENDER_HEIGHT_OFFS+4)
+%define RENDER_RAND2_OFFS    (RENDER_RAND1_OFFS+REAL_SIZE)
+%define RENDER_RAY_OFFS      (RENDER_RAND2_OFFS+REAL_SIZE)
+%define RENDER_PIXEL_OFFS    (RENDER_RAY_OFFS+RAY_SIZE)
+%define RENDER_ARGS_SIZE     (RENDER_PIXEL_OFFS+VEC3_SIZE)
 
-scene_render:
+scene_render: ;{{{
     push rbp
+    mov rbp, rsp
     push rbx
     push r12
     push r13
     push r14
-    mov rbp, rsp
+    push r15
     sub rsp, RENDER_ARGS_SIZE
+    sub rsp, 8 ; align 16 bytes
 
-    mov rbx, rdi ; save scene
-    mov rdi, [ppm_start_fmt]
-    mov rsi, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
-    mov [rsp+RENDER_WIDTH_OFFS], rsi ; width
-    mov rdx, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_HEIGHT_OFFS]
-    mov [rsp+RENDER_HEIGHT_OFFS], rdx ; height
-    mov r8, rdx
-    dec r8
-    mov r12, r8 ; initial j value
-    call printf
+    mov r15, rdi ; backup scene
+    mov rbx, rsi ; backup image
+    mov edx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_HEIGHT_OFFS]
+    mov [rsp+RENDER_HEIGHT_OFFS], edx ; height
+    mov ecx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
+    mov [rsp+RENDER_WIDTH_OFFS], ecx ; width
+    xor r12d, r12d ; initial j value
 
     .height_loop: ; {{{
-        xor r13, r13 ; initial i value
-        .width_loop: ; {{{
-            xor r14, r14
+        xor r13d, r13d ; initial i value
+        .width_loop: ; 
+            xor r14d, r14d
             vxorps xmm0, xmm0
             vmovups [rsp+RENDER_PIXEL_OFFS], xmm0
-            .spp_loop: ; {{{
-                call randf01
+            .spp_loop: ; 
+                rnd xmm0
                 vmovss [rsp+RENDER_RAND1_OFFS], xmm0
-                call randf01
+                rnd xmm0
 
-                vcvtsi2ss xmm2, r13 ; (float) i
-                mov rdi, [rsp+RENDER_WIDTH_OFFS]
-                dec rdi ; width - 1
-                vcvtsi2ss xmm3, rdi ; (float) (width - 1)
+                ; calculate u vec
+                vcvtsi2ss xmm2, r13d ; (float) i
+                mov edi, [rsp+RENDER_WIDTH_OFFS]
+                dec edi ; width - 1
+                vcvtsi2ss xmm3, edi ; (float) (width - 1)
                 vaddss xmm0, xmm2
                 vdivss xmm0, xmm3 ; u = (i + rnd()) / (width - 1)
 
+                ; calculate v vec
                 vmovss xmm1, [rsp+RENDER_RAND1_OFFS]
-                vcvtsi2ss xmm2, r12 ; (float) j
-                mov rdi, [rsp+RENDER_HEIGHT_OFFS]
-                dec rdi ; height - 1
-                vcvtsi2ss xmm3, rdi ; (float) (height - 1)
+                vcvtsi2ss xmm2, r12d ; (float) j
+                mov edi, [rsp+RENDER_HEIGHT_OFFS]
+                dec edi ; height - 1
+                vcvtsi2ss xmm3, edi ; (float) (height - 1)
                 vaddss xmm1, xmm2
                 vdivss xmm1, xmm3 ; v = (j + rnd()) / (height - 1)
 
-                lea rdi, [rsp+RENDER_RAY_OFFS]
-                lea rsi, [rbx+SCENE_CAMERA_OFFS]
+                lea rdi, [rsp+RENDER_RAY_OFFS] ; prepare space for return Ray
+                lea rsi, [r15+SCENE_CAMERA_OFFS] ; s->camera
                 call camera_get_ray
 
-                lea rsi, [rbx+SCENE_WORLD_OFFS]
-                vxorps xmm0, xmm0
-                mov rdx, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
+                mov rsi, rdi ; ray address
+                mov rdi, [r15+SCENE_WORLD_OFFS] ; s->world
+                vmovups xmm0, [rsp+RENDER_PIXEL_OFFS]
+                mov edx, [r15+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
                 call ray_color
 
-                vmovups xmm1, [rsp+RENDER_PIXEL_OFFS]
-                vaddps xmm1, xmm0
-                vmovups [rsp+RENDER_PIXEL_OFFS], xmm1
+                vaddps xmm0, [rsp+RENDER_PIXEL_OFFS]
+                vmovups [rsp+RENDER_PIXEL_OFFS], xmm0
 
-                inc r14
-                cmp r14, [rbx+SCENE_OUTPUT_OFFS+OUTPUT_SPP_OFFS]
-                jl .spp_loop ;}}}
+                inc r14d
+                cmp r14d, [r15+SCENE_OUTPUT_OFFS+OUTPUT_SPP_OFFS]
+                jl .spp_loop 
 
-            ; write_color
-            vcvtsi2ss xmm0, r14
-            vrsqrtss xmm0, xmm0
-            vshufps xmm0, xmm0, 0
-            vsqrtps xmm1, xmm1
-            vmulps xmm0, xmm1
+            mov eax, [rsp+RENDER_WIDTH_OFFS]
+            mul r12d
+            add eax, r13d ; idx = j * w + i
+            sal eax, 4    ; * 16 (Vec3)
+            vmovups [rbx+rax], xmm0 ; image[idx] = pixel
 
-            vxorps xmm1, xmm1
-            vmaxps xmm0, xmm1 ; clamp below at 0
-            vmovss xmm1, [one]
-            vshufps xmm1, xmm1, 0
-            vminps xmm0, xmm1 ; clamp above at 1
-            vmovss xmm1, [rgb_max]
-            vshufps xmm1, xmm1, 0
-            vmulps xmm0, xmm1
+            inc r13d
+            cmp r13d, [rsp+RENDER_WIDTH_OFFS]
+            jl .width_loop 
+        inc r12d
+        cmp r12d, [rsp+RENDER_HEIGHT_OFFS]
+        jl .height_loop ; }}}
 
-            cvttps2dq xmm1, xmm0 ; truncate to ints
-            vmovups [rsp+RENDER_PIXEL_OFFS], xmm1
-            mov rdi, [write_color_fmt]
-            mov esi, [rsp+RENDER_RAY_OFFS]
-            mov edx, [rsp+RENDER_RAY_OFFS+0x04]
-            mov ecx, [rsp+RENDER_RAY_OFFS+0x08]
-            call printf
-
-            inc r13
-            cmp r13, [rsp+RENDER_WIDTH_OFFS]
-            jl .width_loop ;}}}
-        dec r12
-        jns .height_loop ; }}}
-
+    add rsp, 8
     add rsp, RENDER_ARGS_SIZE
+    pop r15
     pop r14
     pop r13
     pop r12
     pop rbx
     pop rbp
     ret
+;}}}
 
-ray_color:
+ray_color: ;{{{
     push rbp
     mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, RECORD_SIZE+RAY_SIZE+3*VEC3_SIZE
 
+    vmovaps xmm1, xmm0 ; save bg color
+    vxorps xmm0, xmm0
+    test edx, edx ; check depth <= 0
+    jz .rc_return
+
+    ; save params
+    vmovaps [rsp], xmm1
+    mov r12, rdi
+    mov r13, rsi
+    mov r14, rdx
+
+    mov rax, [rdi+HITTABLE_HIT_OFFS]
+    vmovss xmm0, [eps]
+    vmovss xmm1, [inf]
+    lea rdx, [rsp+3*VEC3_SIZE]
+    call rax ; world->hit(...)
+
+    ; restore params
+    vmovaps xmm1, [rsp]
+    mov rdi, r12
+    mov rsi, r13
+    mov rdx, r14
+
+    test al, al
+    jnz .rc_world_hit
+
+    ; no hit, return bg
+    vmovaps xmm0, xmm1
+    jmp .rc_return
+
+    .rc_world_hit:
+    ; params already saved
+    lea rsi, [rsp+3*VEC3_SIZE]
+    mov rdi, [rsi+RECORD_SM_OFFS] ; get material
+    mov rdi, [rdi]
+    mov r15, rdi ; save material
+    mov rax, [rdi+MATERIAL_EMITTED_OFFS]
+
+    call rax ; m->emitted(m)
+    vpslldq xmm1, 8
+    vorps xmm0, xmm1 ; emit functions implemented in C
+    vmovaps [rsp+VEC3_SIZE], xmm0 ; save emitted
+
+    mov rdi, r15
+    mov rsi, r13
+    lea rdx, [rsp+3*VEC3_SIZE] ; record
+    lea rcx, [rsp+2*VEC3_SIZE] ; attenuation
+    lea r8, [rsp+3*VEC3_SIZE+RECORD_SIZE] ; scattered
+    mov rax, [rdi+MATERIAL_SCATTER_OFFS]
+
+    call rax
+
+    test al, al
+    jnz .rc_mat_scatter
+
+    ; no scatter, return emitted
+    vmovaps xmm0, [rsp+VEC3_SIZE]
+    jmp .rc_return
+
+    .rc_mat_scatter:
+    mov rdi, r12
+    lea rsi, [rsp+3*VEC3_SIZE+RECORD_SIZE] ; scattered
+    mov rdx, r14
+    dec edx ; depth - 1
+    vmovaps xmm0, [rsp] ; restore bg
+    call ray_color
+
+    vmulps xmm0, [rsp+2*VEC3_SIZE] ; attenuation
+    vaddps xmm0, [rsp+VEC3_SIZE]   ; emitted
+
+    .rc_return:
+    add rsp, RECORD_SIZE+RAY_SIZE+3*VEC3_SIZE
+    pop r15
+    pop r14
+    pop r13
+    pop r12
     pop rbp
     ret
+;}}}
 ;}}}
 ;}}}
 

@@ -225,24 +225,21 @@ void scene_render(const Scene *s, Color *image) {
         real u = (i + rnd()) / (s->output.width - 1);
         real v = (j + rnd()) / (s->output.height - 1);
         Ray r = camera_get_ray(&s->camera, u, v);
-        pixel = vec3_add(pixel, ray_color(&r, s->world, bg_color, s->output.max_depth));
+        pixel = vec3_add(pixel, ray_color(s->world, &r, bg_color, s->output.max_depth));
       }
 
       image[j * w + i] = pixel;
     }
   }
-#ifdef DEBUG
-  fprintf(stderr, "\n");
-#endif
 }
 
-Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth) {
+Color ray_color(Hittable *world, const Ray *r, Color bg, uint depth) {
   if (depth <= 0)
     return (Color){0, 0, 0};
 
   Record rec;
 
-  if (!world->hit(world, r, 0.001, INFINITY, &rec))
+  if (!world->hit(world, r, EPS, INFINITY, &rec))
     return bg;
 
   Material *m = rec.sm ? rec.sm->m : NULL;
@@ -253,7 +250,7 @@ Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth) {
   if (!m->scatter(m, r, &rec, &attenuation, &scattered))
     return emitted;
 
-  return vec3_add(emitted, vec3_prod(attenuation, ray_color(&scattered, world, bg, depth - 1)));
+  return vec3_add(emitted, vec3_prod(attenuation, ray_color(world, &scattered, bg, depth - 1)));
 }
 
 // Internal

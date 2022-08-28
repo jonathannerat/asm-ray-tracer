@@ -229,6 +229,6 @@ Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
 Ray camera_get_ray(const Camera *c, real s, real t);
 
 void scene_render(const Scene *s, Color *image);
-Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth);
+Color ray_color(Hittable *world, const Ray *r, Color bg, uint depth);
 // }}}
 #endif // CORE_H
