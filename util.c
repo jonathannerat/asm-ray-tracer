@@ -60,3 +60,13 @@ void write_color(Color pixel, uint spp) {
 Point ray_at(const Ray *r, real t) {
   return vec3_add(r->origin, vec3_unscale(r->direction, 1 / t));
 }
+
+void dump_image(FILE *f, Scene *s, Color *image) {
+  int i, j, h = s->output.height, w = s->output.width, spp = s->output.samples_per_pixel;
+
+  fprintf(f, "P3\n%d %d\n255\n", s->output.width, s->output.height);
+
+  for (j = h - 1; j >= 0; j--)
+    for (i = 0; i < w; i++)
+      write_color(image[j * w + i], spp);
+}

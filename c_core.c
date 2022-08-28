@@ -174,8 +174,8 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
   return true;
 }
 
-Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
-                   real aperture, real focus_dist) {
+Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
+                   real focus_dist) {
   real theta = vfov * M_PI / 180.0; // to radians
   real h = tan(theta / 2);
   real vp_height = 2.0 * h;
@@ -208,13 +208,17 @@ Ray camera_get_ray(const Camera *c, real s, real t) {
   return r;
 }
 
-void scene_render(const Scene *s) {
-  int i, j, k;
-  Color bg_color = {0,0,0};
-  printf("P3\n%d %d\n255\n", s->output.width, s->output.height);
+void scene_render(const Scene *s, Color *image) {
+  int i, j, k, w = s->output.width, h = s->output.height;
+  Color bg_color = {0, 0, 0};
 
-  for (j = s->output.height - 1; j >= 0; j--) {
-    for (i = 0; i < s->output.width; i++) {
+  for (j = h - 1; j >= 0; j--) {
+#ifdef DEBUG
+    // print progress on stderr
+    fprintf(stderr, ".");
+    fflush(stderr);
+#endif
+    for (i = 0; i < w; i++) {
       Color pixel = {0, 0, 0};
 
       for (k = 0; k < s->output.samples_per_pixel; k++) {
@@ -224,9 +228,12 @@ void scene_render(const Scene *s) {
         pixel = vec3_add(pixel, ray_color(&r, s->world, bg_color, s->output.max_depth));
       }
 
-      write_color(pixel, s->output.samples_per_pixel);
+      image[j * w + i] = pixel;
     }
   }
+#ifdef DEBUG
+  fprintf(stderr, "\n");
+#endif
 }
 
 Color ray_color(const Ray *r, Hittable *world, Color bg, uint depth) {

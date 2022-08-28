@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "util.h"
+#include <stdio.h>
 
 int main(int argc, char **argv) {
   Scene *s;
@@ -8,8 +9,12 @@ int main(int argc, char **argv) {
     s = scene_init_file(argv[1]);
   else
     s = scene_init();
+  
 
-  scene_render(s);
+  Color *image = malloc(sizeof(Color) * s->output.height * s->output.width);
+  scene_render(s, image);
+  dump_image(stdout, s, image);
+  free(image);
 
   DESTROY(s->world);
   free(s);
