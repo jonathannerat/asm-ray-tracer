@@ -327,8 +327,8 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 
 	xor rax, rax
 
-	vmovups [rsp], xmm0 ; t_min
-	vmovups [rsp+0x10], xmm1 ; t_max
+	vmovaps [rsp], xmm0 ; t_min
+	vmovaps [rsp+0x10], xmm1 ; t_max
 	mov [rsp+0x20], rdx ; rec
 	mov [rsp+0x28], rdi ; self
 	mov [rsp+0x30], al ; hit_anything = false
@@ -356,7 +356,7 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 
 		; box_is_inside(self, tmp.p)
 		mov rdi, [rsp+0x28]
-		vmovups xmm0, [rsp+0x40+RECORD_P_OFFS]
+		vmovaps xmm0, [rsp+0x40+RECORD_P_OFFS]
 		call box_is_inside
 		test al, al
 		jz .bh_face_loop_continue ; not inside
@@ -366,8 +366,8 @@ box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
 		vmovss [rsp+0x10], xmm0 ; t_max = xmm0
 
 		; *rec = tmp
-		vmovups xmm0, [rsp+0x40+RECORD_P_OFFS]
-		vmovups xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
+		vmovaps xmm0, [rsp+0x40+RECORD_P_OFFS]
+		vmovaps xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
 		mov r8, [rsp+0x40+RECORD_SM_OFFS]
 		mov r9, [rsp+0x40+RECORD_T_OFFS]
 
@@ -937,7 +937,7 @@ scene_render: ;{{{
         .width_loop: ; 
             xor r14d, r14d
             vxorps xmm0, xmm0
-            vmovups [rsp+RENDER_PIXEL_OFFS], xmm0
+            vmovaps [rsp+RENDER_PIXEL_OFFS], xmm0
             .spp_loop: ; 
                 rnd xmm0
                 vmovss [rsp+RENDER_RAND1_OFFS], xmm0
@@ -966,12 +966,12 @@ scene_render: ;{{{
 
                 mov rsi, rdi ; ray address
                 mov rdi, [r15+SCENE_WORLD_OFFS] ; s->world
-                vmovups xmm0, [rsp+RENDER_PIXEL_OFFS]
+                vmovaps xmm0, [rsp+RENDER_PIXEL_OFFS]
                 mov edx, [r15+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
                 call ray_color
 
                 vaddps xmm0, [rsp+RENDER_PIXEL_OFFS]
-                vmovups [rsp+RENDER_PIXEL_OFFS], xmm0
+                vmovaps [rsp+RENDER_PIXEL_OFFS], xmm0
 
                 inc r14d
                 cmp r14d, [r15+SCENE_OUTPUT_OFFS+OUTPUT_SPP_OFFS]
