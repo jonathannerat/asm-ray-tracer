@@ -911,7 +911,8 @@ camera_get_ray: ;{{{
 %define RENDER_RAND2_OFFS    (RENDER_RAND1_OFFS+REAL_SIZE)
 %define RENDER_RAY_OFFS      (RENDER_RAND2_OFFS+REAL_SIZE)
 %define RENDER_PIXEL_OFFS    (RENDER_RAY_OFFS+RAY_SIZE)
-%define RENDER_ARGS_SIZE     (RENDER_PIXEL_OFFS+VEC3_SIZE)
+%define RENDER_BG_OFFS       (RENDER_PIXEL_OFFS+VEC3_SIZE)
+%define RENDER_ARGS_SIZE     (RENDER_BG_OFFS+VEC3_SIZE)
 
 scene_render: ;{{{
     push rbp
@@ -931,6 +932,8 @@ scene_render: ;{{{
     mov ecx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
     mov [rsp+RENDER_WIDTH_OFFS], ecx ; width
     xor r12d, r12d ; initial j value
+    vxorps xmm0, xmm0
+    vmovaps [rsp+RENDER_BG_OFFS], xmm0
 
     .height_loop: ; {{{
         xor r13d, r13d ; initial i value
@@ -966,7 +969,7 @@ scene_render: ;{{{
 
                 mov rsi, rdi ; ray address
                 mov rdi, [r15+SCENE_WORLD_OFFS] ; s->world
-                vmovaps xmm0, [rsp+RENDER_PIXEL_OFFS]
+                vmovaps xmm0, [rsp+RENDER_BG_OFFS]
                 mov edx, [r15+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
                 call ray_color
 
@@ -1156,4 +1159,4 @@ box_is_inside: ; Box *self, Vec3 p {{{
 	ret
 ;}}}
 
-; vi: fdm=marker ts=4 sw=4 et
+; vi: ft=x86asm ts=4 sw=4 et
