@@ -4,7 +4,7 @@ NASM=nasm
 SRC=util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittable/Sphere.c hittable/Triangle.c Scene.c Material.c hittable/KDTree.c
 OBJ=${SRC:.c=.o}
 IMAGES=$(patsubst scenes/%,out/%.png,$(wildcard scenes/*))
-CFLAGS=-std=c99 -pedantic -Wall
+CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm -no-pie
 NASMFLAGS=-f elf64 -Wall
 
@@ -28,7 +28,6 @@ out/%.png: scenes/%
 	( ./rt-asm "$$scene" | convert ppm:- "out/$$name-asm.png" ) ; \
 	echo
 
-${TARGET}-c: CFLAGS += -O2
 ${TARGET}-c: main.o c_core.o ${OBJ}
 	${CC} -o $@ main.o c_core.o ${OBJ} ${LDFLAGS}
 
@@ -53,7 +52,7 @@ options:
 
 targets: ${TARGET}-c ${TARGET}-asm
 
-debug: CFLAGS += -g -DDEBUG
+debug: CFLAGS += -g -O0 -DDEBUG
 debug: NASMFLAGS += -gdwarf
 debug: options targets
 
