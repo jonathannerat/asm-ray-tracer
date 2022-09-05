@@ -212,12 +212,7 @@ void scene_render(const Scene *s, Color *image) {
   int i, j, k, w = s->output.width, h = s->output.height;
   Color bg_color = {0, 0, 0};
 
-  for (j = h - 1; j >= 0; j--) {
-#ifdef DEBUG
-    // print progress on stderr
-    fprintf(stderr, ".");
-    fflush(stderr);
-#endif
+  for (j = 0; j < h; j++) {
     for (i = 0; i < w; i++) {
       Color pixel = {0, 0, 0};
 
