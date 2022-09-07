@@ -200,120 +200,67 @@ degtorad: dd 0.017453292519943295
 section .text
 
 ; GLOBAL Functions {{{
-; Vec3 Functions {{{
-vec3_add: ; vec3 v1, vec3 v2 {{{
-	push rbp
-	mov rbp, rsp
+vec3_add:
+    addps xmm0, xmm2
+    addps xmm1, xmm3
+    ret
 
-	addps xmm0, xmm2
-	addps xmm1, xmm3
+vec3_prod:
+    mulps xmm0, xmm2
+    mulps xmm1, xmm3
+    ret
 
-	pop rbp
-	ret
-;}}}
+vec3_unscale:
+    shufps xmm2, xmm2, 0b00000000
+    divps xmm0, xmm2
+    divps xmm1, xmm2
+    ret
 
-vec3_prod: ; vec3 v1, vec3 v2 {{{
-	push rbp
-	mov rbp, rsp
+vec3_sub:
+    subps xmm0, xmm2
+    subps xmm1, xmm3
+    ret
 
-	mulps xmm0, xmm2
-	mulps xmm1, xmm3
+vec3_norm2:
+    dpps xmm1, xmm1, 0b00010001
+    dpps xmm0, xmm0, 0b00110001
+    addss xmm0, xmm1
+    ret
 
-	pop rbp
-	ret
-;}}}
+vec3_rnd_unit_sphere:
+    sub rsp, 0x18
 
-vec3_unscale: ; vec3 v1, real s {{{
-	push rbp
-	mov rbp, rsp
-
-	; v1 = x y 0 0 
-	; v2 = z _ 0 0 
-	vshufps xmm2, xmm2, 0b00000000
-	divps xmm0, xmm2 ; v1 = x/s y/s 0 0
-	divps xmm1, xmm2 ; v2 = z/s  0  0 0
-
-	pop rbp
-	ret
-;}}}
-
-vec3_sub: ; vec3 v1, vec3 v2 {{{
-	push rbp
-	mov rbp, rsp
-
-	subps xmm0, xmm2
-	subps xmm1, xmm3
-
-	pop rbp
-	ret
-;}}}
-
-vec3_norm2: ; vec3 v = xmm0 | xmm1  {{{
-	push rbp
-	mov rbp, rsp
-
-	vpslldq xmm1, 0x8 ;xmm1 = 0 0 z 0
-	vorps xmm0, xmm1
-	vdpps xmm0, xmm0, 0xF1 ; F -> use all packed floats, 1 -> store result in least significant dword
-
-	pop rbp
-	ret
-;}}}
-
-; Random vec3 in unit sphere
-vec3_rnd_unit_sphere: ;{{{
-	sub rsp, 0x18
-    vmovaps [rsp], xmm1
-
-	.vru_loop:
-		call randvec
-		vdpps xmm1, xmm0, xmm0, 0xF1
-		vcomiss xmm1, [one]
-		jae .vru_loop
-
-    vmovaps xmm1, [rsp]
-	add rsp, 0x18
-	ret
-;}}}
-;}}}
-
-; Random {{{
-randvec: ; store 3 random floats in range (-1;1] in xmm0 {{{
-	sub rsp, 0x18
-
+    .vru_loop:
     call rand
     mov [rsp], eax
 
-	call rand
+    call rand
     mov [rsp+0x04], eax
 
-	call rand
+    call rand
     mov [rsp+0x08], eax
 
     xor eax, eax
     mov [rsp+0x0C], eax
 
-    vcvtdq2ps xmm0, [rsp]
+    cvtdq2ps xmm0, [rsp]
 
-    ; rand() * (1/RAND_MAX)
-    vmovss xmm1, [rand_descale]
-    vshufps xmm1, xmm1, 0x80
-    vmulps xmm0, xmm1
+    movss xmm1, [rand_descale]
+    shufps xmm1, xmm1, 0x80
+    mulps xmm0, xmm1
 
-    ; _ * 2.0
-    vmovss xmm1, [two]
-    vshufps xmm1, xmm1, 0x80
-    vmulps xmm0, xmm1
+    addps xmm0, xmm0
 
-    ; _ - 1.0
-    vmovss xmm1, [one]
-    vshufps xmm1, xmm1, 0x80
-    vsubps xmm0, xmm1
+    movss xmm1, [one]
+    shufps xmm1, xmm1, 0x80
+    subps xmm0, xmm1
 
-	add rsp, 0x18
-	ret
-;}}}
-;}}}
+    vdpps xmm1, xmm0, xmm0, 0xF1
+    comiss xmm1, [one]
+    jae .vru_loop
+
+    add rsp, 0x18
+    ret
 
 ; Hittable Functions {{{
 box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
