@@ -1,4 +1,4 @@
-; GLOBALS & EXTERNS {{{
+; GLOBALS & EXTERNS
 global vec3_add
 global vec3_prod
 global vec3_unscale
@@ -24,9 +24,8 @@ extern list_get
 extern tanf
 extern rand
 extern printf
-; }}}
 
-; OFFSETS {{{
+; OFFSETS
 %define REAL_SIZE 4 ; float
 %define VEC3_SIZE (REAL_SIZE * 4)
 
@@ -34,24 +33,19 @@ extern printf
 %define RAY_DIR_OFFS    VEC3_SIZE
 %define RAY_SIZE        (RAY_DIR_OFFS+VEC3_SIZE)
 
-; Hittable {{{
 %define HITTABLE_HIT_OFFS        0
 %define HITTABLE_DESTROY_OFFS    8
 %define HITTABLE_BBOX_OFFS      16
 %define HITTABLE_REFP_OFFS      24
 %define HITTABLE_SIZE           (HITTABLE_REFP_OFFS+VEC3_SIZE)
-; }}}
 
-; Record {{{
 %define RECORD_P_OFFS       0
 %define RECORD_NORMAL_OFFS  VEC3_SIZE
 %define RECORD_SM_OFFS      (RECORD_NORMAL_OFFS+VEC3_SIZE)
 %define RECORD_T_OFFS       (RECORD_SM_OFFS+8)
 %define RECORD_FFACE_OFFS   (RECORD_T_OFFS+REAL_SIZE)
 %define RECORD_SIZE         48 ; size is aligned to largest property
-; }}}
 
-; List {{{
 %define LIST_HITTABLE_OFFS   0
 %define LIST_BBOX_OFFS       HITTABLE_SIZE
 %define LIST_SM_OFFS         (LIST_BBOX_OFFS+8)
@@ -60,34 +54,26 @@ extern printf
 %define LIST_SIZE_OFFS       (LIST_LIST_OFFS+8)
 %define LIST_CAP_OFFS        (LIST_SIZE_OFFS+4)
 %define LIST_SIZE            (LIST_CAP_OFFS+4)
-; }}}
 
-; Box {{{
 %define BOX_HITTABLE_OFFS   0
 %define BOX_SM_OFFS         HITTABLE_SIZE
 %define BOX_CBACK_OFFS      BOX_SM_OFFS+8
 %define BOX_CFRONT_OFFS     (BOX_CBACK_OFFS+VEC3_SIZE)
 %define BOX_FACES_OFFS      (BOX_CFRONT_OFFS+VEC3_SIZE)
-; }}}
 
-; Plane {{{
 %define PLANE_HITTABLE_OFFS 0
 %define PLANE_SM_OFFS       HITTABLE_SIZE
 %define PLANE_ORIGIN_OFFS   (PLANE_SM_OFFS+8)
 %define PLANE_NORMAL_OFFS   (PLANE_ORIGIN_OFFS+VEC3_SIZE)
 %define PLANE_SIZE          (PLANE_NORMAL_OFFS+VEC3_SIZE)
-;}}}
 
-; Sphere {{{
 %define SPHERE_HITTABLE_OFFS   0
 %define SPHERE_BBOX_OFFS       HITTABLE_SIZE
 %define SPHERE_SM_OFFS         SPHERE_BBOX_OFFS+8
 %define SPHERE_CENTER_OFFS     (SPHERE_SM_OFFS+8)
 %define SPHERE_RADIUS_OFFS     (SPHERE_CENTER_OFFS+VEC3_SIZE)
 %define SPHERE_SIZE            (SPHERE_RADIUS_OFFS+REAL_SIZE)
-;}}}
 
-; Triangle {{{
 %define TRIANGLE_HITTABLE_OFFS   0
 %define TRIANGLE_BBOX_OFFS       HITTABLE_SIZE
 %define TRIANGLE_SM_OFFS         TRIANGLE_BBOX_OFFS+8
@@ -95,20 +81,15 @@ extern printf
 %define TRIANGLE_P2_OFFS         (TRIANGLE_P1_OFFS+VEC3_SIZE)
 %define TRIANGLE_P3_OFFS         (TRIANGLE_P2_OFFS+VEC3_SIZE)
 %define TRIANGLE_SIZE            (TRIANGLE_P3_OFFS+VEC3_SIZE)
-;}}}
 
-; Materials {{{
 %define MATERIAL_SCATTER_OFFS 0
 %define MATERIAL_EMITTED_OFFS 8
 %define MATERIAL_SIZE         (2*8)
 
-; All materials share the same structure
 %define MATALL_MATERIAL_OFFS 0
 %define MATALL_ALBEDO_OFFS   MATERIAL_SIZE
 %define MATALL_ALPHA_OFFS    (MATALL_ALBEDO_OFFS+VEC3_SIZE)
-;}}}
 
-; Camera {{{
 %define CAMERA_ORIGIN_OFFS 0
 %define CAMERA_BLCORN_OFFS (CAMERA_ORIGIN_OFFS+VEC3_SIZE)
 %define CAMERA_HORIZ_OFFS  (CAMERA_BLCORN_OFFS+VEC3_SIZE)
@@ -118,9 +99,7 @@ extern printf
 %define CAMERA_W_OFFS      (CAMERA_V_OFFS+VEC3_SIZE)
 %define CAMERA_LR_OFFS     (CAMERA_W_OFFS+VEC3_SIZE)
 %define CAMERA_SIZE        (CAMERA_LR_OFFS+REAL_SIZE)
-;}}}
 
-; Scene & Output {{{
 %define SCENE_CAMERA_OFFS 0
 %define SCENE_OUTPUT_OFFS CAMERA_SIZE
 %define SCENE_WORLD_OFFS  (SCENE_OUTPUT_OFFS+OUTPUT_SIZE+4)
@@ -131,8 +110,6 @@ extern printf
 %define OUTPUT_SPP_OFFS 8
 %define OUTPUT_DEPTH_OFFS 12
 %define OUTPUT_SIZE 16
-;}}}
-;}}}
 
 ; MACROS {{{
 %macro v3p_scale 3 ; v1, t, v2 -> v1=t*v2
