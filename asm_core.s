@@ -239,82 +239,90 @@ vec3_rnd_unit_sphere:
     add rsp, 0x18
     ret
 
-; Hittable Functions {{{
-box_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *rec {{{
-	push rbp
-	mov rbp, rsp
-	push rbx
-	push r12
-	push r13
-	push r14
-	sub rsp, RECORD_SIZE+0x40
+; Hittable Functions
+box_hit:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    sub rsp, RECORD_SIZE+0x48
 
-	xor rax, rax
+    movaps [rsp], xmm0 ; t_min
+    movaps [rsp+0x10], xmm1 ; t_max
+    mov [rsp+0x20], rdx ; rec
+    mov [rsp+0x28], rdi ; self
+    mov [rsp+0x30], al ; hit_anything = false
 
-	vmovaps [rsp], xmm0 ; t_min
-	vmovaps [rsp+0x10], xmm1 ; t_max
-	mov [rsp+0x20], rdx ; rec
-	mov [rsp+0x28], rdi ; self
-	mov [rsp+0x30], al ; hit_anything = false
+    mov r12, [rdi+BOX_FACES_OFFS]
+    mov r12, [r12+LIST_LIST_OFFS] ; self->faces->list
+    mov r13, rsi ; ray
+    xor r14, r14
 
-	xor ebx, ebx ; i = 0
-	mov r12, [rdi+BOX_FACES_OFFS] ; self->faces
-	mov r13d, [r12+LIST_SIZE_OFFS] ; self->faces->size
-	mov r14, rsi ; ray
+    .bh_face_loop:
+        ; Hittable *h = list_get(self->faces, i)
+        mov rax, [r12+r14*8]
 
-	.bh_face_loop:
-		; Hittable *h = list_get(self->faces, i)
-		mov rdi, r12
-		mov esi, ebx
-		call list_get
+        ; h->hit(h, ray, t_min, t_max, tmp)
+        mov rdi, rax
+        mov rsi, r13
+        movaps xmm0, [rsp]
+        movaps xmm1, [rsp+0x10]
+        lea rdx, [rsp+0x40]
+        call [rdi+BOX_HITTABLE_OFFS+HITTABLE_HIT_OFFS]
+        test al, al
+        jz .bh_face_loop_continue ; no hit
 
-		; h->hit(h, ray, t_min, t_max, tmp)
-		mov rdi, rax
-		mov rsi, r14
-		vmovaps xmm0, [rsp]
-		vmovaps xmm1, [rsp+0x10]
-		lea rdx, [rsp+0x40]
-		call [rdi+BOX_HITTABLE_OFFS+HITTABLE_HIT_OFFS]
-		test al, al
-		jz .bh_face_loop_continue ; no hit
+        ; box_is_inside(self, tmp.p)
+        mov rdi, [rsp+0x28]
+        movaps xmm0, [rsp+0x40+RECORD_P_OFFS]
 
-		; box_is_inside(self, tmp.p)
-		mov rdi, [rsp+0x28]
-		vmovaps xmm0, [rsp+0x40+RECORD_P_OFFS]
-		call box_is_inside
-		test al, al
-		jz .bh_face_loop_continue ; not inside
+        ; check if it's inside
+        movups xmm1, [rdi+BOX_CBACK_OFFS]
+        movss xmm2, [eps]
+        shufps xmm2, xmm2, 0b01000000
+        subps xmm1, xmm2
+        cmpleps xmm1, xmm0 ; self->cback <= p (coord by coord)
 
-		mov byte [rsp+0x30], 1 ; hit_anything = true
-		vmovss xmm0, [rsp+0x40+RECORD_T_OFFS] ; xmm0 = tmp->t
-		vmovss [rsp+0x10], xmm0 ; t_max = xmm0
+        movups xmm3, [rdi+BOX_CFRONT_OFFS]
+        addps xmm3, xmm2
+        cmpnltps xmm3, xmm0  ; self->cfront >= p (coord by coord)
 
-		; *rec = tmp
-		vmovaps xmm0, [rsp+0x40+RECORD_P_OFFS]
-		vmovaps xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
-		mov r8, [rsp+0x40+RECORD_SM_OFFS]
-		mov r9, [rsp+0x40+RECORD_T_OFFS]
+        andps xmm1, xmm3
+        pcmpeqd xmm2, xmm2 ; fill xmm2 with ones
+        ptest xmm1, xmm2 ; if xmm1 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
 
-		mov rdx, [rsp+0x20] ; rec
-		vmovups [rdx+RECORD_P_OFFS], xmm0
-		vmovups [rdx+RECORD_NORMAL_OFFS], xmm1
-		mov [rdx+RECORD_SM_OFFS], r8
-		mov [rdx+RECORD_T_OFFS], r9
+        jnc .bh_face_loop_continue ; if CF=0, it's not inside
 
-	.bh_face_loop_continue:
-	inc ebx ; i++
-	cmp ebx, r13d ; i < self->size
-	jl .bh_face_loop
+        mov byte [rsp+0x30], 1 ; hit_anything = true
+        movss xmm0, [rsp+0x40+RECORD_T_OFFS] ; xmm0 = tmp->t
+        movss [rsp+0x10], xmm0 ; t_max = xmm0
 
-	mov al, [rsp+0x30]
+        ; *rec = tmp
+        movaps xmm0, [rsp+0x40+RECORD_P_OFFS]
+        movaps xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
+        mov r8, [rsp+0x40+RECORD_SM_OFFS]
+        mov r9, [rsp+0x40+RECORD_T_OFFS]
 
-	add rsp, RECORD_SIZE+0x40
-	pop r14
-	pop r13
-	pop r12
-	pop rbx
-	pop rbp
-	ret
+        mov rdx, [rsp+0x20] ; rec
+        movups [rdx+RECORD_P_OFFS], xmm0
+        movups [rdx+RECORD_NORMAL_OFFS], xmm1
+        mov [rdx+RECORD_SM_OFFS], r8
+        mov [rdx+RECORD_T_OFFS], r9
+
+        .bh_face_loop_continue:
+        inc r14 ; i++
+        cmp r14, 6 ; i < self->size
+        jl .bh_face_loop
+
+    mov al, [rsp+0x30]
+
+    add rsp, RECORD_SIZE+0x48
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    ret
 ;}}}
 
 plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
