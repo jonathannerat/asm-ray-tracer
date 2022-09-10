@@ -111,7 +111,6 @@ extern printf
 %define OUTPUT_DEPTH_OFFS 12
 %define OUTPUT_SIZE 16
 
-; MACROS {{{
 %macro v3p_scale 3 ; v1, t, v2 -> v1=t*v2
 	vshufps %2, %2, 0b00000000
 	vmulps %1, %2, %3
@@ -142,10 +141,12 @@ extern printf
 	vmulps %1, %2
 %endmacro
 
-%macro ray_at 3 ; ray_at(r, t) : p = r->origin + r->direction * t
-    vmovups %1, [%2+RAY_DIR_OFFS]
-    v3p_scale %1, %3, %1
-    vaddps %1, [%2+RAY_ORIG_OFFS]
+; ray_at: return, ray_pointer, t
+%macro ray_at 3
+    movups %1, [%2+RAY_DIR_OFFS]
+	shufps %3, %3, 0
+	mulps %1, %3
+    addps %1, [%2+RAY_ORIG_OFFS]
 %endmacro
 
 %macro rnd 1
@@ -154,11 +155,45 @@ extern printf
 	vcvtsi2ss %1, eax
 	vmulss %1, [rand_descale]
 %endmacro
-;}}}
+
+%macro scalar_fabs_mask 1
+    pcmpeqw %1, %1
+    psrlq %1, 1
+%endmacro
+
+%macro packed_fabs_mask 1
+    scalar_fabs_mask %1
+    shufps %1, %1, 0
+%endmacro
+
+; set_face_normal record, ray, normal, tag
+; kills: xmm0, xmm1, r8
+%macro set_face_normal 4
+    mov r8, rax
+
+    xor eax, eax
+    movups xmm0, [%2+RAY_DIR_OFFS]
+    dpps xmm0, %3, 0xF1
+    pxor xmm1, xmm1
+    comiss xmm0, xmm1 ; dot < 0?
+    jae .set_face_normal_%4_no_ff
+
+    movaps xmm1, %3
+    inc eax
+    jmp .set_face_normal_%4_return
+
+    .set_face_normal_%4_no_ff:
+    subps xmm1, %3
+
+    .set_face_normal_%4_return:
+    mov [%1+RECORD_FFACE_OFFS], al
+    movups [%1+RECORD_NORMAL_OFFS], xmm1
+
+    mov rax, r8
+%endmacro
 
 section .data
 
-;DATA {{{
 ; 32-bit absolute value mask 
 fabs_mask: dd 0x7FFFFFFF
 rand_descale:  dd 4.656612873077393e-10
@@ -172,11 +207,9 @@ one:  dd 1.0e0
 two:  dd 2.0e0
 rgb_max:  dd 2.56e2
 degtorad: dd 0.017453292519943295
-;}}}
 
 section .text
 
-; GLOBAL Functions {{{
 vec3_add:
     addps xmm0, xmm2
     addps xmm1, xmm3
@@ -291,7 +324,7 @@ box_hit:
         cmpnltps xmm3, xmm0  ; self->cfront >= p (coord by coord)
 
         andps xmm1, xmm3
-        pcmpeqd xmm2, xmm2 ; fill xmm2 with ones
+        pcmpeqw xmm2, xmm2 ; fill xmm2 with ones
         ptest xmm1, xmm2 ; if xmm1 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
 
         jnc .bh_face_loop_continue ; if CF=0, it's not inside
@@ -327,49 +360,45 @@ box_hit:
     pop rbx
     pop rbp
     ret
-;}}}
 
-plane_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
-	push rbp
-	mov rbp, rsp
+plane_hit:
+    push rbp
+    mov rbp, rsp
 
-	xor rax, rax ; false
+    xor eax, eax; false
 
-	; check if ray direction is perpendicular to plane normal
-	vmovups xmm2, [rsi+RAY_DIR_OFFS] ; ray->direction
-	vmovups xmm3, [rdi+PLANE_NORMAL_OFFS] ; self->normal
-	vdpps xmm4, xmm2, xmm3, 0xF1
-	vandps xmm4, [fabs_mask]
-	vcomiss xmm4, [eps] ; xmm2 < EPS
-	jbe .ph_return ; if it is, return false (no plane hit)
+    ; check if ray direction is perpendicular to plane normal
+    movups xmm2, [rsi+RAY_DIR_OFFS] ; ray->direction
+    movups xmm3, [rdi+PLANE_NORMAL_OFFS] ; self->normal
+    vdpps xmm4, xmm2, xmm3, 0xF1
+    vandps xmm4, [fabs_mask]
+    comiss xmm4, [eps] ; xmm4 < EPS
+    jbe .ph_return ; if it is, return false (no plane hit)
 
-	vmovups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
-	vsubps xmm4, [rsi+RAY_ORIG_OFFS] ; - r->origin
-	vdpps xmm4, xmm3, 0xF1
-	vdpps xmm2, xmm3, 0xF1
-	vdivss xmm4, xmm2 ; xmm4 = t
-	vcomiss xmm4, xmm0
-	jb .ph_return  ; t < t_min
-	vcomiss xmm1, xmm4
-	jb .ph_return  ; t_max < t
+    movups xmm4, [rdi+PLANE_ORIGIN_OFFS] ; self->origin
+    subps xmm4, [rsi+RAY_ORIG_OFFS] ; - r->origin
+    dpps xmm4, xmm3, 0xF1
+    dpps xmm2, xmm3, 0xF1
+    divss xmm4, xmm2 ; xmm4 = t
+    comiss xmm4, xmm0
+    jb .ph_return  ; t < t_min
+    comiss xmm1, xmm4
+    jb .ph_return  ; t_max < t
 
-	vmovss [rdx+RECORD_T_OFFS], xmm4 ; record->t = t
-	mov r8, [rdi+PLANE_SM_OFFS]
-	mov [rdx+RECORD_SM_OFFS], r8 ; record->sm = plane->xm
+    movss [rdx+RECORD_T_OFFS], xmm4 ; record->t = t
+    mov r8, [rdi+PLANE_SM_OFFS]
+    mov [rdx+RECORD_SM_OFFS], r8 ; record->sm = plane->sm
 
-	ray_at xmm0, rsi, xmm4
-	vmovups [rdx+RECORD_P_OFFS], xmm0 ; record->p = ray_at(ray, t)
+    ray_at xmm0, rsi, xmm4
+    movups [rdx+RECORD_P_OFFS], xmm0 ; record->p = ray_at(ray, t)
 
-	mov rdi, rdx
-	vmovaps xmm0, xmm3
-	call record_set_face_normal ; rec, normal
+    set_face_normal rdx, rsi, xmm3, plane
 
-	inc rax ; return true
+    inc eax ; return true
 
-	.ph_return:
-	pop rbp
-	ret
-;}}}
+    .ph_return:
+    pop rbp
+    ret
 
 sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
 	push rbp
