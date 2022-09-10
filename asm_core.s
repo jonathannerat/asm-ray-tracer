@@ -243,10 +243,13 @@ vec3_rnd_unit_sphere:
 box_hit:
     push rbp
     mov rbp, rsp
+    push rbx
     push r12
     push r13
     push r14
-    sub rsp, RECORD_SIZE+0x48
+    sub rsp, RECORD_SIZE+0x40
+
+    xor al, al
 
     movaps [rsp], xmm0 ; t_min
     movaps [rsp+0x10], xmm1 ; t_max
@@ -261,10 +264,9 @@ box_hit:
 
     .bh_face_loop:
         ; Hittable *h = list_get(self->faces, i)
-        mov rax, [r12+r14*8]
+        mov rdi, [r12+r14*8]
 
         ; h->hit(h, ray, t_min, t_max, tmp)
-        mov rdi, rax
         mov rsi, r13
         movaps xmm0, [rsp]
         movaps xmm1, [rsp+0x10]
@@ -295,14 +297,15 @@ box_hit:
         jnc .bh_face_loop_continue ; if CF=0, it's not inside
 
         mov byte [rsp+0x30], 1 ; hit_anything = true
-        movss xmm0, [rsp+0x40+RECORD_T_OFFS] ; xmm0 = tmp->t
+        lea rdi, [rsp+0x40]
+        movss xmm0, [rdi+RECORD_T_OFFS] ; xmm0 = tmp->t
         movss [rsp+0x10], xmm0 ; t_max = xmm0
 
         ; *rec = tmp
-        movaps xmm0, [rsp+0x40+RECORD_P_OFFS]
-        movaps xmm1, [rsp+0x40+RECORD_NORMAL_OFFS]
-        mov r8, [rsp+0x40+RECORD_SM_OFFS]
-        mov r9, [rsp+0x40+RECORD_T_OFFS]
+        movaps xmm0, [rdi+RECORD_P_OFFS]
+        movaps xmm1, [rdi+RECORD_NORMAL_OFFS]
+        mov r8, [rdi+RECORD_SM_OFFS]
+        mov r9, [rdi+RECORD_T_OFFS]
 
         mov rdx, [rsp+0x20] ; rec
         movups [rdx+RECORD_P_OFFS], xmm0
@@ -317,10 +320,11 @@ box_hit:
 
     mov al, [rsp+0x30]
 
-    add rsp, RECORD_SIZE+0x48
+    add rsp, RECORD_SIZE+0x40
     pop r14
     pop r13
     pop r12
+    pop rbx
     pop rbp
     ret
 ;}}}
@@ -1054,40 +1058,6 @@ record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{
 	vmovaps xmm2, [rsp+0x10]
 	add rsp, 0x20
 	pop rax
-	ret
-;}}}
-
-box_is_inside: ; Box *self, Vec3 p {{{
-	sub rsp, 0x38
-	vmovaps [rsp], xmm1
-	vmovaps [rsp+0x10], xmm2
-	vmovaps [rsp+0x20], xmm3
-    xor al, al
-    inc al ; true
-
-	vmovups xmm1, [rdi+BOX_CBACK_OFFS] ; xmm0 = cb.x cb.y cb.z 0
-	vmovss xmm2, [eps]
-	vshufps xmm2, xmm2, 0b01000000     ; xmm1 = eps eps eps 0
-	vsubps xmm1, xmm2                  ; xmm0 = (cb.x - eps) (cb.y - eps) (cb.y - eps) 0
-	cmpleps xmm1, xmm0 ; self->cback <= p (coord by coord)
-
-	vmovups xmm3, [rdi+BOX_CFRONT_OFFS] ; xmm3 = cf.x cf.y cf.z 0
-	vaddps xmm3, xmm2                   ; xmm3 = (cf.x + eps) (cf.y + eps) (cf.z + eps) 0
-	cmpnltps xmm3, xmm0  ; self->cfront >= p (coord by coord)
-
-	vandps xmm1, xmm3
-	vmovss xmm2, [ones_mask]
-	vshufps xmm2, xmm2, 0b00000000
-	vptest xmm1, xmm2 ; if xmm1 ANDN xmm2 === 0...0, then xmm2 is all ones and CF=1
-	jc .bii_return ; if CF=1, function returns true
-
-	xor al, al ; false
-
-	.bii_return:
-	vmovaps xmm3, [rsp+0x20]
-	vmovaps xmm2, [rsp+0x10]
-	vmovaps xmm1, [rsp]
-	add rsp, 0x38
 	ret
 ;}}}
 
