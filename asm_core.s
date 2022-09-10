@@ -400,67 +400,65 @@ plane_hit:
     pop rbp
     ret
 
-sphere_hit: ; Hittable *_self, Ray *ray, real t_min, real t_max, Record *hr {{{
-	push rbp
-	mov rbp, rsp
+sphere_hit:
+    push rbp
+    mov rbp, rsp
 
-	xor rax, rax
+    xor eax, eax
 
-	vmovups xmm2, [rsi+RAY_ORIG_OFFS]      ; r->origin
-	vmovups xmm3, [rdi+SPHERE_CENTER_OFFS] ; center
-	vsubps  xmm2, xmm3               ; oc = center to ray origin
-	vmovups xmm4, [rsi+RAY_DIR_OFFS] ; r->direction
-	vdpps xmm5, xmm4, xmm4, 0xF1     ; a = norm2(r->direction)
-	vdpps xmm6, xmm2, xmm4, 0xF1     ; hb = half b
-	vxorps xmm9, xmm9
-	vsubss xmm6, xmm9, xmm6          ; -hb
-	vdpps xmm2, xmm2, 0xF1           ; norm2(oc)
-	vmovss xmm8, [rdi+SPHERE_RADIUS_OFFS] ; radius
-	vmulss xmm7, xmm8, xmm8          ; radius^2
-	vsubss xmm2, xmm7                ; c = norm2(oc) - radius^2
-	vmulss xmm2, xmm5                ; c * a
-	vmulss xmm7, xmm6, xmm6          ; hb^2 = (-hb) * (-hb)
-	vsubss xmm2, xmm7, xmm2 ; discriminant
+    movups xmm2, [rsi+RAY_ORIG_OFFS]      ; r->origin
+    movups xmm3, [rdi+SPHERE_CENTER_OFFS] ; center
+    subps  xmm2, xmm3               ; oc = center to ray origin
+    movups xmm4, [rsi+RAY_DIR_OFFS] ; r->direction
+    vdpps xmm5, xmm4, xmm4, 0xF1     ; a = norm2(r->direction)
+    vdpps xmm6, xmm2, xmm4, 0xF1     ; hb = half b
+    xorps xmm9, xmm9
+    vsubss xmm6, xmm9, xmm6          ; -hb
+    dpps xmm2, xmm2, 0xF1           ; norm2(oc)
+    movss xmm8, [rdi+SPHERE_RADIUS_OFFS] ; radius
+    vmulss xmm7, xmm8, xmm8          ; radius^2
+    subss xmm2, xmm7                ; c = norm2(oc) - radius^2
+    mulss xmm2, xmm5                ; c * a
+    vmulss xmm7, xmm6, xmm6          ; hb^2 = (-hb) * (-hb)
+    vsubss xmm2, xmm7, xmm2 ; discriminant
 
-	vcomiss xmm2, [zero]
-	jb .sphere_hit_return
+    pxor xmm9, xmm9
+    comiss xmm2, xmm9
+    jb .sphere_hit_return
 
-	vsqrtss xmm2, xmm2 ; sqrt(discriminant)
-	vsubss xmm7, xmm6, xmm2
-	vdivss xmm7, xmm5  ; root = (-hb - sqrtd) / a
-	vcomiss xmm7, xmm0
-	jb .sphere_hit_check_other_root ; root < t_min
-	vcomiss xmm1, xmm7
-	jae .sphere_hit_did_hit ; t_max >= root
+    sqrtss xmm2, xmm2 ; sqrt(discriminant)
+    vsubss xmm7, xmm6, xmm2
+    divss xmm7, xmm5  ; root = (-hb - sqrtd) / a
+    comiss xmm7, xmm0
+    jb .sphere_hit_check_other_root ; root < t_min
+    comiss xmm1, xmm7
+    jae .sphere_hit_did_hit ; t_max >= root
 
-	.sphere_hit_check_other_root:
-	vaddss xmm7, xmm6, xmm2
-	vdivss xmm7, xmm5  ; root = (-hb + sqrtd) / a
-	vcomiss xmm7, xmm0 ; root < t_min
-	jb .sphere_hit_return
-	vcomiss xmm1, xmm7 ; t_max < root
-	jb .sphere_hit_return
+    .sphere_hit_check_other_root:
+    vaddss xmm7, xmm6, xmm2
+    divss xmm7, xmm5  ; root = (-hb + sqrtd) / a
+    comiss xmm7, xmm0 ; root < t_min
+    jb .sphere_hit_return
+    comiss xmm1, xmm7 ; t_max < root
+    jb .sphere_hit_return
 
-	.sphere_hit_did_hit:
-	inc rax
-	vmovss [rdx+RECORD_T_OFFS], xmm7
-	mov r8, [rdi+SPHERE_SM_OFFS]
-	mov [rdx+RECORD_SM_OFFS], r8
+    .sphere_hit_did_hit:
+    inc eax
+    movss [rdx+RECORD_T_OFFS], xmm7
+    mov r8, [rdi+SPHERE_SM_OFFS]
+    mov [rdx+RECORD_SM_OFFS], r8
 
-	ray_at xmm0, rsi, xmm7
-	vmovups [rdx+RECORD_P_OFFS], xmm0
+    ray_at xmm2, rsi, xmm7
+    movups [rdx+RECORD_P_OFFS], xmm2
 
-	vshufps xmm8, xmm8, 0b00000000
-	vsubps xmm0, xmm3
-	vdivps xmm0, xmm8 ; outward_normal
-	mov rdi, rdx
-	call record_set_face_normal
+    shufps xmm8, xmm8, 0b00000000
+    subps xmm2, xmm3
+    divps xmm2, xmm8 ; outward_normal
+    set_face_normal rdx, rsi, xmm2, sphere
 
-	.sphere_hit_return:
-	pop rbp
-	ret
-
-;}}}
+    .sphere_hit_return:
+    pop rbp
+    ret
 
 triangle_hit: ; {{{
 	push rbp
