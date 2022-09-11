@@ -157,14 +157,9 @@ extern printf
 	vmulss %1, [rand_descale]
 %endmacro
 
-%macro scalar_fabs_mask 1
+%macro fabs_mask 1
     pcmpeqw %1, %1
     psrld %1, 1
-%endmacro
-
-%macro packed_fabs_mask 1
-    pcmpeqw %1, %1
-    psrlq %1, 1
 %endmacro
 
 ; set_face_normal record, ray, normal, tag
@@ -196,18 +191,13 @@ extern printf
 section .data
 
 ; 32-bit absolute value mask 
-fabs_mask: dd 0x7FFFFFFF
-rand_descale:  dd 4.656612873077393e-10
-fnabs_mask: dd 0x80000000
-ones_mask:  dd 0xFFFFFFFF
+rand_descale:  dd 0x2FFFFFFD
 eps:  dd 1.0e-4
 inf:  dd 0x7F800000
-zero: dd 0.0e0
 half: dd 0.5e0
 one:  dd 1.0e0
 two:  dd 2.0e0
-rgb_max:  dd 2.56e2
-degtorad: dd 0.017453292519943295
+degtorad: dd 0x3C8EFA35
 
 section .text
 
@@ -257,17 +247,20 @@ vec3_rnd_unit_sphere:
     cvtdq2ps xmm0, [rsp]
 
     movss xmm1, [rand_descale]
-    shufps xmm1, xmm1, 0x80
+    shufps xmm1, xmm1, 0x40
     mulps xmm0, xmm1
 
     addps xmm0, xmm0
 
-    movss xmm1, [one]
-    shufps xmm1, xmm1, 0x80
-    subps xmm0, xmm1
+    pcmpeqw xmm2, xmm2 ; fill with 1's
+    psrlq xmm2, 32 ; clear every other float
+    pslld xmm2, 25
+    psrld xmm2, 2
+    shufps xmm2, xmm2, 0x40
+    subps xmm0, xmm2
 
     vdpps xmm1, xmm0, xmm0, 0xF1
-    comiss xmm1, [one]
+    comiss xmm1, xmm2 ; one
     jae .vru_loop
 
     add rsp, 0x18
@@ -372,7 +365,8 @@ plane_hit:
     movups xmm2, [rsi+RAY_DIR_OFFS] ; ray->direction
     movups xmm3, [rdi+PLANE_NORMAL_OFFS] ; self->normal
     vdpps xmm4, xmm2, xmm3, 0xF1
-    vandps xmm4, [fabs_mask]
+    fabs_mask xmm5
+    andps xmm4, xmm5
     comiss xmm4, [eps] ; xmm4 < EPS
     jbe .ph_return ; if it is, return false (no plane hit)
 
@@ -477,7 +471,7 @@ triangle_hit:
     ; perpendicular(normal, r->direction)
     movups xmm6, [rsi+RAY_DIR_OFFS] ; r->direction
     vdpps xmm7, xmm5, xmm6, 0xF1
-    scalar_fabs_mask xmm8
+    fabs_mask xmm8
     andps xmm7, xmm8
     comiss xmm7, [eps] ; xmm7 < EPS
     jb .th_return
@@ -558,7 +552,7 @@ lambertian_scatter:
     addps xmm0, xmm1 ; scatter_dir
 
     ; check if scatter_dir is near zero
-    packed_fabs_mask xmm2
+    fabs_mask xmm2
     andps xmm2, xmm0 ; fabs(scatter_dir)
 
     movss xmm3, [eps]
@@ -717,7 +711,8 @@ dielectric_scatter: ; {{{
 
 	vdpps xmm6, xmm5, xmm5, 0xF1
 	vsubss xmm6, xmm3, xmm6
-	vandps xmm6, [fabs_mask]
+    fabs_mask xmm8
+	vandps xmm6, xmm8
 	vsqrtss xmm6, xmm6
 	vshufps xmm6, xmm6, 0b00000000
 	vmulps xmm6, xmm9
