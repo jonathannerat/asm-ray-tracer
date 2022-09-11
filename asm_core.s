@@ -112,49 +112,49 @@ extern printf
 %define OUTPUT_SIZE 16
 
 %macro v3p_scale 3 ; v1, t, v2 -> v1=t*v2
-	vshufps %2, %2, 0b00000000
-	vmulps %1, %2, %3
+    shufps %2, %2, 0
+    vmulps %1, %2, %3
 %endmacro
 
 %macro v3p_cross 3 ; v1 = v2 x v3 ; v2 = (x2,y2,z2,_), v3 = (x3,y3,z3,_)
-	vshufps xmm6, %2, %2, 0b11001001                        ; (y2,z2,x2)
-	vshufps xmm7, %3, %3, 0b11010010                        ; (z3,x3,y3)
-	vmulps %1, xmm6, xmm7 ; v1 = (y2*z3, z2*x3, x2*y3)
-	vshufps xmm6, %2, %2, 0b11010010                        ; (z2,x2,y2)
-	vshufps xmm7, %3, %3, 0b11001001                        ; (y3,z3,x3)
-	mulps xmm6, xmm7    ; (z2*y3, x2*z3, y2*x3)
-	subps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
+    vshufps xmm6, %2, %2, 0b11001001                        ; (y2,z2,x2)
+    vshufps xmm7, %3, %3, 0b11010010                        ; (z3,x3,y3)
+    vmulps %1, xmm6, xmm7 ; v1 = (y2*z3, z2*x3, x2*y3)
+    vshufps xmm6, %2, %2, 0b11010010                        ; (z2,x2,y2)
+    vshufps xmm7, %3, %3, 0b11001001                        ; (y3,z3,x3)
+    mulps xmm6, xmm7    ; (z2*y3, x2*z3, y2*x3)
+    subps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
 %endmacro
 
 ; v3p_reflect: return, v, n
 %macro v3p_reflect 3
-	vdpps %1, %2, %3, 0xF1
-	addss %1, %1
-	shufps %1, %1, 0
-	mulps %1, %3
-	vsubps %1, %2, %1
+    vdpps %1, %2, %3, 0xF1
+    addss %1, %1
+    shufps %1, %1, 0
+    mulps %1, %3
+    vsubps %1, %2, %1
 %endmacro
 
 %macro v3p_normalized  2
-	vdpps %2, %1, %1, 0xF1 ; norm2
-	rsqrtss %2, %2        ; 1/sqrt(norm2)
-	shufps %2, %2, 0 ;normalize
-	mulps %1, %2
+    vdpps %2, %1, %1, 0xF1 ; norm2
+    rsqrtss %2, %2        ; 1/sqrt(norm2)
+    shufps %2, %2, 0 ;normalize
+    mulps %1, %2
 %endmacro
 
 ; ray_at: return, ray_pointer, t
 %macro ray_at 3
     movups %1, [%2+RAY_DIR_OFFS]
-	shufps %3, %3, 0
-	mulps %1, %3
+    shufps %3, %3, 0
+    mulps %1, %3
     addps %1, [%2+RAY_ORIG_OFFS]
 %endmacro
 
 %macro rnd 1
-	call rand
-	pxor %1, %1
-	cvtsi2ss %1, eax
-	mulss %1, [rand_descale]
+    call rand
+    pxor %1, %1
+    cvtsi2ss %1, eax
+    mulss %1, [rand_descale]
 %endmacro
 
 %macro fabs_mask 1
@@ -572,27 +572,27 @@ lambertian_scatter:
     ret
 
 metal_scatter:
-	push rbp
-	mov rbp, rsp
+    push rbp
+    mov rbp, rsp
     push rbx
     push r12
     push r13
     push r14
 
-	; *attenuation = self->albedo
-	movups xmm0, [rdi+MATALL_ALBEDO_OFFS]
-	movups [rcx], xmm0
+    ; *attenuation = self->albedo
+    movups xmm0, [rdi+MATALL_ALBEDO_OFFS]
+    movups [rcx], xmm0
 
-	; scattered->orig = rec->p
-	movups xmm0, [rdx+RECORD_P_OFFS]
-	movups [r8+RAY_ORIG_OFFS], xmm0
+    ; scattered->orig = rec->p
+    movups xmm0, [rdx+RECORD_P_OFFS]
+    movups [r8+RAY_ORIG_OFFS], xmm0
 
     mov rbx, rdi
     mov r12, rsi
     mov r13, rdx
     mov r14, r8
 
-	call vec3_rnd_unit_sphere
+    call vec3_rnd_unit_sphere
 
     mov rdi, rbx
     mov rsi, r12
@@ -600,38 +600,38 @@ metal_scatter:
     mov r8, r14
 
     ; reflected
-	movups xmm3, [rsi+RAY_DIR_OFFS]
-	v3p_normalized xmm3, xmm2
-	movups xmm1, [rdx+RECORD_NORMAL_OFFS]
-	v3p_reflect xmm4, xmm3, xmm1
+    movups xmm3, [rsi+RAY_DIR_OFFS]
+    v3p_normalized xmm3, xmm2
+    movups xmm1, [rdx+RECORD_NORMAL_OFFS]
+    v3p_reflect xmm4, xmm3, xmm1
 
-	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit_sphere()
-	movss xmm3, [rdi+MATALL_ALPHA_OFFS]
-	shufps xmm3, xmm3, 0x80
-	mulps xmm0, xmm3
-	addps xmm0, xmm4
-	movups [r8+RAY_DIR_OFFS], xmm0
+    ; scattered->dir = reflected + self->fuzz * vec3_rnd_unit_sphere()
+    movss xmm3, [rdi+MATALL_ALPHA_OFFS]
+    shufps xmm3, xmm3, 0x80
+    mulps xmm0, xmm3
+    addps xmm0, xmm4
+    movups [r8+RAY_DIR_OFFS], xmm0
 
-	xor rax, rax
+    xor rax, rax
 
-	dpps xmm1, xmm4, 0xF1
+    dpps xmm1, xmm4, 0xF1
     pxor xmm2, xmm2
-	comiss xmm1, xmm2
+    comiss xmm1, xmm2
 
-	jbe .ms_return ; dot(...) <= 0
-	inc rax
-	
-	.ms_return:
+    jbe .ms_return ; dot(...) <= 0
+    inc rax
+    
+    .ms_return:
     pop r14
     pop r13
     pop r12
     pop rbx
-	pop rbp
-	ret
+    pop rbp
+    ret
 
 dielectric_scatter:
-	push rbp
-	mov rbp, rsp
+    push rbp
+    mov rbp, rsp
 
     push rdi
     push rsi
@@ -639,7 +639,7 @@ dielectric_scatter:
     push rcx
     push r8
     sub rsp, 8
-	rnd xmm0
+    rnd xmm0
     add rsp, 8
     pop r8
     pop rcx
@@ -647,217 +647,217 @@ dielectric_scatter:
     pop rsi
     pop rdi
 
-	movups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
-	mov al, [rdx+RECORD_FFACE_OFFS]
-	test al, al
-	jz .ds_not_fface
+    movups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
+    mov al, [rdx+RECORD_FFACE_OFFS]
+    test al, al
+    jz .ds_not_fface
 
-	rcpss xmm1, xmm1
+    rcpss xmm1, xmm1
 
-	.ds_not_fface:
-	movups xmm2, [rsi+RAY_DIR_OFFS]
-	v3p_normalized xmm2, xmm3 ; unit_dir
+    .ds_not_fface:
+    movups xmm2, [rsi+RAY_DIR_OFFS]
+    v3p_normalized xmm2, xmm3 ; unit_dir
 
-	pxor xmm3, xmm3
-	vsubps xmm5, xmm3, xmm2 ; -unit_dir
-	movups xmm9, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
-	dpps xmm5, xmm9, 0xF1
+    pxor xmm3, xmm3
+    vsubps xmm5, xmm3, xmm2 ; -unit_dir
+    movups xmm9, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+    dpps xmm5, xmm9, 0xF1
 
     pcmpeqw xmm3, xmm3
     pslld xmm3, 25
     psrld xmm3, 2 ; xmm3 = (1,1,1,1)
 
-	minss xmm5, xmm3 ; cos_theta = min(dot(-unit_dir, rec->normal), 1)
-	vmulss xmm6, xmm5, xmm5
-	vsubss xmm6, xmm3, xmm6
-	sqrtss xmm6, xmm6 ; sin_theta
-	mulss xmm6, xmm1
+    minss xmm5, xmm3 ; cos_theta = min(dot(-unit_dir, rec->normal), 1)
+    vmulss xmm6, xmm5, xmm5
+    vsubss xmm6, xmm3, xmm6
+    sqrtss xmm6, xmm6 ; sin_theta
+    mulss xmm6, xmm1
 
-	comiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
-	ja .ds_do_reflect ; cannot refract
+    comiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
+    ja .ds_do_reflect ; cannot refract
 
-	; Use Schlick's approximation for reflectance.
-	vsubss xmm6, xmm3, xmm1
-	vaddss xmm7, xmm3, xmm1
-	divss xmm6, xmm7 ; r0
-	mulss xmm6, xmm6 ; r0 *= r0
+    ; Use Schlick's approximation for reflectance.
+    vsubss xmm6, xmm3, xmm1
+    vaddss xmm7, xmm3, xmm1
+    divss xmm6, xmm7 ; r0
+    mulss xmm6, xmm6 ; r0 *= r0
 
-	vsubss xmm5, xmm3, xmm5 ; (1-cos_theta)
-	movss xmm8, xmm5
-	mulss xmm5, xmm5 ; (1-cos_theta)^2
-	mulss xmm5, xmm5 ; (1-cos_theta)^4
-	mulss xmm5, xmm8 ; (1-cos_theta)^5
-	vsubss xmm7, xmm3, xmm6 ; (1-r0)
-	mulss xmm7, xmm5
-	addss xmm6, xmm7
+    vsubss xmm5, xmm3, xmm5 ; (1-cos_theta)
+    movss xmm8, xmm5
+    mulss xmm5, xmm5 ; (1-cos_theta)^2
+    mulss xmm5, xmm5 ; (1-cos_theta)^4
+    mulss xmm5, xmm8 ; (1-cos_theta)^5
+    vsubss xmm7, xmm3, xmm6 ; (1-r0)
+    mulss xmm7, xmm5
+    addss xmm6, xmm7
 
-	comiss xmm6, xmm0
-	jbe .ds_do_refract ; reflectance <= rnd
+    comiss xmm6, xmm0
+    jbe .ds_do_refract ; reflectance <= rnd
 
-	.ds_do_reflect:
-	v3p_reflect xmm0, xmm2, xmm9
-	jmp .ds_return
+    .ds_do_reflect:
+    v3p_reflect xmm0, xmm2, xmm9
+    jmp .ds_return
 
-	.ds_do_refract:
-	pxor xmm4, xmm4
-	subps xmm4, xmm2
-	dpps xmm4, xmm9, 0xF1
-	minss xmm4, xmm3 ; cos_theta
-	shufps xmm4, xmm4, 0
-	vmulps xmm5, xmm4, xmm9
-	addps xmm5, xmm2
-	shufps xmm1, xmm1, 0
-	mulps xmm5, xmm1 ; r_out_perp
+    .ds_do_refract:
+    pxor xmm4, xmm4
+    subps xmm4, xmm2
+    dpps xmm4, xmm9, 0xF1
+    minss xmm4, xmm3 ; cos_theta
+    shufps xmm4, xmm4, 0
+    vmulps xmm5, xmm4, xmm9
+    addps xmm5, xmm2
+    shufps xmm1, xmm1, 0
+    mulps xmm5, xmm1 ; r_out_perp
 
-	vdpps xmm6, xmm5, xmm5, 0xF1
-	vsubss xmm6, xmm3, xmm6
+    vdpps xmm6, xmm5, xmm5, 0xF1
+    vsubss xmm6, xmm3, xmm6
     fabs_mask xmm8
-	andps xmm6, xmm8
-	sqrtss xmm6, xmm6
-	shufps xmm6, xmm6, 0
-	mulps xmm6, xmm9
-	vsubps xmm0, xmm5, xmm6 ; sub instead of add, because we use sqrt instead of -sqrt
+    andps xmm6, xmm8
+    sqrtss xmm6, xmm6
+    shufps xmm6, xmm6, 0
+    mulps xmm6, xmm9
+    vsubps xmm0, xmm5, xmm6 ; sub instead of add, because we use sqrt instead of -sqrt
 
-	.ds_return:
-	; *attenuation = self->albedo
-	movups xmm1, [rdi+MATALL_ALBEDO_OFFS]
-	movups [rcx], xmm1
+    .ds_return:
+    ; *attenuation = self->albedo
+    movups xmm1, [rdi+MATALL_ALBEDO_OFFS]
+    movups [rcx], xmm1
 
-	movups xmm1, [rdx+RECORD_P_OFFS]
-	movups [r8+RAY_ORIG_OFFS], xmm1
-	movups [r8+RAY_DIR_OFFS], xmm0
+    movups xmm1, [rdx+RECORD_P_OFFS]
+    movups [r8+RAY_ORIG_OFFS], xmm1
+    movups [r8+RAY_DIR_OFFS], xmm0
 
     xor al, al
     inc al
 
-	pop rbp
-	ret
+    pop rbp
+    ret
 
 camera_init:
-	push rbp
-	mov rbp, rsp
-	sub rsp, 0x60
+    push rbp
+    mov rbp, rsp
+    sub rsp, 0x60
 
-	pslldq xmm1, 8
-	orps xmm0, xmm1 ; from
-	movups [rdi+CAMERA_ORIGIN_OFFS], xmm0 ; c->origin = from
+    pslldq xmm1, 8
+    orps xmm0, xmm1 ; from
+    movups [rdi+CAMERA_ORIGIN_OFFS], xmm0 ; c->origin = from
 
-	pslldq xmm3, 8
-	vorps xmm1, xmm2, xmm3 ; to
-	vsubps xmm1, xmm0, xmm1 ; from-to
+    pslldq xmm3, 8
+    vorps xmm1, xmm2, xmm3 ; to
+    vsubps xmm1, xmm0, xmm1 ; from-to
 
-	pslldq xmm5, 8
-	vorps xmm2, xmm4, xmm5 ; vup
+    pslldq xmm5, 8
+    vorps xmm2, xmm4, xmm5 ; vup
 
-	movss xmm3, [rbp+0x10] ; aperture
-	mulss xmm3, [half]
-	movss [rdi+CAMERA_LR_OFFS], xmm3 ; c->lens_radius = aperture/2.0
+    movss xmm3, [rbp+0x10] ; aperture
+    mulss xmm3, [half]
+    movss [rdi+CAMERA_LR_OFFS], xmm3 ; c->lens_radius = aperture/2.0
 
-	movss xmm3, [rbp+0x18] ; focus_dist
+    movss xmm3, [rbp+0x18] ; focus_dist
 
-	movaps [rsp], xmm0      ; from
-	movaps [rsp+0x10], xmm1 ; from-to
-	movaps [rsp+0x20], xmm2 ; vup
-	movaps [rsp+0x30], xmm6 ; vfov
-	movaps [rsp+0x40], xmm7 ; aspect_ratio
-	movaps [rsp+0x50], xmm3 ; focus_dist
-	push rdi
-	sub rsp, 8
+    movaps [rsp], xmm0      ; from
+    movaps [rsp+0x10], xmm1 ; from-to
+    movaps [rsp+0x20], xmm2 ; vup
+    movaps [rsp+0x30], xmm6 ; vfov
+    movaps [rsp+0x40], xmm7 ; aspect_ratio
+    movaps [rsp+0x50], xmm3 ; focus_dist
+    push rdi
+    sub rsp, 8
 
-	vmulss xmm0, xmm6, [halfdegtorad] ; theta
-	call tanf
+    vmulss xmm0, xmm6, [halfdegtorad] ; theta
+    call tanf
 
-	add rsp, 8
-	pop rdi
-	movaps xmm1, [rsp+0x10] ; from-to
-	movaps xmm2, [rsp+0x20] ; vup
-	movaps xmm6, [rsp+0x30] ; vfov
-	movaps xmm7, [rsp+0x40] ; aspect_ratio
-	movaps xmm3, [rsp+0x50] ; focus_dist
+    add rsp, 8
+    pop rdi
+    movaps xmm1, [rsp+0x10] ; from-to
+    movaps xmm2, [rsp+0x20] ; vup
+    movaps xmm6, [rsp+0x30] ; vfov
+    movaps xmm7, [rsp+0x40] ; aspect_ratio
+    movaps xmm3, [rsp+0x50] ; focus_dist
 
-	vaddss xmm4, xmm0, xmm0 ; vp_height
-	vmulss xmm5, xmm7, xmm4 ; vp_width
+    vaddss xmm4, xmm0, xmm0 ; vp_height
+    vmulss xmm5, xmm7, xmm4 ; vp_width
 
-	v3p_normalized xmm1, xmm8
-	movups [rdi+CAMERA_W_OFFS], xmm1
+    v3p_normalized xmm1, xmm8
+    movups [rdi+CAMERA_W_OFFS], xmm1
 
-	v3p_cross xmm8, xmm2, xmm1
-	v3p_normalized xmm8, xmm2
-	movups [rdi+CAMERA_U_OFFS], xmm8
+    v3p_cross xmm8, xmm2, xmm1
+    v3p_normalized xmm8, xmm2
+    movups [rdi+CAMERA_U_OFFS], xmm8
 
-	v3p_cross xmm9, xmm1, xmm8
-	movups [rdi+CAMERA_V_OFFS], xmm9
+    v3p_cross xmm9, xmm1, xmm8
+    movups [rdi+CAMERA_V_OFFS], xmm9
 
-	mulss xmm5, xmm3
-	shufps xmm5, xmm5, 0
-	mulps xmm5, xmm8
-	movups [rdi+CAMERA_HORIZ_OFFS], xmm5
+    mulss xmm5, xmm3
+    shufps xmm5, xmm5, 0
+    mulps xmm5, xmm8
+    movups [rdi+CAMERA_HORIZ_OFFS], xmm5
 
-	mulss xmm4, xmm3
-	shufps xmm4, xmm4, 0
-	mulps xmm4, xmm9
-	movups [rdi+CAMERA_VERTI_OFFS], xmm4
+    mulss xmm4, xmm3
+    shufps xmm4, xmm4, 0
+    mulps xmm4, xmm9
+    movups [rdi+CAMERA_VERTI_OFFS], xmm4
 
-	movaps xmm0, [rsp]
-	addps xmm4, xmm5
-	movss xmm5, [half]
-	shufps xmm5, xmm5, 0
-	mulps xmm4, xmm5
-	shufps xmm3, xmm3, 0
-	mulps xmm1, xmm3
-	addps xmm1, xmm4
-	subps xmm0, xmm1
-	movups [rdi+CAMERA_BLCORN_OFFS], xmm0
+    movaps xmm0, [rsp]
+    addps xmm4, xmm5
+    movss xmm5, [half]
+    shufps xmm5, xmm5, 0
+    mulps xmm4, xmm5
+    shufps xmm3, xmm3, 0
+    mulps xmm1, xmm3
+    addps xmm1, xmm4
+    subps xmm0, xmm1
+    movups [rdi+CAMERA_BLCORN_OFFS], xmm0
 
-	add rsp, 0x60
-	pop rbp
-	ret
+    add rsp, 0x60
+    pop rbp
+    ret
 
 camera_get_ray:
-	push rbp
-	mov rbp, rsp
+    push rbp
+    mov rbp, rsp
     sub rsp, 0x20
 
-	movss xmm2, xmm0
+    movss xmm2, xmm0
 
     mov [rsp], rdi
     mov [rsp+0x08], rsi
     movss [rsp+0x10], xmm2
     movss [rsp+0x14], xmm1
 
-	call vec3_rnd_unit_sphere ; xmm0=rand_unit
+    call vec3_rnd_unit_sphere ; xmm0=rand_unit
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]
     movss xmm2, [rsp+0x10]
     movss xmm1, [rsp+0x14]
 
-	movss xmm3, [rsi+CAMERA_LR_OFFS]
-	shufps xmm3, xmm3, 0
-	mulps xmm0, xmm3 ; rd
+    movss xmm3, [rsi+CAMERA_LR_OFFS]
+    shufps xmm3, xmm3, 0
+    mulps xmm0, xmm3 ; rd
 
-	vshufps xmm3, xmm0, xmm0, 0
-	mulps xmm3, [rsi+CAMERA_U_OFFS]
+    vshufps xmm3, xmm0, xmm0, 0
+    mulps xmm3, [rsi+CAMERA_U_OFFS]
 
-	vshufps xmm4, xmm0, xmm0, 0b01010101
-	mulps xmm4, [rsi+CAMERA_V_OFFS]
-	addps xmm3, xmm4 ; offset
+    vshufps xmm4, xmm0, xmm0, 0b01010101
+    mulps xmm4, [rsi+CAMERA_V_OFFS]
+    addps xmm3, xmm4 ; offset
 
-	addps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
-	movups [rdi+RAY_ORIG_OFFS], xmm3
+    addps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
+    movups [rdi+RAY_ORIG_OFFS], xmm3
 
-	shufps xmm2, xmm2, 0
-	mulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
-	addps xmm2, [rsi+CAMERA_BLCORN_OFFS]
-	shufps xmm1, xmm1, 0
-	mulps xmm1, [rsi+CAMERA_VERTI_OFFS]
-	subps xmm1, xmm3
-	addps xmm1, xmm2
-	movups [rdi+RAY_DIR_OFFS], xmm1
+    shufps xmm2, xmm2, 0
+    mulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
+    addps xmm2, [rsi+CAMERA_BLCORN_OFFS]
+    shufps xmm1, xmm1, 0
+    mulps xmm1, [rsi+CAMERA_VERTI_OFFS]
+    subps xmm1, xmm3
+    addps xmm1, xmm2
+    movups [rdi+RAY_DIR_OFFS], xmm1
 
     add rsp, 0x20
-	pop rbp
-	ret
+    pop rbp
+    ret
 
 %define RENDER_WIDTH_OFFS    0
 %define RENDER_HEIGHT_OFFS   (RENDER_WIDTH_OFFS+4)
@@ -923,7 +923,7 @@ scene_render:
 
                 mov rsi, rdi ; ray address
                 mov rdi, [r15+SCENE_WORLD_OFFS] ; s->world
-                vmovaps xmm0, [rsp+RENDER_BG_OFFS]
+                movaps xmm0, [rsp+RENDER_BG_OFFS]
                 mov edx, [r15+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
                 call ray_color
 
