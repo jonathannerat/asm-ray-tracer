@@ -126,19 +126,20 @@ extern printf
 	subps %1, xmm6   ; v1 = (y2*z3-z2*y3, z2*x3-x2*z3, (x2*y3-y2*x3))
 %endmacro
 
-%macro v3p_reflect 3 ; u = v - 2 * (v . n) * n, w aux
+; v3p_reflect: return, v, n
+%macro v3p_reflect 3
 	vdpps %1, %2, %3, 0xF1
-	vmulss %1, %1, [two]
-	vshufps %1, %1, 0b00000000
-	vmulps %1, %3
+	addss %1, %1
+	shufps %1, %1, 0
+	mulps %1, %3
 	vsubps %1, %2, %1
 %endmacro
 
 %macro v3p_normalized  2
 	vdpps %2, %1, %1, 0xF1 ; norm2
-	vrsqrtss %2, %2        ; 1/sqrt(norm2)
-	vshufps %2, %2, 0b00000000 ;normalize
-	vmulps %1, %2
+	rsqrtss %2, %2        ; 1/sqrt(norm2)
+	shufps %2, %2, 0 ;normalize
+	mulps %1, %2
 %endmacro
 
 ; ray_at: return, ray_pointer, t
@@ -579,58 +580,63 @@ lambertian_scatter:
     pop rbp
     ret
 
-metal_scatter: ; {{{
+metal_scatter:
 	push rbp
 	mov rbp, rsp
-    sub rsp, 0x20
+    push rbx
+    push r12
+    push r13
+    push r14
 
 	; *attenuation = self->albedo
-	vmovups xmm0, [rdi+MATALL_ALBEDO_OFFS]
-	vmovups [rcx], xmm0
+	movups xmm0, [rdi+MATALL_ALBEDO_OFFS]
+	movups [rcx], xmm0
 
 	; scattered->orig = rec->p
-	vmovups xmm0, [rdx+RECORD_P_OFFS]
-	vmovups [r8+RAY_ORIG_OFFS], xmm0
+	movups xmm0, [rdx+RECORD_P_OFFS]
+	movups [r8+RAY_ORIG_OFFS], xmm0
 
-    mov [rsp], rdi
-    mov [rsp+0x08], rsi
-    mov [rsp+0x10], rdx
-    mov [rsp+0x18], r8
+    mov rbx, rdi
+    mov r12, rsi
+    mov r13, rdx
+    mov r14, r8
 
 	call vec3_rnd_unit_sphere
 
-    mov rdi, [rsp]
-    mov rsi, [rsp+0x08]
-    mov rdx, [rsp+0x10]
-    mov r8, [rsp+0x18]
+    mov rdi, rbx
+    mov rsi, r12
+    mov rdx, r13
+    mov r8, r14
 
     ; reflected
-	vmovups xmm3, [rsi+RAY_DIR_OFFS]
+	movups xmm3, [rsi+RAY_DIR_OFFS]
 	v3p_normalized xmm3, xmm2
-	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS]
+	movups xmm1, [rdx+RECORD_NORMAL_OFFS]
 	v3p_reflect xmm4, xmm3, xmm1
 
 	; scattered->dir = reflected + self->fuzz * vec3_rnd_unit_sphere()
-	vmovss xmm3, [rdi+MATALL_ALPHA_OFFS]
-	vshufps xmm3, xmm3, 0b00000000
-	vmulps xmm0, xmm3
-	vaddps xmm0, xmm4
-	vmovups [r8+RAY_DIR_OFFS], xmm0
+	movss xmm3, [rdi+MATALL_ALPHA_OFFS]
+	shufps xmm3, xmm3, 0x80
+	mulps xmm0, xmm3
+	addps xmm0, xmm4
+	movups [r8+RAY_DIR_OFFS], xmm0
 
 	xor rax, rax
 
-	vdpps xmm1, xmm4, 0xF1
-    vxorps xmm2, xmm2
-	vcomiss xmm1, xmm2
+	dpps xmm1, xmm4, 0xF1
+    pxor xmm2, xmm2
+	comiss xmm1, xmm2
 
 	jbe .ms_return ; dot(...) <= 0
 	inc rax
 	
 	.ms_return:
-    add rsp, 0x20
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
 	pop rbp
 	ret
-;}}}
 
 dielectric_scatter: ; {{{
 	push rbp
