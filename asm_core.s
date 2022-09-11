@@ -461,77 +461,77 @@ sphere_hit:
     ret
 
 triangle_hit:
-	push rbp
-	mov rbp, rsp
+    push rbp
+    mov rbp, rsp
 
-	xor eax, eax
+    xor eax, eax
 
-	movups xmm2, [rdi+TRIANGLE_P1_OFFS]
-	movups xmm3, [rdi+TRIANGLE_P2_OFFS]
-	movups xmm4, [rdi+TRIANGLE_P3_OFFS]
-	vsubps xmm8, xmm3, xmm2
-	vsubps xmm9, xmm4, xmm2
-	v3p_cross xmm5, xmm8, xmm9 ; xmm5 = normal
+    movups xmm2, [rdi+TRIANGLE_P1_OFFS]
+    movups xmm3, [rdi+TRIANGLE_P2_OFFS]
+    movups xmm4, [rdi+TRIANGLE_P3_OFFS]
+    vsubps xmm8, xmm3, xmm2
+    vsubps xmm9, xmm4, xmm2
+    v3p_cross xmm5, xmm8, xmm9 ; xmm5 = normal
 
-	; perpendicular(normal, r->direction)
-	movups xmm6, [rsi+RAY_DIR_OFFS] ; r->direction
-	vdpps xmm7, xmm5, xmm6, 0xF1
+    ; perpendicular(normal, r->direction)
+    movups xmm6, [rsi+RAY_DIR_OFFS] ; r->direction
+    vdpps xmm7, xmm5, xmm6, 0xF1
     scalar_fabs_mask xmm8
-	andps xmm7, xmm8
-	comiss xmm7, [eps] ; xmm7 < EPS
-	jb .th_return
+    andps xmm7, xmm8
+    comiss xmm7, [eps] ; xmm7 < EPS
+    jb .th_return
 
-	; check if ray intersection is outside of t_range
-	vsubps xmm8, xmm2, [rsi+RAY_ORIG_OFFS]
-	dpps xmm8, xmm5, 0xF1 ; t_nom
-	dpps xmm6, xmm5, 0xF1 ; t_denom
-	divss xmm8, xmm6 ; t
-	comiss xmm8, xmm0
-	jb .th_return
-	comiss xmm1, xmm8
-	jb .th_return
+    ; check if ray intersection is outside of t_range
+    vsubps xmm8, xmm2, [rsi+RAY_ORIG_OFFS]
+    dpps xmm8, xmm5, 0xF1 ; t_nom
+    dpps xmm6, xmm5, 0xF1 ; t_denom
+    divss xmm8, xmm6 ; t
+    comiss xmm8, xmm0
+    jb .th_return
+    comiss xmm1, xmm8
+    jb .th_return
 
-	mov rcx, [rdi+TRIANGLE_SM_OFFS] ; save sm, since we'll overwrite rdi
+    mov rcx, [rdi+TRIANGLE_SM_OFFS] ; save sm, since we'll overwrite rdi
 
-	ray_at xmm0, rsi, xmm8
+    ray_at xmm0, rsi, xmm8
 
-	; first boundary check
-	vsubps xmm9, xmm3, xmm2 ; (p2 - p1)
-	vsubps xmm10, xmm0, xmm2 ; (p - p1)
-	v3p_cross xmm1, xmm9, xmm10
-	dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+    ; first boundary check
+    vsubps xmm9, xmm3, xmm2 ; (p2 - p1)
+    vsubps xmm10, xmm0, xmm2 ; (p - p1)
+    v3p_cross xmm1, xmm9, xmm10
+    dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
     pxor xmm9, xmm9
-	comiss xmm1, xmm9
-	jbe .th_return ; dot(...) <= 0
+    comiss xmm1, xmm9
+    jbe .th_return ; dot(...) <= 0
 
-	;second boundary check
-	vsubps xmm9, xmm4, xmm3 ; (p3 - p2)
-	vsubps xmm10, xmm0, xmm3 ; (p - p2)
-	v3p_cross xmm1, xmm9, xmm10
-	dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+    ;second boundary check
+    vsubps xmm9, xmm4, xmm3 ; (p3 - p2)
+    vsubps xmm10, xmm0, xmm3 ; (p - p2)
+    v3p_cross xmm1, xmm9, xmm10
+    dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
     pxor xmm9, xmm9
-	comiss xmm1, xmm9
-	jbe .th_return ; dot(...) <= 0
+    comiss xmm1, xmm9
+    jbe .th_return ; dot(...) <= 0
 
-	;third boundary check
-	vsubps xmm9, xmm2, xmm4 ; (p1 - p3)
-	vsubps xmm10, xmm0, xmm4 ; (p - p3)
-	v3p_cross xmm1, xmm9, xmm10
-	dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
+    ;third boundary check
+    vsubps xmm9, xmm2, xmm4 ; (p1 - p3)
+    vsubps xmm10, xmm0, xmm4 ; (p - p3)
+    v3p_cross xmm1, xmm9, xmm10
+    dpps xmm1, xmm5, 0xF1 ; dot(normal, cross(...))
     pxor xmm9, xmm9
-	comiss xmm1, xmm9
-	jbe .th_return ; dot(...) <= 0
+    comiss xmm1, xmm9
+    jbe .th_return ; dot(...) <= 0
 
-	; triangle hit
+    ; triangle hit
     inc eax
-	movss [rdx+RECORD_T_OFFS], xmm8
-	movups [rdx+RECORD_P_OFFS], xmm0
-	mov [rdx+RECORD_SM_OFFS], rcx
+    movss [rdx+RECORD_T_OFFS], xmm8
+    movups [rdx+RECORD_P_OFFS], xmm0
+    mov [rdx+RECORD_SM_OFFS], rcx
     set_face_normal rdx, rsi, xmm5, triangle
 
-	.th_return:
-	pop rbp
-	ret
+    .th_return:
+    pop rbp
+    ret
 
 ; Scatter Functions {{{
 lambertian_scatter: ; {{{
