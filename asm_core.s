@@ -195,9 +195,7 @@ rand_descale:  dd 0x2FFFFFFD
 eps:  dd 1.0e-4
 inf:  dd 0x7F800000
 half: dd 0.5e0
-one:  dd 1.0e0
-two:  dd 2.0e0
-degtorad: dd 0x3C8EFA35
+halfdegtorad: dd 0x3C0EFA35
 
 section .text
 
@@ -735,135 +733,131 @@ dielectric_scatter:
 	pop rbp
 	ret
 
-; Scene Functions {{{
-camera_init: ;{{{
+camera_init:
 	push rbp
 	mov rbp, rsp
 	sub rsp, 0x60
 
-	vpslldq xmm1, 0x8
-	vorps xmm0, xmm1 ; from
-	vmovups [rdi+CAMERA_ORIGIN_OFFS], xmm0 ; c->origin = from
+	pslldq xmm1, 8
+	orps xmm0, xmm1 ; from
+	movups [rdi+CAMERA_ORIGIN_OFFS], xmm0 ; c->origin = from
 
-	vpslldq xmm3, 0x8
+	pslldq xmm3, 8
 	vorps xmm1, xmm2, xmm3 ; to
 	vsubps xmm1, xmm0, xmm1 ; from-to
 
-	vpslldq xmm5, 0x8
+	pslldq xmm5, 8
 	vorps xmm2, xmm4, xmm5 ; vup
 
-	vmovss xmm3, [rbp+0x10] ; aperture
-	vmulss xmm3, [half]
-	vmovss [rdi+CAMERA_LR_OFFS], xmm3 ; c->lens_radius = aperture/2.0
+	movss xmm3, [rbp+0x10] ; aperture
+	mulss xmm3, [half]
+	movss [rdi+CAMERA_LR_OFFS], xmm3 ; c->lens_radius = aperture/2.0
 
-	vmovss xmm3, [rbp+0x18] ; focus_dist
+	movss xmm3, [rbp+0x18] ; focus_dist
 
-	vmovaps [rsp], xmm0      ; from
-	vmovaps [rsp+0x10], xmm1 ; from-to
-	vmovaps [rsp+0x20], xmm2 ; vup
-	vmovaps [rsp+0x30], xmm6 ; vfov
-	vmovaps [rsp+0x40], xmm7 ; aspect_ratio
-	vmovaps [rsp+0x50], xmm3 ; focus_dist
+	movaps [rsp], xmm0      ; from
+	movaps [rsp+0x10], xmm1 ; from-to
+	movaps [rsp+0x20], xmm2 ; vup
+	movaps [rsp+0x30], xmm6 ; vfov
+	movaps [rsp+0x40], xmm7 ; aspect_ratio
+	movaps [rsp+0x50], xmm3 ; focus_dist
 	push rdi
 	sub rsp, 8
 
-	vmulss xmm6, [degtorad] ; theta
-	vmulss xmm0, xmm6, [half]
+	vmulss xmm0, xmm6, [halfdegtorad] ; theta
 	call tanf
 
 	add rsp, 8
 	pop rdi
-	vmovaps xmm1, [rsp+0x10] ; from-to
-	vmovaps xmm2, [rsp+0x20] ; vup
-	vmovaps xmm6, [rsp+0x30] ; vfov
-	vmovaps xmm7, [rsp+0x40] ; aspect_ratio
-	vmovaps xmm3, [rsp+0x50] ; focus_dist
+	movaps xmm1, [rsp+0x10] ; from-to
+	movaps xmm2, [rsp+0x20] ; vup
+	movaps xmm6, [rsp+0x30] ; vfov
+	movaps xmm7, [rsp+0x40] ; aspect_ratio
+	movaps xmm3, [rsp+0x50] ; focus_dist
 
-	vmulss xmm4, xmm0, [two] ; vp_height
+	vaddss xmm4, xmm0, xmm0 ; vp_height
 	vmulss xmm5, xmm7, xmm4 ; vp_width
 
 	v3p_normalized xmm1, xmm8
-	vmovups [rdi+CAMERA_W_OFFS], xmm1
+	movups [rdi+CAMERA_W_OFFS], xmm1
 
 	v3p_cross xmm8, xmm2, xmm1
 	v3p_normalized xmm8, xmm2
-	vmovups [rdi+CAMERA_U_OFFS], xmm8
+	movups [rdi+CAMERA_U_OFFS], xmm8
 
 	v3p_cross xmm9, xmm1, xmm8
-	vmovups [rdi+CAMERA_V_OFFS], xmm9
+	movups [rdi+CAMERA_V_OFFS], xmm9
 
-	vmulss xmm5, xmm3
-	vshufps xmm5, xmm5, 0b00000000
-	vmulps xmm5, xmm8
-	vmovups [rdi+CAMERA_HORIZ_OFFS], xmm5
+	mulss xmm5, xmm3
+	shufps xmm5, xmm5, 0
+	mulps xmm5, xmm8
+	movups [rdi+CAMERA_HORIZ_OFFS], xmm5
 
-	vmulss xmm4, xmm3
-	vshufps xmm4, xmm4, 0b00000000
-	vmulps xmm4, xmm9
-	vmovups [rdi+CAMERA_VERTI_OFFS], xmm4
+	mulss xmm4, xmm3
+	shufps xmm4, xmm4, 0
+	mulps xmm4, xmm9
+	movups [rdi+CAMERA_VERTI_OFFS], xmm4
 
-	vmovaps xmm0, [rsp]
-	vaddps xmm4, xmm5
-	vmovss xmm5, [half]
-	vshufps xmm5, xmm5, 0b00000000
-	vmulps xmm4, xmm5
-	vshufps xmm3, xmm3, 0b00000000
-	vmulps xmm1, xmm3
-	vaddps xmm1, xmm4
-	vsubps xmm0, xmm1
-	vmovups [rdi+CAMERA_BLCORN_OFFS], xmm0
+	movaps xmm0, [rsp]
+	addps xmm4, xmm5
+	movss xmm5, [half]
+	shufps xmm5, xmm5, 0
+	mulps xmm4, xmm5
+	shufps xmm3, xmm3, 0
+	mulps xmm1, xmm3
+	addps xmm1, xmm4
+	subps xmm0, xmm1
+	movups [rdi+CAMERA_BLCORN_OFFS], xmm0
 
 	add rsp, 0x60
 	pop rbp
 	ret
-;}}}
 
-camera_get_ray: ;{{{
+camera_get_ray:
 	push rbp
 	mov rbp, rsp
     sub rsp, 0x20
 
-	vmovss xmm2, xmm0
+	movss xmm2, xmm0
 
     mov [rsp], rdi
     mov [rsp+0x08], rsi
-    vmovss [rsp+0x10], xmm2
-    vmovss [rsp+0x14], xmm1
+    movss [rsp+0x10], xmm2
+    movss [rsp+0x14], xmm1
 
 	call vec3_rnd_unit_sphere ; xmm0=rand_unit
 
     mov rdi, [rsp]
     mov rsi, [rsp+0x08]
-    vmovss xmm2, [rsp+0x10]
-    vmovss xmm1, [rsp+0x14]
+    movss xmm2, [rsp+0x10]
+    movss xmm1, [rsp+0x14]
 
-	vmovss xmm3, [rsi+CAMERA_LR_OFFS]
-	vshufps xmm3, xmm3, 0b00000000
-	vmulps xmm0, xmm3 ; rd
+	movss xmm3, [rsi+CAMERA_LR_OFFS]
+	shufps xmm3, xmm3, 0
+	mulps xmm0, xmm3 ; rd
 
-	vshufps xmm3, xmm0, xmm0, 0b00000000
-	vmulps xmm3, [rsi+CAMERA_U_OFFS]
+	vshufps xmm3, xmm0, xmm0, 0
+	mulps xmm3, [rsi+CAMERA_U_OFFS]
 
 	vshufps xmm4, xmm0, xmm0, 0b01010101
-	vmulps xmm4, [rsi+CAMERA_V_OFFS]
-	vaddps xmm3, xmm4 ; offset
+	mulps xmm4, [rsi+CAMERA_V_OFFS]
+	addps xmm3, xmm4 ; offset
 
-	vaddps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
-	vmovups [rdi+RAY_ORIG_OFFS], xmm3
+	addps xmm3, [rsi+CAMERA_ORIGIN_OFFS]
+	movups [rdi+RAY_ORIG_OFFS], xmm3
 
-	vshufps xmm2, xmm2, 0b00000000
-	vmulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
-	vaddps xmm2, [rsi+CAMERA_BLCORN_OFFS]
-	vshufps xmm1, xmm1, 0b00000000
-	vmulps xmm1, [rsi+CAMERA_VERTI_OFFS]
-	vsubps xmm1, xmm3
-	vaddps xmm1, xmm2
-	vmovups [rdi+RAY_DIR_OFFS], xmm1
+	shufps xmm2, xmm2, 0
+	mulps xmm2, [rsi+CAMERA_HORIZ_OFFS]
+	addps xmm2, [rsi+CAMERA_BLCORN_OFFS]
+	shufps xmm1, xmm1, 0
+	mulps xmm1, [rsi+CAMERA_VERTI_OFFS]
+	subps xmm1, xmm3
+	addps xmm1, xmm2
+	movups [rdi+RAY_DIR_OFFS], xmm1
 
     add rsp, 0x20
 	pop rbp
 	ret
-;}}}
 
 %define RENDER_WIDTH_OFFS    0
 %define RENDER_HEIGHT_OFFS   (RENDER_WIDTH_OFFS+4)
@@ -874,7 +868,7 @@ camera_get_ray: ;{{{
 %define RENDER_BG_OFFS       (RENDER_PIXEL_OFFS+VEC3_SIZE)
 %define RENDER_ARGS_SIZE     (RENDER_BG_OFFS+VEC3_SIZE)
 
-scene_render: ;{{{
+scene_render:
     push rbp
     mov rbp, rsp
     push rbx
@@ -892,36 +886,36 @@ scene_render: ;{{{
     mov ecx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
     mov [rsp+RENDER_WIDTH_OFFS], ecx ; width
     xor r12d, r12d ; initial j value
-    vxorps xmm0, xmm0
-    vmovaps [rsp+RENDER_BG_OFFS], xmm0
+    pxor xmm0, xmm0
+    movaps [rsp+RENDER_BG_OFFS], xmm0
 
-    .height_loop: ; {{{
+    .height_loop:
         xor r13d, r13d ; initial i value
         .width_loop: ; 
             xor r14d, r14d
-            vxorps xmm0, xmm0
-            vmovaps [rsp+RENDER_PIXEL_OFFS], xmm0
+            pxor xmm0, xmm0
+            movaps [rsp+RENDER_PIXEL_OFFS], xmm0
             .spp_loop: ; 
                 rnd xmm0
-                vmovss [rsp+RENDER_RAND1_OFFS], xmm0
+                movss [rsp+RENDER_RAND1_OFFS], xmm0
                 rnd xmm0
 
                 ; calculate u vec
-                vcvtsi2ss xmm2, r13d ; (float) i
+                cvtsi2ss xmm2, r13d ; (float) i
                 mov edi, [rsp+RENDER_WIDTH_OFFS]
                 dec edi ; width - 1
-                vcvtsi2ss xmm3, edi ; (float) (width - 1)
-                vaddss xmm0, xmm2
-                vdivss xmm0, xmm3 ; u = (i + rnd()) / (width - 1)
+                cvtsi2ss xmm3, edi ; (float) (width - 1)
+                addss xmm0, xmm2
+                divss xmm0, xmm3 ; u = (i + rnd()) / (width - 1)
 
                 ; calculate v vec
-                vmovss xmm1, [rsp+RENDER_RAND1_OFFS]
-                vcvtsi2ss xmm2, r12d ; (float) j
+                movss xmm1, [rsp+RENDER_RAND1_OFFS]
+                cvtsi2ss xmm2, r12d ; (float) j
                 mov edi, [rsp+RENDER_HEIGHT_OFFS]
                 dec edi ; height - 1
-                vcvtsi2ss xmm3, edi ; (float) (height - 1)
-                vaddss xmm1, xmm2
-                vdivss xmm1, xmm3 ; v = (j + rnd()) / (height - 1)
+                cvtsi2ss xmm3, edi ; (float) (height - 1)
+                addss xmm1, xmm2
+                divss xmm1, xmm3 ; v = (j + rnd()) / (height - 1)
 
                 lea rdi, [rsp+RENDER_RAY_OFFS] ; prepare space for return Ray
                 lea rsi, [r15+SCENE_CAMERA_OFFS] ; s->camera
@@ -933,8 +927,8 @@ scene_render: ;{{{
                 mov edx, [r15+SCENE_OUTPUT_OFFS+OUTPUT_DEPTH_OFFS]
                 call ray_color
 
-                vaddps xmm0, [rsp+RENDER_PIXEL_OFFS]
-                vmovaps [rsp+RENDER_PIXEL_OFFS], xmm0
+                addps xmm0, [rsp+RENDER_PIXEL_OFFS]
+                movaps [rsp+RENDER_PIXEL_OFFS], xmm0
 
                 inc r14d
                 cmp r14d, [r15+SCENE_OUTPUT_OFFS+OUTPUT_SPP_OFFS]
@@ -944,14 +938,14 @@ scene_render: ;{{{
             mul r12d
             add eax, r13d ; idx = j * w + i
             sal eax, 4    ; * 16 (Vec3)
-            vmovups [rbx+rax], xmm0 ; image[idx] = pixel
+            movups [rbx+rax], xmm0 ; image[idx] = pixel
 
             inc r13d
             cmp r13d, [rsp+RENDER_WIDTH_OFFS]
             jl .width_loop 
         inc r12d
         cmp r12d, [rsp+RENDER_HEIGHT_OFFS]
-        jl .height_loop ; }}}
+        jl .height_loop
 
     add rsp, 8
     add rsp, RENDER_ARGS_SIZE
@@ -962,9 +956,8 @@ scene_render: ;{{{
     pop rbx
     pop rbp
     ret
-;}}}
 
-ray_color: ;{{{
+ray_color:
     push rbp
     mov rbp, rsp
     push r12
@@ -973,25 +966,25 @@ ray_color: ;{{{
     push r15
     sub rsp, RECORD_SIZE+RAY_SIZE+3*VEC3_SIZE
 
-    vmovaps xmm1, xmm0 ; save bg color
-    vxorps xmm0, xmm0
+    movaps xmm1, xmm0 ; save bg color
+    pxor xmm0, xmm0
     test edx, edx ; check depth <= 0
     jz .rc_return
 
     ; save params
-    vmovaps [rsp], xmm1
+    movaps [rsp], xmm1
     mov r12, rdi
     mov r13, rsi
     mov r14, rdx
 
     mov rax, [rdi+HITTABLE_HIT_OFFS]
-    vmovss xmm0, [eps]
-    vmovss xmm1, [inf]
+    movss xmm0, [eps]
+    movss xmm1, [inf]
     lea rdx, [rsp+3*VEC3_SIZE]
     call rax ; world->hit(...)
 
     ; restore params
-    vmovaps xmm1, [rsp]
+    movaps xmm1, [rsp]
     mov rdi, r12
     mov rsi, r13
     mov rdx, r14
@@ -1000,7 +993,7 @@ ray_color: ;{{{
     jnz .rc_world_hit
 
     ; no hit, return bg
-    vmovaps xmm0, xmm1
+    movaps xmm0, xmm1
     jmp .rc_return
 
     .rc_world_hit:
@@ -1012,9 +1005,9 @@ ray_color: ;{{{
     mov rax, [rdi+MATERIAL_EMITTED_OFFS]
 
     call rax ; m->emitted(m)
-    vpslldq xmm1, 8
-    vorps xmm0, xmm1 ; emit functions implemented in C
-    vmovaps [rsp+VEC3_SIZE], xmm0 ; save emitted
+    pslldq xmm1, 8
+    orps xmm0, xmm1 ; emit functions implemented in C
+    movaps [rsp+VEC3_SIZE], xmm0 ; save emitted
 
     mov rdi, r15
     mov rsi, r13
@@ -1029,7 +1022,7 @@ ray_color: ;{{{
     jnz .rc_mat_scatter
 
     ; no scatter, return emitted
-    vmovaps xmm0, [rsp+VEC3_SIZE]
+    movaps xmm0, [rsp+VEC3_SIZE]
     jmp .rc_return
 
     .rc_mat_scatter:
@@ -1037,11 +1030,11 @@ ray_color: ;{{{
     lea rsi, [rsp+3*VEC3_SIZE+RECORD_SIZE] ; scattered
     mov rdx, r14
     dec edx ; depth - 1
-    vmovaps xmm0, [rsp] ; restore bg
+    movaps xmm0, [rsp] ; restore bg
     call ray_color
 
-    vmulps xmm0, [rsp+2*VEC3_SIZE] ; attenuation
-    vaddps xmm0, [rsp+VEC3_SIZE]   ; emitted
+    mulps xmm0, [rsp+2*VEC3_SIZE] ; attenuation
+    addps xmm0, [rsp+VEC3_SIZE]   ; emitted
 
     .rc_return:
     add rsp, RECORD_SIZE+RAY_SIZE+3*VEC3_SIZE
@@ -1051,38 +1044,4 @@ ray_color: ;{{{
     pop r12
     pop rbp
     ret
-;}}}
-;}}}
-;}}}
-
-record_set_face_normal: ; Record *rec, Ray *r, Vec3 normal {{{
-	push rax
-	sub rsp, 0x20
-	vmovaps [rsp], xmm1
-	vmovaps [rsp+0x10], xmm2
-
-    xor al, al ; front_face = false
-	vmovups xmm1, [rsi+RAY_DIR_OFFS]
-	vdpps xmm1, xmm0, 0xF1
-    vxorps xmm2, xmm2
-	vcomiss xmm1, xmm2
-	jae .record_no_front_face
-
-	inc al ; front_face = true
-    jmp .record_return
-
-	.record_no_front_face:
-	vsubps xmm0, xmm2, xmm0 ; xmm0 = -xmm0
-
-	.record_return:
-	mov [rdi+RECORD_FFACE_OFFS], al
-	vmovups [rdi+RECORD_NORMAL_OFFS], xmm0
-
-	vmovaps xmm1, [rsp]
-	vmovaps xmm2, [rsp+0x10]
-	add rsp, 0x20
-	pop rax
-	ret
-;}}}
-
 ; vi: ft=x86asm ts=4 sw=4 et
