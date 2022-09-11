@@ -158,12 +158,12 @@ extern printf
 
 %macro scalar_fabs_mask 1
     pcmpeqw %1, %1
-    psrlq %1, 1
+    psrld %1, 1
 %endmacro
 
 %macro packed_fabs_mask 1
-    scalar_fabs_mask %1
-    shufps %1, %1, 0
+    pcmpeqw %1, %1
+    psrlq %1, 1
 %endmacro
 
 ; set_face_normal record, ray, normal, tag
@@ -533,15 +533,14 @@ triangle_hit:
     pop rbp
     ret
 
-; Scatter Functions {{{
-lambertian_scatter: ; {{{
+lambertian_scatter:
 	push rbp
 	mov rbp, rsp
     sub rsp, 0x10
 
 	; *attenuation = self->albedo
-	vmovups xmm0, [rdi+MATALL_ALBEDO_OFFS]
-	vmovups [rcx], xmm0
+	movups xmm0, [rdi+MATALL_ALBEDO_OFFS]
+	movups [rcx], xmm0
 
     mov [rsp], rdx
     mov [rsp+0x08], r8
@@ -551,36 +550,34 @@ lambertian_scatter: ; {{{
     mov rdx, [rsp]
     mov r8, [rsp+0x08]
 
-    xor rax, rax
-    inc rax
+    xor eax, eax
+    inc eax
 
-	vmovups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
-	vaddps xmm3, xmm0, xmm1 ; scatter_dir
+	movups xmm1, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+	addps xmm0, xmm1 ; scatter_dir
 
 	; check if scatter_dir is near zero
-	vmovss xmm2, [fabs_mask]
-	vshufps xmm2, xmm2, 0b00000000
-	vandps xmm4, xmm3, xmm2 ; fabs(scatter_dir)
+    packed_fabs_mask xmm2
+	andps xmm2, xmm0 ; fabs(scatter_dir)
 
-	vmovss xmm2, [eps]
-	vshufps xmm2, xmm2, 0b00000000
-    vminps xmm5, xmm4, xmm2 ; xmm5 = min(fabs(scatter_dir), (eps,eps,eps,eps))
+	movss xmm3, [eps]
+	shufps xmm3, xmm3, 0b00000000
+    vminps xmm5, xmm2, xmm3 ; xmm5 = min(fabs(scatter_dir), (eps,eps,eps,eps))
 
-	vptest xmm5, xmm4 ; set CF if xmm5 = xmm4 (i.e. fabs(scatter_dir) < (eps,...))
+	ptest xmm5, xmm2 ; set CF if xmm5 = xmm2 (i.e. fabs(scatter_dir) < (eps,...))
 	jnc .ls_not_near_zero ; if CF=0, scatter is not near zero
 
-	vmovaps xmm3, xmm1 ; scatter_dir = rec->normal
+	movaps xmm0, xmm1 ; scatter_dir = rec->normal
 
 	.ls_not_near_zero:
 	; *scattered = Ray(p, scatter_dir)
-	vmovups xmm5, [rdx+RECORD_P_OFFS]
-	vmovups [r8+RAY_ORIG_OFFS], xmm5
-	vmovups [r8+RAY_DIR_OFFS], xmm3
+	movups xmm1, [rdx+RECORD_P_OFFS]
+	movups [r8+RAY_ORIG_OFFS], xmm1
+	movups [r8+RAY_DIR_OFFS], xmm0
 
     add rsp, 0x10
 	pop rbp
 	ret
-;}}}
 
 metal_scatter: ; {{{
 	push rbp
