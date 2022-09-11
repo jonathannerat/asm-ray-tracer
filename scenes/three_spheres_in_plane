@@ -4,7 +4,7 @@ materials:
     light=1,1,1
     lambertian=.41,.38,.43
     lambertian=.93,1,.2
-    metal: albedo=.4,1,.5 fuzz=.9
+    metal: albedo=.4,1,.5 fuzz=.1
     dielectric: albedo=.9,.9,.9 ir=.8
 objects:
     plane: origin=0,6,0 normal=0,-1,0 material=0
