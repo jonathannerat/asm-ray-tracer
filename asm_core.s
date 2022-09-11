@@ -152,9 +152,9 @@ extern printf
 
 %macro rnd 1
 	call rand
-	vxorps %1, %1
-	vcvtsi2ss %1, eax
-	vmulss %1, [rand_descale]
+	pxor %1, %1
+	cvtsi2ss %1, eax
+	mulss %1, [rand_descale]
 %endmacro
 
 %macro fabs_mask 1
@@ -252,11 +252,10 @@ vec3_rnd_unit_sphere:
 
     addps xmm0, xmm0
 
-    pcmpeqw xmm2, xmm2 ; fill with 1's
-    psrlq xmm2, 32 ; clear every other float
+    pcmpeqw xmm2, xmm2
     pslld xmm2, 25
-    psrld xmm2, 2
-    shufps xmm2, xmm2, 0x40
+    psrld xmm2, 2 ; (one,one,one,one)
+    psrldq xmm2, 4
     subps xmm0, xmm2
 
     vdpps xmm1, xmm0, xmm0, 0xF1
@@ -632,66 +631,69 @@ metal_scatter:
 	pop rbp
 	ret
 
-dielectric_scatter: ; {{{
+dielectric_scatter:
 	push rbp
 	mov rbp, rsp
-    sub rsp, 0x30
 
-    mov [rsp], rdi
-    mov [rsp+0x08], rsi
-    mov [rsp+0x10], rdx
-    mov [rsp+0x18], rcx
-    mov [rsp+0x20], r8
-
+    push rdi
+    push rsi
+    push rdx
+    push rcx
+    push r8
+    sub rsp, 8
 	rnd xmm0
+    add rsp, 8
+    pop r8
+    pop rcx
+    pop rdx
+    pop rsi
+    pop rdi
 
-    mov rdi, [rsp]
-    mov rsi, [rsp+0x08]
-    mov rdx, [rsp+0x10]
-    mov rcx, [rsp+0x18]
-    mov r8, [rsp+0x20]
-
-	vmovups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
+	movups xmm1, [rdi+MATALL_ALPHA_OFFS] ; ref_ratio = self->ir
 	mov al, [rdx+RECORD_FFACE_OFFS]
 	test al, al
 	jz .ds_not_fface
 
-	vrcpss xmm1, xmm1
+	rcpss xmm1, xmm1
 
 	.ds_not_fface:
-	vmovups xmm2, [rsi+RAY_DIR_OFFS]
+	movups xmm2, [rsi+RAY_DIR_OFFS]
 	v3p_normalized xmm2, xmm3 ; unit_dir
 
-	vxorps xmm3, xmm3
+	pxor xmm3, xmm3
 	vsubps xmm5, xmm3, xmm2 ; -unit_dir
-	vmovups xmm9, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
-	vdpps xmm5, xmm9, 0xF1
-	vmovss xmm3, [one]
-	vminss xmm5, xmm3 ; cos_theta = min(dot(-unit_dir, rec->normal), 1)
+	movups xmm9, [rdx+RECORD_NORMAL_OFFS] ; rec->normal
+	dpps xmm5, xmm9, 0xF1
+
+    pcmpeqw xmm3, xmm3
+    pslld xmm3, 25
+    psrld xmm3, 2 ; xmm3 = (1,1,1,1)
+
+	minss xmm5, xmm3 ; cos_theta = min(dot(-unit_dir, rec->normal), 1)
 	vmulss xmm6, xmm5, xmm5
 	vsubss xmm6, xmm3, xmm6
-	vsqrtss xmm6, xmm6 ; sin_theta
-	vmulss xmm6, xmm1
+	sqrtss xmm6, xmm6 ; sin_theta
+	mulss xmm6, xmm1
 
-	vcomiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
+	comiss xmm6, xmm3 ; ref_ratio * sin_theta > 1
 	ja .ds_do_reflect ; cannot refract
 
 	; Use Schlick's approximation for reflectance.
 	vsubss xmm6, xmm3, xmm1
 	vaddss xmm7, xmm3, xmm1
-	vdivss xmm6, xmm7 ; r0
-	vmulss xmm6, xmm6 ; r0 *= r0
+	divss xmm6, xmm7 ; r0
+	mulss xmm6, xmm6 ; r0 *= r0
 
 	vsubss xmm5, xmm3, xmm5 ; (1-cos_theta)
-	vmovss xmm8, xmm5
-	vmulss xmm5, xmm5 ; (1-cos_theta)^2
-	vmulss xmm5, xmm5 ; (1-cos_theta)^4
-	vmulss xmm5, xmm8 ; (1-cos_theta)^5
+	movss xmm8, xmm5
+	mulss xmm5, xmm5 ; (1-cos_theta)^2
+	mulss xmm5, xmm5 ; (1-cos_theta)^4
+	mulss xmm5, xmm8 ; (1-cos_theta)^5
 	vsubss xmm7, xmm3, xmm6 ; (1-r0)
-	vmulss xmm7, xmm5
-	vaddss xmm6, xmm7
+	mulss xmm7, xmm5
+	addss xmm6, xmm7
 
-	vcomiss xmm6, xmm0
+	comiss xmm6, xmm0
 	jbe .ds_do_refract ; reflectance <= rnd
 
 	.ds_do_reflect:
@@ -699,42 +701,39 @@ dielectric_scatter: ; {{{
 	jmp .ds_return
 
 	.ds_do_refract:
-	vxorps xmm4, xmm4
-	vsubps xmm4, xmm2
-	vdpps xmm4, xmm9, 0xF1
-	vminss xmm4, xmm3 ; cos_theta
-	vshufps xmm4, xmm4, 0b00000000
+	pxor xmm4, xmm4
+	subps xmm4, xmm2
+	dpps xmm4, xmm9, 0xF1
+	minss xmm4, xmm3 ; cos_theta
+	shufps xmm4, xmm4, 0
 	vmulps xmm5, xmm4, xmm9
-	vaddps xmm5, xmm2
-	vshufps xmm1, xmm1, 0b00000000
-	vmulps xmm5, xmm1 ; r_out_perp
+	addps xmm5, xmm2
+	shufps xmm1, xmm1, 0
+	mulps xmm5, xmm1 ; r_out_perp
 
 	vdpps xmm6, xmm5, xmm5, 0xF1
 	vsubss xmm6, xmm3, xmm6
     fabs_mask xmm8
-	vandps xmm6, xmm8
-	vsqrtss xmm6, xmm6
-	vshufps xmm6, xmm6, 0b00000000
-	vmulps xmm6, xmm9
+	andps xmm6, xmm8
+	sqrtss xmm6, xmm6
+	shufps xmm6, xmm6, 0
+	mulps xmm6, xmm9
 	vsubps xmm0, xmm5, xmm6 ; sub instead of add, because we use sqrt instead of -sqrt
 
 	.ds_return:
 	; *attenuation = self->albedo
-	vmovups xmm1, [rdi+MATALL_ALBEDO_OFFS]
-	vmovups [rcx], xmm1
+	movups xmm1, [rdi+MATALL_ALBEDO_OFFS]
+	movups [rcx], xmm1
 
-	vmovups xmm1, [rdx+RECORD_P_OFFS]
-	vmovups [r8+RAY_ORIG_OFFS], xmm1
-	vmovups [r8+RAY_DIR_OFFS], xmm0
+	movups xmm1, [rdx+RECORD_P_OFFS]
+	movups [r8+RAY_ORIG_OFFS], xmm1
+	movups [r8+RAY_DIR_OFFS], xmm0
 
     xor al, al
     inc al
 
-    add rsp, 0x30
 	pop rbp
 	ret
-;}}}
-;}}}
 
 ; Scene Functions {{{
 camera_init: ;{{{
