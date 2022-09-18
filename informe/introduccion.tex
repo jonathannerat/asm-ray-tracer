@@ -1,0 +1,29 @@
+\begin{abstract}
+    En este trabajo implementaremos un Ray Tracer en C y en x64 ASM utilizando extensiones SIMD para
+    comparar la performance de ambos. El mismo es capaz de renderizar mallas de triangulos, utiliza
+    KD Trees para optimizar la detección de colisiones, y permite asignar materiales a cada objeto
+    de una escena.
+\end{abstract}
+
+\section{Introducción} \label{sec:introduccion}
+
+Las arquitecturas x86 y x64 (así como muchas otras) incluyen un modelo de ejecución llamado SIMD
+(\textit{Single Instruction Multiple Data}), que consiste en realizar una operación sobre un cojunto
+de datos en una sula instrucción. Este modelo resulta útil a la hora de procesar contenido
+multimedia, donde se aplican algoritmos sobre un conjunto de datos que sigue el mismo formato. A
+diferencia del modelo SISD (\textit{Single Instruction Single Data}), este modelo permite acelerar
+la ejecución de estos algoritmos paralelizando la manipulación de los datos de entrada.
+
+Para medir las mejoras de performance que ofrece este modelo, implementaremos 2 Ray Tracers: uno en
+C y otro en x64 ASM utilizando SIMD. Compararemos tiempos de ejecución al generar escenas con
+distintos tipos de objetos, materiales, y cantidades.
+
+La idea de este proyecto como trabajo final fue inspirada en el trabajo de Martín Mongi
+\cite{rtmartin}. Además, las implementaciones están basadas en una implementación anterior en C++
+\cite{RayTracerCpp}, que a su vez está basado en las guías de Shirley \cite{RTIOW}. En la seccion
+\ref{sec:diferencias} discutiremos que diferencias existen entre este trabajo, el trabajo de Mongi y
+la implementación original en C++.
+
+% El Ray Tracer implementado en este trabajo esta basado en una implementación en C++
+% \footnote[1](https://github.com/jonathannerat/ray-tracing-iow-cpp), que a su vez esta basado en las
+% guías de Shirley \footnote[2](https://raytracing.github.io).
