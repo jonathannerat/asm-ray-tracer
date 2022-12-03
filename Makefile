@@ -2,13 +2,15 @@ TARGET=rt
 CC=gcc
 NASM=nasm
 SRC=util.c array.c hittable/List.c hittable/Box.c hittable/Plane.c hittable/Sphere.c hittable/Triangle.c Scene.c Material.c hittable/KDTree.c
+INFORMESRC = $(wildcard informe/*.tex) informe/recursos.bib
 OBJ=${SRC:.c=.o}
 IMAGES=$(patsubst scenes/%,out/%.png,$(wildcard scenes/*))
 CFLAGS=-std=c99 -pedantic -Wall -O2
 LDFLAGS=-lm -no-pie
 NASMFLAGS=-f elf64 -Wall
+LATEXFLAGS=--halt-on-error -output-directory build
 
-all: options targets
+all: options targets informe.pdf
 
 asm_core.o: asm_core.s
 	${NASM} $< -o $@ ${NASMFLAGS}
@@ -62,9 +64,16 @@ images: outdir options targets ${IMAGES}
 outdir:
 	@mkdir -p out
 
+informe.pdf: $(INFORMESRC)
+	cd informe && \
+	mkdir -p build && \
+	pdflatex $(LATEXFLAGS) main.tex && \
+	mv build/main.pdf ../$@
+
 clean:
 	-rm ${TARGET}-c ${TARGET}-asm perf-*
 	-rm ${OBJ} main.o perf.o c_core.o asm_core.o
+	-rm informe.pdf
 	[ -d out ] && rm -r out || true
 
 .PHONY: all options targets debug images outdir clean perf

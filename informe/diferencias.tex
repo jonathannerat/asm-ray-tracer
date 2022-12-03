@@ -1,0 +1,77 @@
+\section{Diferencias con otras implementaciones y trabajos} \label{sec:diferencias}
+
+\subsection{Trabajo de Mongi}
+
+% diferencias con mongi:
+% - objetos: agrega soporte para planos, cubos y mallas de triangulos usando
+% archivos .obj en formato stl. No incluye luces como objetos, sino como material
+% - materiales: usa material lambertiano para colores fijos, y agrega materiales
+% metalicos, y dielectricos. Ademas se agrega fuente de luz como material,
+% permitiendo que cualquier objeto de los anteriores sea luz.
+% - agrega parametrizacion extra de archivo de salida: max depth, samples per
+% pixel
+% - agrega parametrizacion de camara: posicion, direccion, vector "arriba",
+% amplitud del angulo de field of view, apertura
+% - optimizacion de hit para escenas con muchos objetos: KDTree
+% - imagen: para escenas similares, los resultados difieren por la forma en la
+%   cada uno maneja las luces
+
+% diferencias con implementacion en C++ 
+%
+% la impl en C++ usa clases y propiedades de herencia, se adaptan usando orden
+% del layout en memoria de structs (un puntero a un struct b{ struct a str_a; }
+% se puede pasar a una funcion que espera un puntero a struct a). tambien se
+% implementaron versiones simplificadas de vector / smart_pointers para manejo
+% eficiente de memoria.
+% Se separo todo el codigo que se podia optimizar usando simd y se implemento en
+% c y luego en asm (c-core y asm-core).
+
+En este trabajo se modifican / agregan las siguientes características:
+
+\paragraph{Objetos} Soporte para dibujar planos, cubos y mallas de triángulos
+usando archivos .obj en formato STL. No incluye luces como objetos, se
+implementan como materiales.
+
+\paragraph{Materiales} Se usa material lambertiano para dar un color difuso a los
+objetos. Además se agregan metales y dieléctricos, y un material especial para
+emitir luz difusa.
+
+\paragraph{Archivo de salida} Se permite parametrizar el \textit{max depth}
+(cantidad de veces que un rayo puede rebotar en objetos de la escena) y
+\textit{samples per pixel} (cantidad de rayos aleatorios que se mandan dentro
+del area correspondiente a cada pixel).
+
+\paragraph{Cámara de escena} Se permite parametrizar la posición, dirección,
+dirección ``arriba'' (fija la posición y dirección a la que apunta la cámara, la
+dirección ``arriba'' indicaría la rotación sobre el eje definido), amplitud del
+ángulo de \textit{field of view}, y la apertura.
+
+\paragraph{Optimización} Se agregó una estructura KDTree para optimizar el
+método hit de los rayos para escenas con muchos objetos (por ejemplo, malla de
+triángulos).
+
+\paragraph{Imagen de salida} Para escenas similares, los resultados difieren por
+la forma en la que cada uno maneja las luces.
+
+\subsection{Implementación original en C++}
+
+La implementación en C++ hace uso de propiedades de la programación orientada a
+objetos, como herencia, polimorfismo, etc. Esta implementación simula estas
+propiedades usando punteros a funciones y propiedades del layout en memoria de
+los \texttt{struct}.
+
+Además, hace uso de estructuras de la librería estándar de C++, como
+\texttt{vector} y \texttt{smart\_ptr}. Se implementaron estructuras básicas que
+proveen solamente la funcionalidad que se usa en este proyecto.
+
+El código tiene una arquitectura distinta, ya que debe permitir la
+implementación de algunas partes tanto en C como en ASM. Para esto, movemos las
+operaciones que se pueden optimizar con SIMD a un \textit{core}
+(\texttt{c\_core.c} o \texttt{asm\_core.s}). Ambos implementan la interfaz
+definida en \texttt{core.h}.
+
+Operaciones como el parsing de la entrada y el overhead inicial de la creación de
+objetos no se consideran para medir el rendimiento, y por lo tanto, no entran en
+algún core y se implementan en C. Por otro lado, los métodos de los objetos de
+una escena, o de los materiales de los mismos, si se implementan en cada
+core ya que son secciones críticas del programa.

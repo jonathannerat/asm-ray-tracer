@@ -1,0 +1,119 @@
+\section{Ray Tracing} \label{sec:ray-tracing}
+
+El \textit{Ray Tracing} es un algoritmo de renderizado en el que una imagen se
+crea identificando los objetos que contribuyen a cada pixel (\textit{image-order
+rendering}). Dada una escena con objetos tridimensionales, se puede obtener una
+imagen de la misma lanzando rayos desde un origen (cámara) hacia una ventana, y
+trazando la trayectoria de los mismos para ver sobre que objetos / materiales
+incidió (Figura \ref{fig:rt-camera-window-scene}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.7\textwidth]{imgs/rt-camera-window-scene.png}
+    \caption{Cámara lanzando rayos por una ventana hacia una escena}
+    \label{fig:rt-camera-window-scene}
+\end{figure}
+
+En esta situación, la imagen final es el resultado de muchas variables:
+
+\begin{itemize}
+    \item Cámara: posición, dirección, inclinación, apertura de la lente,
+        distancia de foco.
+    \item Objetos: ubicación, tamaños, formas, etc.
+    \item Materiales (de cada objeto): tipos (lambertiano, metálico, etc),
+    color, reflexión, refracción, etc.
+    \item Archivo de salida: Dimensiones, \textit{spp}, \textit{max depth}.
+\end{itemize}
+
+A continuación explicaremos como cada uno influye en la imagen final.
+
+\subsection{Cámara} \label{ssec:rt-camera}
+
+Como ya se mencionó, el origen de los rayos estará dado por la cámara. No
+solamente por la posición de la misma, sino también por la apertura de la lente
+y la distancia de foco.
+
+Para poder controlar el ``nivel de enfoque'' de la imagen, la implementación
+simula la lente de la cámara usando como verdadero origen de los rayos a un
+disco (la lente). La apertura es el diámetro de la lente, y la distancia de foco
+es la distancia entre el disco y el plano de foco.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.7\textwidth]{imgs/rt-camera-plano-foco.png}
+    \caption{Lente y plano de foco}
+    \label{fig:rt-camera-plano-foco}
+\end{figure}
+
+Los rayos se lanzarán desde un punto aleatorio de la lente, hacia distintos
+puntos en el plano de foco (dependiendo del pixel que se este calculando).
+Mientras más chico sea el diámetro de la lente, y más cerca esté el plano de
+foco del objetivo, más nítida será la imagen. Por el contrario, si la lente es
+muy grande, o el plano de foco se encuentra lejos del objetivo, la imagen se
+verá más borrosa.
+
+\subsection{Objetos}
+
+Los objetos son cuerpos del espacio tridimensional que pueden colisionar con los
+rayos y en consecuencia, modificar la trayectoria de los mismos y finalmente  la
+imagen. Dependiendo del material de su superficie, estos pueden reflejar o
+refractar los rayos, y cambiar el color de cada pixel. En este trabajo se
+implementaron 4 objetos
+
+\begin{itemize}
+    \item Esferas
+    \item Planos
+    \item Cubos
+    \item Triángulos
+\end{itemize}
+
+Cada objeto es definido por una función que indica si un rayo colisiona o no con
+el mismo (\texttt{hit}). Además, esta función retorna (en caso de que haya
+colisión) detalles de como se dio la misma: el punto de intersección, la normal
+de la superficie en ese punto, el material del objeto, etc.
+
+Por ejemplo, la función \texttt{hit} de un plano devuelve verdadero si el rayo
+\textbf{no} es paralelo al plano (suponiendo que el rayo y el plano no se
+superponen). Por otro lado, para una esfera la función devuelve verdadero si el
+rayo ``pasa'' a una distancia menor que su radio.
+
+Formalmente, representaremos a un rayo como un par
+$\left\langle P, D \right\rangle$, donde $P$ es el punto de origen y $D$ es la
+dirección. De esta forma, podemos describir cada punto del rayo $R(t) = P + tD$.
+La función \texttt{hit} de un objeto (e.g. \textsc{\texttt{ObjectHit}}) recibirá
+como parámetros:
+
+\begin{itemize}
+    \item El objeto, para saber sus coordenadas y dimensiones
+    \item $t_{min}$ y $t_{max}$: el rango de valores de $t$ (del rayo) a
+        considerar. Por ejemplo, no consideramos colisiones con $t < 0$ porque
+        se encuentran detrás de la cámara y no aparecen en la imagen final
+\end{itemize}
+
+Y retornará dos valores:
+
+\begin{itemize}
+    \item Un booleano, para indicar si hay intersección o no
+    \item Un diccionario con los datos de la colisión, si corresponde
+\end{itemize}
+
+Como vimos, la implementación de cada función \texttt{hit} puede ser muy
+diferente dependiendo de la forma y las propiedades de cada objeto, así que
+exploraremos cada uno por separado.
+
+% * Definicion / idea de ray tracing: camara, window, generacion de rayos,
+%   como modifica el rayo un objeto y un material
+% * Objetos base (hittable), estructura y como simulamos polimorfismo con esta
+%   struct
+%   * esferas
+%   * planos
+%   * cubo: box alignment, planos como caras, inside box
+%   * triangulo 
+%   * KDTree: mencionar concepto, no deberia ser tan importante porque no tiene
+%   nada de asm
+% * Material base, y sus metodos
+%   * lambertian
+%   * metal
+%   * dielectric
+%   * diffuselight
+%   * spmat necesidad de shared pointer para kdtree
