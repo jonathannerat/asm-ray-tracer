@@ -8,9 +8,3 @@ The original implementation in C++ is
 amazing [guide](https://raytracing.github.io) by Peter Shirley. This project
 reimplements everything in C, and then reimplements the core (where vector-heavy
 operations are handled) in x86_64 asm using SIMD instructions to boost performance.
-
-## TODO
-
-- [X] Implement every vec3-operation heavy method in ASM
-- [ ] Comparison between C and ASM implementations
-- [ ] Report with findings and conclusions
