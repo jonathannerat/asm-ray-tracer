@@ -1,1 +1,6 @@
+# include this makefile
+!Makefile
+
+# build files
 build/
+informe.pdf
