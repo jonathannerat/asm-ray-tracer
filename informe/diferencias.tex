@@ -67,11 +67,11 @@ proveen solamente la funcionalidad que se usa en este proyecto.
 El código tiene una arquitectura distinta, ya que debe permitir la
 implementación de algunas partes tanto en C como en ASM. Para esto, movemos las
 operaciones que se pueden optimizar con SIMD a un \textit{core}
-(\texttt{c\_core.c} o \texttt{asm\_core.s}). Ambos implementan la interfaz
+(\texttt{c\_core.c} o \texttt{asm\_core.nasm}). Ambos implementan la interfaz
 definida en \texttt{core.h}.
 
 Operaciones como el parsing de la entrada y el overhead inicial de la creación de
 objetos no se consideran para medir el rendimiento, y por lo tanto, no entran en
 algún core y se implementan en C. Por otro lado, los métodos de los objetos de
-una escena, o de los materiales de los mismos, si se implementan en cada
+una escena, o de los materiales de los mismos, sí se implementan en cada
 core ya que son secciones críticas del programa.
