@@ -3,7 +3,7 @@
 
 #include "KDTree.h"
 #include "List.h"
-#include "util.h"
+#include "../util.h"
 
 bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr);
 void node_destroy(Hittable *o);

@@ -1,8 +1,8 @@
 #ifndef HITTABLE_BOX_H
 #define HITTABLE_BOX_H
 
-#include "core.h"
-#include "util.h"
+#include "../core.h"
+#include "../util.h"
 
 /** Initialize a new axis aligned box delimited by two (*distinct) points
  *

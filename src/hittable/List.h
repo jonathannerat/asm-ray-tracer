@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "core.h"
+#include "../core.h"
 
 Hittable *list_init();
 

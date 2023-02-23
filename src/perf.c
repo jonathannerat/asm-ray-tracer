@@ -1,10 +1,10 @@
-#include <hittable/Plane.h>
 #include <math.h>
 #include <stdio.h>
 #include <sys/time.h>
 
 #include "Material.h"
 #include "core.h"
+#include "hittable/Plane.h"
 #include "hittable/Box.h"
 #include "hittable/Sphere.h"
 #include "hittable/Triangle.h"

@@ -4,7 +4,7 @@
 #include "Box.h"
 #include "List.h"
 #include "Triangle.h"
-#include "array.h"
+#include "../array.h"
 
 #define LIST_INITIAL_CAPACITY 16
 

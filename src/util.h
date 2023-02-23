@@ -16,7 +16,6 @@ void d(const char *fmt, ...);
 #endif
 
 #define EPS 1e-4
-#define M_PI 3.14159265358979323846f
 #define MAX_BUF_SIZE 256
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
