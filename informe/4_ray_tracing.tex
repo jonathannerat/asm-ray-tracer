@@ -35,7 +35,7 @@ y la distancia de foco.
 
 Para poder controlar el ``nivel de enfoque'' de la imagen, la implementación
 simula la lente de la cámara usando como verdadero origen de los rayos a un
-disco (la lente). La apertura es el diámetro de la lente, y la distancia de foco
+disco. La apertura es el diámetro de la lente, y la distancia de foco
 es la distancia entre el disco y el plano de foco.
 
 \begin{figure}[H]
@@ -85,6 +85,7 @@ como parámetros:
 
 \begin{itemize}
     \item El objeto, para saber sus coordenadas y dimensiones
+    \item El rayo
     \item $t_{min}$ y $t_{max}$: el rango de valores de $t$ (del rayo) a
         considerar. Por ejemplo, no consideramos colisiones con $t < 0$ porque
         se encuentran detrás de la cámara y no aparecen en la imagen final
@@ -101,16 +102,235 @@ Como vimos, la implementación de cada función \texttt{hit} puede ser muy
 diferente dependiendo de la forma y las propiedades de cada objeto, así que
 exploraremos cada uno por separado.
 
-% * Definicion / idea de ray tracing: camara, window, generacion de rayos,
-%   como modifica el rayo un objeto y un material
-% * Objetos base (hittable), estructura y como simulamos polimorfismo con esta
-%   struct
-%   * esferas
-%   * planos
-%   * cubo: box alignment, planos como caras, inside box
-%   * triangulo 
-%   * KDTree: mencionar concepto, no deberia ser tan importante porque no tiene
-%   nada de asm
+\subsubsection{Plano}
+
+Un plano está dado por un origen $O$ y una normal $N$. Para decidir si un rayo
+$R(t) = P + tD$ interseca con el plano, bastará con ver que no sean paralelos.
+El punto de intersección (en particular, el parámetro $t$ del rayo) se puede
+despejar de la ecuación del plano:
+
+\begin{align*}
+    ((P + tD) - O) \cdot N &= 0 \\
+    (tD \cdot N) + (P - O) \cdot N &= 0 \\
+    t(D \cdot N) &= (O - P) \cdot N \\
+    t &= \frac{(O - P) \cdot N}{D \cdot N} \\
+\end{align*}
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{PlaneHit}{$Plane, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
+    \State $O, N \gets Plane$ \Comment{Descomponemos en origen y normal}
+    \State $P, D \gets Ray$ \Comment{Descomponemos en origen y dirección}
+    \If {$N \perp D$} \Comment{Rayo y plano son paralelos}
+        \State \Return (False, NIL)
+    \EndIf
+    \State $t \gets ((O - P) \cdot N)/(D \cdot N)$
+
+    \If {$\lnot (t_{min} \le t \le t_{max})$} \Comment{Punto fuera del rango permitido}
+        \State \Return (False, NIL)
+    \EndIf
+
+    \State $record \gets$ ($t$, $N$, \dots) \Comment{Datos de la intersección}
+    \State \Return (True, $record$)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{hit} para planos}
+\label{alg:plane-hit}
+\end{algorithm}
+
+El algoritmo \ref{alg:plane-hit} encapsula estas reglas. Devuelve un par $(hit,
+record)$ donde $hit$ es un booleano que indica si hubo intersección, y $record$
+contiene los datos de la misma (como la ``distancia'' desde el origen del rayo
+$t$, o la normal del plano de intersección $N$), o \texttt{NIL} si no hubo
+intersección.
+
+\subsubsection{Esferas}
+
+Para representar una esfera usamos un punto $C$ para representar el centro, y un
+radio $r$. La ecuación de los puntos $Q=(x, y, z)$ de la superficie de una
+esfera esta dada por:
+
+\begin{align*}
+    (x - C_x)^2 + (y - C_y)^2 + (z - C_z)^2 &= r^2 \\
+    (Q - C) \cdot (Q - C) = r^2
+\end{align*}
+
+Si $Q = R(t) = P + tD$, podemos reemplazarlo en la ecuación y obtener una
+ecuación cuadrática en $t$.
+
+\begin{align*}
+    (P + tD - C) \cdot (P + tD - C) &= r^2 \\
+    t^2 D \cdot D + 2tD \cdot (P - C) + (P - C) \cdot (P - C) - r^2 &= 0
+    \label{eq:cuad-esfera}
+\end{align*}
+
+Esta función puede tener 0, 1 o 2 raíces, dependiendo de si el rayo intersecta o
+no con la esfera, y en cuantos puntos lo hace. Si la función no tiene raíces, no
+existe $t$ que satisfaga la ecuación de la esfera, y por lo tanto, no hay
+intersección. Si la función tiene 1 raíz, el rayo intersecta a la esfera en
+\textbf{un} único punto, y es tangente a la superficie de la misma. Por otro
+lado, si la función tiene 2 raíces, el rayo atraviesa a esfera y la intersecta
+en 2 puntos, uno de entrada y uno de salida.
+
+Para decidir si el rayo intersecta o no, podemos calcular el discriminante y ver
+si es negativo (no intersecta) o no.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{SphereHit}{$Sphere, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
+    \State $C, r \gets Sphere$ \Comment{Descomponemos en centro y radio}
+    \State $P, D \gets Ray$ \Comment{Descomponemos en origen y dirección}
+    \State $a \gets D \cdot D$
+    \State $b \gets 2D \cdot (P - C)$
+    \State $c \gets (P - C) \cdot (P - C) - r^2$
+    \State $disc \gets b^2 - 4ac$
+
+    \If {$disc < 0$}
+        \State \Return (False, \texttt{NIL})
+    \EndIf
+
+    \State $t \gets (-b - \sqrt{disc} / 2a)$
+    \If {$t < t_{min} \lor t_{max} < t$}
+        \State $t \gets (-b + \sqrt{disc} / 2a)$
+        \If {$t < t_{min} \lor t_{max} < t$}
+            \State \Return (False, \texttt{NIL})
+        \EndIf
+    \EndIf
+
+    \State $N \gets P + tD - C$ \Comment{Normal al plano de la intersección}
+    \State $record \gets$ ($t$, $N$, \dots) \Comment{Datos de la intersección}
+    \State \Return (True, $record$)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{hit} para esferas}
+\label{alg:sphere-hit}
+\end{algorithm}
+
+\subsubsection{Cubos}
+
+La forma más directa de implementar cubos es utilizando planos para representar
+cada cara. Para simplificar la implementación, solo representaremos cubos
+alineados a los ejes de coordenadas del espacio, de forma tal que basta con dar
+las coordenadas de 2 vertices opuestos para determinar su posición y tamaño.
+
+Sobre cada uno de estos vertices ubicamos 3 planos con normales sobre cada eje,
+con dirección opuesta al otro vértice, de forma que los 6 planos encapsulen el
+volumen del cubo.
+
+% TODO: incluir imagen de lo descripto anteriormente
+
+Debido a que los planos son infinitos y estan sobre cada eje del espacio,
+cualquier rayo intersecará con al menos 2 planos del cubo. Para decidir si
+alguna de estas intersecciones corresponde a alguna cara del cubo, tenemos que
+verificar que el punto se encuentre dentro del volumen del mismo. Para esto
+usamos las coordenadas de los 2 vertices que definen al cubo: cada coordenada
+del punto de intersección debe estar entre las coordenadas correspondientes de
+los vertices.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{CubeHit}{$Cube, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
+    \State $vmin \gets Cube.vmin$ \Comment{Obtenemos los vertices del cubo}
+    \State $vmax \gets Cube.vmax$
+    \State $faces \gets Cube.faces$
+
+    \State $hitAnyFace \gets$ False
+    \State $closestSoFar \gets \infty$
+    \State $cubeRecord \gets$ NIL
+
+    \For {$face \in faces$} \Comment{Cada cara es un plano}
+        \State {$(faceHit, faceRecord) \gets$ PlaneHit($face, Ray, t_{min}, closestSoFar$)}
+        \State {$insideBox \gets$ puntoEntreVertices($faceRecord.p, vmin, vmax$)}
+
+        \If {$faceHit \land insideBox$}
+            \State {$hitAnyFace \gets$ True}
+            \State {$closestSoFar \gets faceRecord.t$}
+            \State {$cubeRecord \gets faceRecord$}
+        \EndIf
+    \EndFor
+
+    \State \Return ($hitAnyFace, cubeRecord$)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{hit} para cubos}
+\label{alg:box-hit}
+\end{algorithm}
+
+En el algoritmo \ref{alg:box-hit}, $hitAnyFace$ es \texttt{True} si y solo si el
+rayo $Ray$ interseca a alguna cara del cubo y lo hace dentro de las coordenadas
+definidas por los limites del mismo ($vmin$ y $vmax$). En ese caso, se setea
+$closestSoFar$ para ignorar las proximas intersecciones que podrían quedar detrás
+de la más cercana a la camara, y se guarda el registro de la interseccion en
+$cubeRecord$.
+
+\subsubsection{Triangulos}
+
+Nuevamente podemos utilizar lo que conocemos sobre planos para definir un
+triangulo. Al definir el triangulo con 3 puntos, definimos tambin el plano sobre
+el que se encuentra. Para acomodarnos a la representacion que adoptamos para los
+planos, podemos usar alguno de los vertices como origen, y calcular la normal
+como el producto vectorial de los vectores que inciden sobre el origen.
+
+% TODO: incluir grafico que ilustre esto.
+
+Al igual que hicimos con el cubo, primero calcularemos el punto de interseccin
+entre el rayo y el plano, y luego verificaremos que el punto se encuentre entre
+los vertices del triangulo para determinar si el rayo intersecta o no con el
+mismo. Para verificar esto, tenemos que definir una convención para indicar que
+cara del triangulo es la ``visible'' (es decir, en que sentido apunta la normal
+del plano). Sean $P_1$, $P_2$ y $P_3$ los vertices del triangulo, entonces llamamos
+cara ``visible'' a la cara en la que estos vértices aparecen en sentido anti-horario.
+
+Si sabemos que los vertices aparecen en cierto orden, detectar un punto dentro de
+la superficie del triangulo consiste en verificar que el punto se encuentra ``dentro''
+para cada borde. Es decir, sea $P$ un punto en el plano del triangulo, si:
+
+\begin{itemize}
+    \item $(P_2 - P_1) \times (P - P_1)$ apunta en el sentido de la normal,
+    \item $(P_3 - P_2) \times (P - P_2)$ apunta en el sentido de la normal, y
+    \item $(P_1 - P_3) \times (P - P_3)$ apunta en el sentido de la normal
+\end{itemize}
+
+significa que $P$ esta ``dentro'' del triangulo para cada borde.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{TriangleHit}{$Triangle, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
+    \State $P_1, P_2, P_3 \gets Triangle$ \Comment{Obtenemos los vertices del triangulo}
+    \State $normal \gets (P_2 - P_1) \times (P_3 - P_1)$
+    
+    \If {$normal \perp Ray.dir$}
+        \State \Return (False, NIL) \Comment{Si el rayo es paralelo al plano, no hay hit}
+    \EndIf
+
+    \State $t \gets ((P_1 - Ray.origin) \cdot normal) / (Ray.dir \cdot normal)$
+    \If {$\lnot (t_{min} \le t \le t_{max})$} 
+        \State \Return (False, NIL)
+    \EndIf
+
+    \State $P \gets Ray.at(t)$ \Comment{Punto de intersección}
+    \State $dentroBorde1 \gets normal \cdot ((P_2 - P_1) \times (P - P_1)) > 0$
+    \State $dentroBorde2 \gets normal \cdot ((P_3 - P_2) \times (P - P_2)) > 0$
+    \State $dentroBorde3 \gets normal \cdot ((P_1 - P_3) \times (P - P_3)) > 0$
+
+
+    \If {$dentroBorde1 \land dentroBorde2 \land dentroBorde3$}
+        \State $record \gets (t, p, normal, \dots)$
+        \State \Return (True, $record$)
+    \EndIf
+
+    \State \Return (False, NIL)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{hit} para triangulos}
+\label{alg:triangle-hit}
+\end{algorithm}
+
+Se puede comprobar que el sentido de dos vectores es el mismo al ver el signo de
+su producto interno, ya que $A \cdot B = \vert A \vert \vert B \vert
+\cos{\theta}$, donde $\theta$ es el angulo entre $A$ y $B$. En este caso,
+$\theta$ o bien es 0 y $\cos{0} = 1$, o bien es 180 y $\cos{180}=-1$.
+
 % * Material base, y sus metodos
 %   * lambertian
 %   * metal

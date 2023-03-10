@@ -26,13 +26,14 @@
 \usepackage{amsthm}
 \usepackage{amssymb}
 
-\usepackage[
-    backend=biber,
-    style=numeric,
-    sorting=ynt
-]{biblatex}
-\usepackage{csquotes}
+\usepackage[backend=biber]{biblatex}
+
 \addbibresource{recursos.bib}
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{csquotes}
+
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -64,7 +65,11 @@
 
 \input{4_ray_tracing}
 
-\input{5_conclusion}
+\input{5_experimentacion}
+
+\input{6_conclusion}
+
+\newpage
 
 \printbibliography
 
