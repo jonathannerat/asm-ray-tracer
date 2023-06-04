@@ -331,9 +331,168 @@ su producto interno, ya que $A \cdot B = \vert A \vert \vert B \vert
 \cos{\theta}$, donde $\theta$ es el angulo entre $A$ y $B$. En este caso,
 $\theta$ o bien es 0 y $\cos{0} = 1$, o bien es 180 y $\cos{180}=-1$.
 
-% * Material base, y sus metodos
-%   * lambertian
-%   * metal
-%   * dielectric
-%   * diffuselight
-%   * spmat necesidad de shared pointer para kdtree
+\subsection{Materiales}
+
+Los materiales están asociados a cada objeto y se encargan de darle color a una
+escena. Cada material puede emitir / atenuar luz y reflejar / refractar
+rayos. En este trabajo, se implementaron 4 tipos:
+
+\begin{itemize}
+    \item Luz Difusa
+    \item Lambertiano
+    \item Metal
+    \item Dieléctrico
+\end{itemize}
+
+Cada material implementa 2 métodos: \texttt{Scatter} (atenuar / dispersar) y
+\texttt{Emit} (emitir):
+
+\begin{itemize}
+    \item \texttt{Scatter} recibe 3 parámetros: el material ($M$) sobre el que
+        incide el rayo, el rayo en cuestión ($R_{in}$), y la metadata de la
+        colisión ($rec$) que se dio sobre el objeto al que esta asociado el
+        material. Devuelve 3 valores: \textit{did\_scatter} que indica si el
+        material puede dispersar rayos en el punto de intersección,
+        \textit{R\_{out}} el rayo dispersado en caso de que el anterior sea
+        \texttt{TRUE}, y $A$ la atenuación del color que produce el material.
+    \item \texttt{Emit} solamente recibe el material $M$ y retorna el color que
+        emite el mismo.
+\end{itemize}
+
+Estos métodos serán llamados por cada rayo que se genere desde la cámara.
+\texttt{Scatter} se encarga de dirigir cada rayo en cada colisión, hasta llegar
+a un material que no disperse más (\textit{did\_scatter} en \texttt{False}), o
+hasta que se supere el \textit{max depth} de la imagen.
+
+Por la naturaleza de los materiales que se eligieron, Luz Difusa solamente emite
+luz, y el resto solamente atenúa luz  y refleja / refracta los rayos que
+reciben. A continuación describiremos como se implementa estos métodos, y en los
+casos en los que se omita alguno se toma por defecto que \texttt{Emit} devuelve
+un color negro \texttt{\#000000} (es decir, no emite luz), y que
+\texttt{Scatter} devuelve \texttt{(False, NIL, NIL)} (es decir, ni atenúa ni
+dispersa).
+
+\subsubsection{Luz Difusa}
+
+Para crear este material solo necesitamos un color $A$, que será el valor que se
+devuelva al llamar al método \texttt{Emit} sobre el mismo.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{DiffuseLightEmit}{$Light$}{$\rightarrow A$}
+    \State \Return $Light.A$
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{Emit} para Luz Difusa}
+\label{alg:diffuse-light-emit}
+\end{algorithm}
+
+\subsubsection{Lambertiano}
+
+Un material difuso o lambertiano se caracteriza por verse uniformemente
+iluminado de todas las direcciones. Si bien posee un color propio $A$, también
+toma parte de los colores de su entorno para formar el color final de la imagen.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \Function{LambertianScatter}{$Lambertian, r_{in}, rec$}{$\rightarrow
+    (did\_scatter, A, R_{out})$}
+
+    \State $scatterdir \gets rec.normal +$ (vector random en esfera unitaria)
+
+    \If {$scatterdir \approx \vec{0}$}
+        \State $scatterdir \gets rec.normal$
+    \EndIf
+
+    \State $r_{out} \gets \left \langle rec.p, scatterdir \right \rangle$
+    \State \Return (True, $Lambertian.A$, $r_{out}$)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{Scatter} para material Lambertiano}
+\label{alg:lambertian-scatter}
+\end{algorithm}
+
+Para simular el aporte uniforme de todo el entorno, en el algoritmo
+\ref{alg:lambertian-scatter} tomamos como referencia la normal al plano de
+intersección $rec.normal$ y le sumamos un vector random $v$ en la esfera
+unitaria (es decir, $v \in \mathbb{R}^3, \vert v \vert = 1$). Puede ocurrir que
+$rec.normal \approx -v$, lo cual resulte en un $scatterdir \approx 0$. En ese
+caso, simplemente tomamos $scatterdir = rec.normal$.
+
+\subsubsection{Metal}
+
+Por otro lado, los materiales metálicos están caracterizados por reflejar muy
+bien los rayos, dependiendo de que tan ``pulido'' esté el mismo. Vamos a
+parametrizar un material metálico nuevamente con un color $A$, y con un valor de
+\textit{fuzziness} $f \in [0, 1]$. Si $f=0$, los rayos se reflejan perfectamente
+sobre la superficie, y para $f>0$, se le suma algo de aleatoriedad al rayo de
+salida, cuyo aporte incrementa con $f$.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \Function{MetalScatter}{$Metal, r_{in}, rec$}{$\rightarrow
+    (did\_scatter, A, R_{out})$}
+
+    \State $d \gets r_{in}.dir$
+    \State $n \gets rec.normal$
+    \State $reflected \gets d - 2 (d \cdot n) n $
+
+    \If {$reflected \cdot n \le 0$} 
+        \State \Return (False, NIL, NIL)
+    \EndIf
+
+    \State $scatterdir \gets reflected + Metal.f \times$ (vector random en esfera
+    unitaria)
+
+    \State $r_{out} \gets \left \langle rec.p, scatterdir \right \rangle$
+    \State \Return (True, $Metal.A$, $r_{out}$)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{Scatter} para material metálico}
+\label{alg:metal-scatter}
+\end{algorithm}
+
+Como vemos en el algoritmo \ref{alg:metal-scatter}, la aleatoriedad la provee un
+vector random en la esfera unitaria. En caso de que el rayo reflejado no se
+encuentre del lado de la cara de la superficie ($reflected \cdot n \le 0$), el
+material no dispersa el rayo y devuelve \texttt{(False, NIL, NIL)}.
+
+\subsubsection{Dieléctrico}
+
+Los materiales dielectricos son aquellos que al recibir rayos de luz, son
+capaces de separarlos en un rayo que se refleja, y otro que se refracta. Si bien
+nuestra representación solo permite un rayo de salida, simularemos este
+comportamiento reflejando y refractando rayos en cada punto de un objeto de
+manera aleatoria.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.7\textwidth]{imgs/refraction.jpg}
+    \caption{Ley de Snell}
+    \label{fig:snell-law}
+\end{figure}
+
+Ya vimos como calcular el rayo reflejado, así que veremos como calcular el
+refractado. Así como un rayo se refleja al entrar en contacto con una
+superficie, la refracción se da en la frontera entre 2 materiales con indices de
+refracción $\eta$ y $\eta'$ (ver figura \ref{fig:snell-law}). Si el rayo viaja
+por un material ($\eta$), y llega a la frontera con otro material ($\eta'$), el
+angulo de ``entrada'' en el primer material $\theta$ y el angulo de ``salida'' en el
+segundo material $\theta'$ están relacionados por la ley de Snell:
+
+\[
+    \eta \sin \theta = \eta' \sin \theta'
+\]
+
+Suponiendo que conocemos $\eta$ y $\eta'$ (uno es el índice del material, y el
+otro podemos asumir que es el índice del aire), y como además conocemos $\theta$
+(el angulo con el que un rayo incide sobre una superficie respecto de la
+normal), podemos calcular $\sin \theta'$ despejando de la ecuación:
+
+\[
+    \sin \theta' = \frac{\eta}{\eta'} \sin \theta
+\]
+
+El rayo refractado que se encuentra del otro lado de la frontera es $R'$, y se
+puede descomponer en $R'_{\perp}$ perpendicular a la normal, y
+$R_{\parallel}$ paralela a la normal: $R' = R'_{\perp} + R'_{\parallel}$.
