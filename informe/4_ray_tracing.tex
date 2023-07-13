@@ -496,3 +496,92 @@ normal), podemos calcular $\sin \theta'$ despejando de la ecuación:
 El rayo refractado que se encuentra del otro lado de la frontera es $R'$, y se
 puede descomponer en $R'_{\perp}$ perpendicular a la normal, y
 $R_{\parallel}$ paralela a la normal: $R' = R'_{\perp} + R'_{\parallel}$.
+
+Se puede probar que cada componente se calcula como:
+
+\begin{align*}
+    R'_{\perp} &= \frac{\eta}{\eta'}(R + (-R \cdot n) n) \\
+    R'_{\parallel} &= - \sqrt{1 - \vert R'_{\perp} \vert^2} n
+\end{align*}
+
+Y finalmente, el rayo refractado se puede calcular con el algoritmo
+\ref{alg:refract}.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \Function{Refract}{$R$, $n$, $i$}{ $\rightarrow R'$}
+
+    \State $cos_{\theta} = \min\{-R \cdot n, 1.0\}$
+    \State $R'_{\perp} = i (R + cos_{\theta} n)$
+    \State $R'_{\parallel} = - \sqrt{\vert 1 - \Vert R'_{\perp} \Vert ^ 2 \vert} n$
+
+    \State \Return $R'_{\perp} + R'_{\parallel}$
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo para refractar un rayo $R$ sobre una superficie con normal
+$n$ y relación de indices de refracción $i = \eta / \eta'$}
+\label{alg:refract}
+\end{algorithm}
+
+Si usáramos éste algoritmo para definir \texttt{DielectricScatter} y calcular el
+nuevo rayo, obtendríamos imágenes poco realistas, ya que los materiales
+dieléctricos no siempre refractan los rayos. Por ejemplo, si el radio entre los
+indices de refracción es mayor a 1, la refracción no es posible:
+
+\[
+    \sin \theta' = \frac{\eta}{\eta'} \cdot \sin \theta = i \cdot \sin \theta
+\]
+
+Como $\sin \theta' \in [0, 1]$, si $i \cdot \sin \theta > 1$, entonces no existe valor
+de $\theta'$ que satisfaga la ecuación.
+
+Además, los materiales dieléctricos son capaces de reflejar dependiendo del
+ángulo sobre el que incide el rayo. Si bien existe una ecuación para determinar
+ésto, podemos usar la aproximación de Schlick \cite{schlicksapprox} como una
+alternativa simple y que para nuestro caso de uso alcanza. La misma se basa en
+el uso de una propiedad llamada \textit{reflectance} que se calcula usando el
+coseno del ángulo de incidencia y la relación entre los índices de refracción.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{Reflectance}{$\cos_{\theta}$, $i$}{ $\rightarrow R'$}
+    \State $r \gets \frac{1 - i}{1 + i}$
+    \State \Return $r^2 + (1-r^2) (1 - \cos_{\theta})^5$
+\EndFunction
+\end{algorithmic}
+\caption{Calculo de la \textit{reflectance} de un rayo que incide con un ángulo
+cuyo coseno es $\cos_{\theta}$, y con un radio de refracción $i = \eta / \eta'$}
+\label{alg:reflectance}
+\end{algorithm}
+
+El algoritmo \ref{alg:reflectance} calcula este valor. Lo que luego se pide en
+la aproximación es que sea mayor que un valor aleatorio entre $[0, 1]$.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{DielectricScatter}{$Dielectric, r_{in}, rec$}{$\rightarrow
+    (did\_scatter, A, R_{out})$}
+    \State $r \gets Dielectric.ir$
+    \If {hit in $rec$ was front face}
+        \State $r \gets Dielectric.ir^{-1}$
+    \EndIf
+    \State $u \gets normalized(r_{\text{in}}.direction)$
+    \State $\cos_{\theta} \gets \min(1, -u \cdot rec.normal)$
+    \State $\sin_{\theta} \gets \sqrt{1 - \cos_{\theta}^2}$
+
+    \If {$r \sin_{\theta} > 1$ \textbf{or} reflectance($\cos_{\theta}, r$) $>$ (random in
+    [0, 1])}
+        \State $dir \gets$ reflect($u$, $rec.normal$)
+    \Else
+        \State $dir \gets$ refract($u, rec.normal, r$)
+    \EndIf
+
+    \State \Return (True, $Dielectric.albedo$, $\langle rec.point, dir \rangle$)
+\EndFunction
+\Function{reflect}{$v$, $n$}{$\rightarrow v'$}
+    \State \Return $v - 2 (v \cdot n) n$
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{Scatter} para material dieléctrico}
+\label{alg:dielectric-scatter}
+\end{algorithm}
