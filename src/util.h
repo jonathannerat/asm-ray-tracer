@@ -29,7 +29,6 @@ real rnd();
 char* strfind(char *c, char f);
 Vec3 parse_vec3(char *c, char **t);
 void write_color(Color pixel, uint spp);
-void dump_image(FILE *f, Scene *s, Color *image);
 
 Point ray_at(const Ray *r, real t);
 #endif // UTIL_H

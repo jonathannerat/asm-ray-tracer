@@ -187,6 +187,7 @@ typedef struct {
   Camera camera;
   Output output;
   Hittable *world;
+  Color *framebuffer;
 } Scene;
 
 // }}}
@@ -228,7 +229,7 @@ Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
                    real focus_dist);
 Ray camera_get_ray(const Camera *c, real s, real t);
 
-void scene_render(const Scene *s, Color *image);
+void scene_render(const Scene *s);
 Color ray_color(Hittable *world, const Ray *r, Color bg, uint depth);
 // }}}
 #endif // CORE_H

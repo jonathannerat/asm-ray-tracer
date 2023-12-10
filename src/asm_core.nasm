@@ -104,7 +104,8 @@ extern printf
 %define SCENE_CAMERA_OFFS 0
 %define SCENE_OUTPUT_OFFS CAMERA_SIZE
 %define SCENE_WORLD_OFFS  (SCENE_OUTPUT_OFFS+OUTPUT_SIZE+4)
-%define SCENE_SIZE (SCENE_WORLD_OFFS+8)
+%define SCENE_FRAMEBUFFER_OFFS (SCENE_WORLD_OFFS+8)
+%define SCENE_SIZE        (SCENE_FRAMEBUFFER_OFFS+8) ; 152
 
 %define OUTPUT_WIDTH_OFFS 0
 %define OUTPUT_HEIGHT_OFFS 4
@@ -867,7 +868,8 @@ camera_get_ray:
 %define RENDER_RAY_OFFS      (RENDER_RAND2_OFFS+REAL_SIZE)
 %define RENDER_PIXEL_OFFS    (RENDER_RAY_OFFS+RAY_SIZE)
 %define RENDER_BG_OFFS       (RENDER_PIXEL_OFFS+VEC3_SIZE)
-%define RENDER_ARGS_SIZE     (RENDER_BG_OFFS+VEC3_SIZE)
+%define RENDER_FRAMEBUFFER   (RENDER_BG_OFFS+VEC3_SIZE)
+%define RENDER_ARGS_SIZE     (RENDER_FRAMEBUFFER+8)
 
 scene_render:
     push rbp
@@ -878,10 +880,9 @@ scene_render:
     push r14
     push r15
     sub rsp, RENDER_ARGS_SIZE
-    sub rsp, 8 ; align 16 bytes
 
     mov r15, rdi ; backup scene
-    mov rbx, rsi ; backup image
+    mov rbx, [rdi+SCENE_FRAMEBUFFER_OFFS] ; backup image
     mov edx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_HEIGHT_OFFS]
     mov [rsp+RENDER_HEIGHT_OFFS], edx ; height
     mov ecx, [rdi+SCENE_OUTPUT_OFFS+OUTPUT_WIDTH_OFFS]
@@ -948,7 +949,6 @@ scene_render:
         cmp r12d, [rsp+RENDER_HEIGHT_OFFS]
         jl .height_loop
 
-    add rsp, 8
     add rsp, RENDER_ARGS_SIZE
     pop r15
     pop r14

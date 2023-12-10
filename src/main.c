@@ -10,13 +10,9 @@ int main(int argc, char **argv) {
   else
     s = scene_new();
 
-  Color *image = malloc(sizeof(Color) * s->output.height * s->output.width);
-  scene_render(s, image);
-  dump_image(stdout, s, image);
-  free(image);
-
-  DESTROY(s->world);
-  free(s);
+  scene_render(s);
+  scene_dump(s, stdout);
+  scene_free(s);
 
   return 0;
 }

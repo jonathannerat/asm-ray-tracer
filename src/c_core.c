@@ -208,9 +208,10 @@ Ray camera_get_ray(const Camera *c, real s, real t) {
   return r;
 }
 
-void scene_render(const Scene *s, Color *image) {
+void scene_render(const Scene *s) {
   int i, j, k, w = s->output.width, h = s->output.height;
   Color bg_color = {0, 0, 0};
+  Color *framebuffer = s->framebuffer;
 
   for (j = 0; j < h; j++) {
     for (i = 0; i < w; i++) {
@@ -223,7 +224,7 @@ void scene_render(const Scene *s, Color *image) {
         pixel = vec3_add(pixel, ray_color(s->world, &r, bg_color, s->output.max_depth));
       }
 
-      image[j * w + i] = pixel;
+      framebuffer[j * w + i] = pixel;
     }
   }
 }

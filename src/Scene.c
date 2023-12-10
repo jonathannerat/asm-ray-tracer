@@ -37,6 +37,23 @@ Scene *scene_new_from_file(const char *path) {
   return NULL;
 }
 
+void scene_dump(Scene *s, FILE *f) {
+  int i, j, h = s->output.height, w = s->output.width, spp = s->output.samples_per_pixel;
+  Color *image = s->framebuffer;
+
+  fprintf(f, "P3\n%d %d\n255\n", s->output.width, s->output.height);
+
+  for (j = h - 1; j >= 0; j--)
+    for (i = 0; i < w; i++)
+      write_color(image[j * w + i], spp);
+}
+
+void scene_free(Scene *s) {
+  DESTROY(s->world);
+  free(s->framebuffer);
+  free(s);
+}
+
 typedef enum {
   PARSING_NONE,
   PARSING_MATERIALS,
@@ -67,6 +84,7 @@ Scene *scene_new_from_stream(FILE *fp) {
   }
 
   s->world = list_init();
+  s->framebuffer = malloc(sizeof(Color) * s->output.height * s->output.width);
 
   for (size_t i = 0; i < arr_len(objects); i++)
     list_push((List *)s->world, objects[i]);
