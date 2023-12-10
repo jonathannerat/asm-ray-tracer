@@ -1,3 +1,4 @@
+; vi: ft=nasm ts=4 sw=4 et
 ; GLOBALS & EXTERNS
 global vec3_add
 global vec3_prod
@@ -1044,4 +1045,3 @@ ray_color:
     pop r12
     pop rbp
     ret
-; vi: ft=x86asm ts=4 sw=4 et

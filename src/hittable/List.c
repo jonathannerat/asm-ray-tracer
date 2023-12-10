@@ -1,18 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../array.h"
 #include "Box.h"
 #include "List.h"
 #include "Triangle.h"
-#include "../array.h"
 
 #define LIST_INITIAL_CAPACITY 16
 
-bool list_hit(const Hittable *hittable, const Ray *ray, real t_min, real t_max,
-              Record *hitrecord);
+bool list_hit(const Hittable *hittable, const Ray *ray, real t_min, real t_max, Record *hitrecord);
 void list_destroy(Hittable *self);
 Box *list_bbox(const Hittable *h);
-
 
 Hittable *list_init() {
   List *self = malloc(sizeof(List));
@@ -146,7 +144,7 @@ Hittable *list_parse_obj(const char *path, spmat *sm) {
   char buf[MAX_BUF_SIZE];
   FILE *fp = fopen(path, "r");
 
-  array_vec3 *vertex = array_vec3_init();
+  Vec3 *vertex = NULL;
 
   while (fgets(buf, MAX_BUF_SIZE, fp)) {
     char *c = buf;
@@ -155,7 +153,7 @@ Hittable *list_parse_obj(const char *path, spmat *sm) {
     case 'v':
       if (c[1] == ' ') {
         c += 2;
-        array_vec3_push(vertex, parse_vec3(c, NULL));
+        arr_push(vertex, parse_vec3(c, NULL));
       }
       break;
     case 'f':
@@ -169,15 +167,13 @@ Hittable *list_parse_obj(const char *path, spmat *sm) {
         c = strfind(c, ' ') + 1;
         k = strtold(c, NULL);
 
-        list_push(objects,
-                  triangle_init(array_vec3_get(vertex, i - 1), array_vec3_get(vertex, j - 1),
-                                array_vec3_get(vertex, k - 1), sm));
+        list_push(objects, triangle_init(vertex[i - 1], vertex[j - 1], vertex[k - 1], sm));
       }
       break;
     }
   }
 
-  array_vec3_destroy(vertex);
+  arr_free(vertex);
   fclose(fp);
 
   return (Hittable *)objects;

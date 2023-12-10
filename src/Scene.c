@@ -2,20 +2,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Scene.h"
 #include "Material.h"
+#include "Scene.h"
+#include "array.h"
 #include "hittable/Box.h"
 #include "hittable/KDTree.h"
 #include "hittable/List.h"
 #include "hittable/Plane.h"
 #include "hittable/Sphere.h"
 #include "hittable/Triangle.h"
-#include "array.h"
 #include "util.h"
 
 #define SKIPBLANK(c)                                                                               \
   while (*c == ' ' || *c == '\t' || *c == '\n')                                                    \
     c++;
+
+Scene *scene_new_from_stream(FILE *fp);
+Camera parse_camera_line(char *c);
+Output parse_output_line(char *c);
+spmat *parse_material_line(char *c);
+Hittable *parse_object_line(spmat **materials, char *c);
+void write_color(Color pixel, uint spp);
+
+Scene *scene_new() { return scene_new_from_stream(stdin); }
+
+Scene *scene_new_from_file(const char *path) {
+  FILE *fp = fopen(path, "r");
+
+  if (fp)
+    return scene_new_from_stream(fp);
+
+  fclose(fp);
+
+  return NULL;
+}
 
 typedef enum {
   PARSING_NONE,
@@ -23,18 +43,11 @@ typedef enum {
   PARSING_OBJECTS,
 } ParsingStage;
 
-Camera parse_camera_line(char *c);
-Output parse_output_line(char *c);
-spmat *parse_material_line(char *c);
-Hittable *parse_object_line(const array_gen *materials, char *c);
-void write_color(Color pixel, uint spp);
-
-Scene *_scene_init(FILE *fp) {
+Scene *scene_new_from_stream(FILE *fp) {
   Scene *s = malloc(sizeof(Scene));
   char buf[MAX_BUF_SIZE];
-  array_gen *materials = array_gen_init();
-  array_gen *objects = array_gen_init();
-
+  spmat **materials = NULL;
+  Hittable **objects = NULL;
   ParsingStage stage = PARSING_NONE;
 
   while (fgets(buf, MAX_BUF_SIZE, fp)) {
@@ -47,34 +60,21 @@ Scene *_scene_init(FILE *fp) {
     } else if (!strncmp(buf, "objects:", 8)) {
       stage = PARSING_OBJECTS;
     } else if (stage == PARSING_MATERIALS && (buf[0] == ' ' || buf[0] == '\t')) {
-      array_gen_push(materials, parse_material_line(buf));
+      arr_push(materials, parse_material_line(buf));
     } else if (stage == PARSING_OBJECTS && (buf[0] == ' ' || buf[0] == '\t')) {
-      array_gen_push(objects, parse_object_line(materials, buf));
+      arr_push(objects, parse_object_line(materials, buf));
     }
   }
 
   s->world = list_init();
 
-  for (size_t i = 0; i < objects->size; i++)
-    list_push((List *)s->world, array_gen_get(objects, i));
+  for (size_t i = 0; i < arr_len(objects); i++)
+    list_push((List *)s->world, objects[i]);
 
-  array_gen_destroy(materials);
-  array_gen_destroy(objects);
+  arr_free(materials);
+  arr_free(objects);
 
   return s;
-}
-
-Scene *scene_init() { return _scene_init(stdin); }
-
-Scene *scene_init_file(const char *path) {
-  FILE *fp = fopen(path, "r");
-
-  if (fp)
-    return _scene_init(fp);
-
-  fclose(fp);
-
-  return NULL;
 }
 
 Camera parse_camera_line(char *c) {
@@ -207,7 +207,7 @@ spmat *parse_material_line(char *c) {
   return m;
 }
 
-Hittable *parse_object_line(const array_gen *materials, char *c) {
+Hittable *parse_object_line(spmat **materials, char *c) {
   Hittable *h = NULL;
 
   while (*c && !h) {
@@ -235,7 +235,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
         }
       }
 
-      h = sphere_init(center, radius, array_gen_get(materials, i));
+      h = sphere_init(center, radius, materials[i]);
     } else if (!strncmp(c, "box:", 4)) {
       Vec3 cback = {0, 0, 0}, cfront = {1, 1, 1};
       size_t i = 0;
@@ -257,7 +257,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
         }
       }
 
-      h = box_init(cback, cfront, array_gen_get(materials, i));
+      h = box_init(cback, cfront, materials[i]);
     } else if (!strncmp(c, "plane:", 6)) {
       Vec3 origin = {0, 0, 0}, normal = {0, 1, 0};
       size_t i = 0;
@@ -279,7 +279,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
         }
       }
 
-      h = plane_init(origin, normal, array_gen_get(materials, i));
+      h = plane_init(origin, normal, materials[i]);
     } else if (!strncmp(c, "triangle:", 9)) {
       Vec3 triangle_vertex[3] = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}};
       size_t i = 0, j = 0;
@@ -298,8 +298,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
         i = strtoul(c, &c, 10);
       }
 
-      h = triangle_init(triangle_vertex[0], triangle_vertex[1], triangle_vertex[2],
-                        array_gen_get(materials, i));
+      h = triangle_init(triangle_vertex[0], triangle_vertex[1], triangle_vertex[2], materials[i]);
     } else if (!strncmp(c, "mesh:", 5)) {
       char objpath[MAX_BUF_SIZE], *end;
       size_t leafs = 1000;
@@ -314,7 +313,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
           c += 8;
           end = strfind(c, ' ');
           strncpy(objpath, c, end - c);
-          objpath[end-c] = '\0';
+          objpath[end - c] = '\0';
           c = end;
         } else if (!strncmp(c, "leafs=", 6)) {
           c += 6;
@@ -325,7 +324,7 @@ Hittable *parse_object_line(const array_gen *materials, char *c) {
         }
       }
 
-      h = kdtree_init_from_file(objpath, leafs, array_gen_get(materials, i));
+      h = kdtree_new_from_file(objpath, leafs, materials[i]);
     }
   }
 

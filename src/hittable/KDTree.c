@@ -5,17 +5,17 @@
 #include "List.h"
 #include "../util.h"
 
-bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr);
-void node_destroy(Hittable *o);
-Box *node_bbox(const Hittable *o) { return ((Node *)o)->bbox; }
+bool kdtree_node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr);
+void kdtree_node_destroy(Hittable *o);
+Box *kdtree_node_bbox(const Hittable *o) { return ((Node *)o)->bbox; }
 
-Node *node_init(List *objects) {
+Node *kdtree_node_new(List *objects) {
   Node *self = malloc(sizeof(Node));
 
   self->_hittable = (Hittable){
-    node_hit,
-    node_destroy,
-    node_bbox,
+    kdtree_node_hit,
+    kdtree_node_destroy,
+    kdtree_node_bbox,
     objects->_hittable.refp,
   };
 
@@ -27,13 +27,13 @@ Node *node_init(List *objects) {
   return self;
 }
 
-size_t node_size(Node *n) {
-  return n->objects ? n->objects->size : node_size(n->left) + node_size(n->right);
+size_t kdtree_node_size(Node *n) {
+  return n->objects ? n->objects->size : kdtree_node_size(n->left) + kdtree_node_size(n->right);
 }
 
 char axis = 'x';
 
-int node_objects_sort_by_axis(const void *a, const void *b) {
+int sort_objects_by_axis(const void *a, const void *b) {
   Hittable *ha = (Hittable *)a, *hb = (Hittable *)b;
 
   if (axis == 'x')
@@ -44,7 +44,7 @@ int node_objects_sort_by_axis(const void *a, const void *b) {
     return ha->refp.z < hb->refp.z ? -1 : 1;
 }
 
-void node_split(Node *n, size_t leaf_size) {
+void kdtree_node_split(Node *n, size_t leaf_size) {
   if (!n->objects)
     return;
 
@@ -64,7 +64,7 @@ void node_split(Node *n, size_t leaf_size) {
 
   // order objects by that axis
   List *sorted = list_copy(n->objects);
-  qsort(sorted->list, sorted->size, sizeof(Hittable *), node_objects_sort_by_axis);
+  qsort(sorted->list, sorted->size, sizeof(Hittable *), sort_objects_by_axis);
 
   size_t middle = sorted->size / 2, i;
   List *hleft = (List *)list_init(), *hright = (List *)list_init();
@@ -77,8 +77,8 @@ void node_split(Node *n, size_t leaf_size) {
 
   list_copy_destroy(sorted);
 
-  n->left = node_init(hleft);
-  n->right = node_init(hright);
+  n->left = kdtree_node_new(hleft);
+  n->right = kdtree_node_new(hright);
 
   if (n->objects->size > leaf_size) {
     list_copy_destroy(n->objects);
@@ -86,12 +86,12 @@ void node_split(Node *n, size_t leaf_size) {
   }
 
   if (hleft->size > leaf_size)
-    node_split(n->left, leaf_size);
+    kdtree_node_split(n->left, leaf_size);
   if (hright->size > leaf_size)
-    node_split(n->right, leaf_size);
+    kdtree_node_split(n->right, leaf_size);
 }
 
-bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr) {
+bool kdtree_node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *hr) {
   Box *bbox = o->bbox(o);
   Node *self = (Node *)o;
   List *objects = self->objects;
@@ -121,7 +121,7 @@ bool node_hit(const Hittable *o, const Ray *r, real t_min, real t_max, Record *h
   }
 }
 
-void node_destroy(Hittable *h) {
+void kdtree_node_destroy(Hittable *h) {
   Node *self = (Node *)h;
 
   if (self->left)
@@ -149,7 +149,7 @@ void kdtree_destroy(Hittable *o) {
 
 Box *kdtree_bbox(const Hittable *o) { return ((KDTree *)o)->root->bbox; }
 
-Hittable *kdtree_init(List *objects, uint leaf_size) {
+Hittable *kdtree_new(List *objects, uint leaf_size) {
   KDTree *self = malloc(sizeof(KDTree));
 
   self->_hittable = (Hittable){
@@ -159,13 +159,13 @@ Hittable *kdtree_init(List *objects, uint leaf_size) {
     objects->_hittable.refp,
   };
 
-  self->root = node_init(objects);
+  self->root = kdtree_node_new(objects);
 
-  node_split(self->root, leaf_size);
+  kdtree_node_split(self->root, leaf_size);
 
   return (Hittable *)self;
 }
 
-Hittable *kdtree_init_from_file(const char *path, uint leaf_size, spmat *sm) {
-  return kdtree_init((List *)list_parse_obj(path, sm), leaf_size);
+Hittable *kdtree_new_from_file(const char *path, uint leaf_size, spmat *sm) {
+  return kdtree_new((List *)list_parse_obj(path, sm), leaf_size);
 }

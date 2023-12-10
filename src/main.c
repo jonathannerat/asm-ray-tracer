@@ -6,10 +6,9 @@ int main(int argc, char **argv) {
   Scene *s;
 
   if (argc > 1)
-    s = scene_init_file(argv[1]);
+    s = scene_new_from_file(argv[1]);
   else
-    s = scene_init();
-  
+    s = scene_new();
 
   Color *image = malloc(sizeof(Color) * s->output.height * s->output.width);
   scene_render(s, image);

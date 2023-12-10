@@ -1,4 +1,4 @@
 #include "core.h"
 
-Scene *scene_init();
-Scene *scene_init_file(const char* path);
+Scene *scene_new();
+Scene *scene_new_from_file(const char* path);

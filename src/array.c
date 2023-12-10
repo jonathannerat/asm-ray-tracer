@@ -1,82 +1,37 @@
 #include <stdlib.h>
 
 #include "array.h"
-#include "util.h"
 
-array_vec3 *array_vec3_init() {
-  array_vec3 *arr = malloc(sizeof(array_vec3));
+void *arr_growf(void *arr, uint elem_size, uint growth_size) {
+  void *bigger_arr;
+  uint new_size;
 
-  arr->size = 0;
-  arr->cap = ARRAY_INITIAL_CAPACITY;
-  arr->data = malloc(sizeof(Vec3) * arr->cap);
+  // we have to alocate at least this many elements
+  uint min_cap = arr_len(arr) + growth_size;
+  // we currently can alocate this many elements
+  uint capacity = arr_cap(arr);
 
-  return arr;
-}
+  if (min_cap < 2 * capacity) {
+    // doubling our current capacity is enough
+    min_cap = 2 * capacity;
+  } else if (min_cap < ARRAY_INITIAL_CAPACITY) {
+    // if its not enough, maybe it's because we're empty
+    min_cap = ARRAY_INITIAL_CAPACITY;
+  } // otherwise, we might be needing a lot of space, then we just use min_cap
 
-bool array_vec3_push(array_vec3 *arr, Vec3 v) {
-  if (arr->size == arr->cap) {
-    Vec3 *data = realloc(arr->data, sizeof(Vec3) * arr->cap * 2);
-    if (!data)
-      return false;
+  // we make enough space for the header
+  new_size = elem_size * min_cap + sizeof(struct array_header);
+  bigger_arr = realloc(arr ? arr_header(arr) : 0, new_size);
+  // we offset the pointer, so we can directly access elements
+  bigger_arr = (char *)bigger_arr + sizeof(struct array_header);
 
-    if (data != arr->data)
-      arr->data = data;
-    arr->cap *= 2;
+  if (!arr) {
+    // arr was NULL, then bigger_arr won't have length set
+    arr_header(bigger_arr)->length = 0;
   }
 
-  arr->data[arr->size++] = v;
+  // regardless we need to set to new capacity
+  arr_header(bigger_arr)->capacity = min_cap;
 
-  return true;
-}
-
-Vec3 array_vec3_get(const array_vec3 *arr, uint i) {
-  if (i >= arr->size)
-    return V(NAN, NAN, NAN);
-
-  return arr->data[i];
-}
-
-void array_vec3_destroy(array_vec3 *arr) {
-  free(arr->data);
-  free(arr);
-}
-
-// For pointers
-
-array_gen *array_gen_init() {
-  array_gen *arr = malloc(sizeof(array_gen));
-
-  arr->size = 0;
-  arr->cap = ARRAY_INITIAL_CAPACITY;
-  arr->data = malloc(sizeof(void *) * arr->cap);
-
-  return arr;
-}
-
-bool array_gen_push(array_gen *arr, void *v) {
-  if (arr->size == arr->cap) {
-    void **data = realloc(arr->data, sizeof(void *) * arr->cap * 2);
-    if (!data)
-      return false;
-
-    if (data != arr->data)
-      arr->data = data;
-    arr->cap *= 2;
-  }
-
-  arr->data[arr->size++] = v;
-
-  return true;
-}
-
-void *array_gen_get(const array_gen *arr, uint i) {
-  if (i >= arr->size)
-    return NULL;
-
-  return arr->data[i];
-}
-
-void array_gen_destroy(array_gen *arr) {
-  free(arr->data);
-  free(arr);
+  return bigger_arr;
 }
