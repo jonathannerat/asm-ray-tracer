@@ -22,7 +22,7 @@ Vec3 vec3_inv(const Vec3 v) { return V(-v.x, -v.y, -v.z); }
 
 Vec3 vec3_prod(const Vec3 a, const Vec3 b) { return V(a.x * b.x, a.y * b.y, a.z * b.z); }
 
-Vec3 vec3_scale(real s, const Vec3 v) { return V(v.x * s, v.y * s, v.z * s); }
+Vec3 vec3_scale(const Vec3 v, real s) { return V(v.x * s, v.y * s, v.z * s); }
 
 Vec3 vec3_unscale(const Vec3 v, real s) { return V(v.x / s, v.y / s, v.z / s); }
 
@@ -93,7 +93,7 @@ bool sphere_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Rec
   hr->t = root;
   hr->p = ray_at(r, hr->t);
   hr->sm = self->sm;
-  Vec3 outward_normal = vec3_scale(1 / self->radius, vec3_sub(hr->p, self->center));
+  Vec3 outward_normal = vec3_scale(vec3_sub(hr->p, self->center), 1 / self->radius);
   hr_set_face_normal(hr, r, outward_normal);
 
   return true;
@@ -146,7 +146,7 @@ bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *
 
   *scattered = (Ray){
     hr->p,
-    vec3_add(reflected, vec3_scale(self->fuzz, vec3_rnd_unit_sphere())),
+    vec3_add(reflected, vec3_scale(vec3_rnd_unit_sphere(), self->fuzz)),
   };
   *attenuation = self->albedo;
 
@@ -187,23 +187,23 @@ Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
   c.u = normalized(cross(vup, c.w));
   c.v = cross(c.w, c.u);
   c.lens_radius = aperture / 2.0;
-  c.horizontal = vec3_scale(focus_dist * vp_width, c.u);
-  c.vertical = vec3_scale(focus_dist * vp_height, c.v);
+  c.horizontal = vec3_scale(c.u, focus_dist * vp_width);
+  c.vertical = vec3_scale(c.v, focus_dist * vp_height);
   c.bl_corner =
-    vec3_sub(c.origin, vec3_add(vec3_scale(focus_dist, c.w), vec3_add(vec3_scale(.5, c.horizontal),
-                                                                      vec3_scale(.5, c.vertical))));
+    vec3_sub(c.origin, vec3_add(vec3_scale(c.w, focus_dist), vec3_add(vec3_scale(c.horizontal, .5),
+                                                                      vec3_scale(c.vertical, .5))));
 
   return c;
 }
 
 Ray camera_get_ray(const Camera *c, real s, real t) {
   Vec3 rand_unit = vec3_rnd_unit_sphere();
-  Vec3 rd = vec3_scale(c->lens_radius, rand_unit);
-  Vec3 offset = vec3_add(vec3_scale(rd.x, c->u), vec3_scale(rd.y, c->v));
+  Vec3 rd = vec3_scale(rand_unit, c->lens_radius);
+  Vec3 offset = vec3_add(vec3_scale(c->u, rd.x), vec3_scale(c->v, rd.y));
 
   Ray r = {.origin = vec3_add(c->origin, offset),
-           .direction = vec3_add(vec3_add(c->bl_corner, vec3_scale(s, c->horizontal)),
-                                 vec3_sub(vec3_scale(t, c->vertical), r.origin))};
+           .direction = vec3_add(vec3_add(c->bl_corner, vec3_scale(c->horizontal, s)),
+                                 vec3_sub(vec3_scale(c->vertical, t), r.origin))};
 
   return r;
 }
@@ -264,18 +264,18 @@ real dot(const Vec3 a, const Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z;
 
 bool perpendicular(const Vec3 a, const Vec3 b) { return fabs(dot(a, b)) < EPS; }
 
-Vec3 normalized(const Vec3 v) { return vec3_scale(1.0 / sqrt(vec3_norm2(v)), v); }
+Vec3 normalized(const Vec3 v) { return vec3_scale(v, 1.0 / sqrt(vec3_norm2(v))); }
 
 bool vec3_near_zero(const Vec3 v) { return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS; }
 
 Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat) {
   real cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
-  Vec3 r_out_perp = vec3_scale(etai_over_etat, vec3_add(uv, vec3_scale(cos_theta, n)));
-  Vec3 r_out_par = vec3_scale(-sqrt(fabs(1.0 - vec3_norm2(r_out_perp))), n);
+  Vec3 r_out_perp = vec3_scale(vec3_add(uv, vec3_scale(n, cos_theta)), etai_over_etat);
+  Vec3 r_out_par = vec3_scale(n, -sqrt(fabs(1.0 - vec3_norm2(r_out_perp))));
   return vec3_add(r_out_perp, r_out_par);
 }
 
-Vec3 reflect(const Vec3 v, const Vec3 n) { return vec3_sub(v, vec3_scale(2 * dot(v, n), n)); }
+Vec3 reflect(const Vec3 v, const Vec3 n) { return vec3_sub(v, vec3_scale(n, 2 * dot(v, n))); }
 
 real reflectance(real cosine, real ref_idx) {
   // Use Schlick's approximation for reflectance.

@@ -2,6 +2,7 @@
 ; GLOBALS & EXTERNS
 global vec3_add
 global vec3_prod
+global vec3_scale
 global vec3_unscale
 global vec3_sub
 global vec3_norm2
@@ -209,6 +210,12 @@ vec3_add:
 vec3_prod:
     mulps xmm0, xmm2
     mulps xmm1, xmm3
+    ret
+
+vec3_scale:
+    shufps xmm2, xmm2, 0b00000000
+    mulps xmm0, xmm2
+    mulps xmm1, xmm2
     ret
 
 vec3_unscale:

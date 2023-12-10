@@ -56,4 +56,4 @@ void write_color(Color pixel, uint spp) {
          (int)(256 * clamp(b, 0, 1)));
 }
 
-Point ray_at(const Ray *r, real t) { return vec3_add(r->origin, vec3_unscale(r->direction, 1.0 / t)); }
+Point ray_at(const Ray *r, real t) { return vec3_add(r->origin, vec3_scale(r->direction, t)); }
