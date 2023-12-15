@@ -1,4 +1,5 @@
 #include "util.h"
+#include "tracer.h"
 
 #ifdef DEBUG
 #include <stdarg.h>
@@ -40,7 +41,9 @@ Vec3 parse_vec3(char *c, char **t) {
   return v;
 }
 
-static real clamp(real x, real min, real max) { return x < min ? min : (x > max ? max : x); }
+static real clamp(real x, real min, real max) {
+  return x < min ? min : (x > max ? max : x);
+}
 
 void write_color(Color pixel, uint spp) {
   real r = pixel.x;
@@ -56,4 +59,6 @@ void write_color(Color pixel, uint spp) {
          (int)(256 * clamp(b, 0, 1)));
 }
 
-Point ray_at(const Ray *r, real t) { return vec3_add(r->origin, vec3_scale(r->direction, t)); }
+Point ray_at(const Ray *r, real t) {
+  return vec3_add(r->origin, vec3_scale(r->direction, t));
+}

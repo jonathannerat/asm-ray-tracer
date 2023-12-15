@@ -2,29 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Material.h"
+#include "../structures/array.h"
+#include "../surfaces.h"
+#include "../tracer.h"
 #include "Scene.h"
-#include "array.h"
-#include "hittable/Box.h"
-#include "hittable/KDTree.h"
-#include "hittable/List.h"
-#include "hittable/Plane.h"
-#include "hittable/Sphere.h"
-#include "hittable/Triangle.h"
-#include "util.h"
 
-#define SKIPBLANK(c)                                                                               \
-  while (*c == ' ' || *c == '\t' || *c == '\n')                                                    \
+#define SKIPBLANK(c)                                                                     \
+  while (*c == ' ' || *c == '\t' || *c == '\n')                                          \
     c++;
 
 Scene *scene_new_from_stream(FILE *fp);
 Camera parse_camera_line(char *c);
 Output parse_output_line(char *c);
-spmat *parse_material_line(char *c);
-Hittable *parse_object_line(spmat **materials, char *c);
+Material *parse_material_line(char *c);
+Surface *parse_surface_line(char *c, Material **materials);
 void write_color(Color pixel, uint spp);
 
-Scene *scene_new() { return scene_new_from_stream(stdin); }
+Scene *scene_new_from_stdin() { return scene_new_from_stream(stdin); }
 
 Scene *scene_new_from_file(const char *path) {
   FILE *fp = fopen(path, "r");
@@ -49,7 +43,7 @@ void scene_dump(Scene *s, FILE *f) {
 }
 
 void scene_free(Scene *s) {
-  DESTROY(s->world);
+  list_free(s->world);
   free(s->framebuffer);
   free(s);
 }
@@ -63,8 +57,8 @@ typedef enum {
 Scene *scene_new_from_stream(FILE *fp) {
   Scene *s = malloc(sizeof(Scene));
   char buf[MAX_BUF_SIZE];
-  spmat **materials = NULL;
-  Hittable **objects = NULL;
+  Material **materials = NULL;
+  Surface **surfaces = NULL;
   ParsingStage stage = PARSING_NONE;
 
   while (fgets(buf, MAX_BUF_SIZE, fp)) {
@@ -79,18 +73,14 @@ Scene *scene_new_from_stream(FILE *fp) {
     } else if (stage == PARSING_MATERIALS && (buf[0] == ' ' || buf[0] == '\t')) {
       arr_push(materials, parse_material_line(buf));
     } else if (stage == PARSING_OBJECTS && (buf[0] == ' ' || buf[0] == '\t')) {
-      arr_push(objects, parse_object_line(materials, buf));
+      arr_push(surfaces, parse_surface_line(buf, materials));
     }
   }
 
-  s->world = list_init();
+  s->world = list_new(surfaces);
   s->framebuffer = malloc(sizeof(Color) * s->output.height * s->output.width);
 
-  for (size_t i = 0; i < arr_len(objects); i++)
-    list_push((List *)s->world, objects[i]);
-
   arr_free(materials);
-  arr_free(objects);
 
   return s;
 }
@@ -136,7 +126,7 @@ Camera parse_camera_line(char *c) {
     focus_dist = sqrt(vec3_norm2(vec3_sub(from, to)));
   }
 
-  return camera_init(from, to, vup, vfov, aspect_ratio, aperture, focus_dist);
+  return camera_new(from, to, vup, vfov, aspect_ratio, aperture, focus_dist);
 }
 
 Output parse_output_line(char *c) {
@@ -167,8 +157,8 @@ Output parse_output_line(char *c) {
   return o;
 }
 
-spmat *parse_material_line(char *c) {
-  spmat *m = NULL;
+Material *parse_material_line(char *c) {
+  Material *m = NULL;
 
   while (*c && !m) {
     SKIPBLANK(c);
@@ -176,7 +166,7 @@ spmat *parse_material_line(char *c) {
     if (!strncmp(c, "lambertian=", 11)) {
       c += 11;
       Vec3 albedo = parse_vec3(c, NULL);
-      m = lambertian_init(albedo);
+      m = lambertian_new(albedo);
     } else if (!strncmp(c, "dielectric:", 11)) {
       Vec3 albedo = {1, 1, 1};
       float ir = 1;
@@ -195,7 +185,7 @@ spmat *parse_material_line(char *c) {
         }
       }
 
-      m = dielectric_init(albedo, ir);
+      m = dielectric_new(albedo, ir);
     } else if (!strncmp(c, "metal:", 6)) {
       Vec3 albedo = {1, 1, 1};
       float fuzz = 0;
@@ -214,19 +204,19 @@ spmat *parse_material_line(char *c) {
         }
       }
 
-      m = metal_init(albedo, fuzz);
+      m = metal_new(albedo, fuzz);
     } else if (!strncmp(c, "light=", 6)) {
       c += 6;
       Vec3 albedo = parse_vec3(c, NULL);
-      m = diffuse_light_init(albedo);
+      m = light_new(albedo);
     }
   }
 
   return m;
 }
 
-Hittable *parse_object_line(spmat **materials, char *c) {
-  Hittable *h = NULL;
+Surface *parse_surface_line(char *c, Material **materials) {
+  Surface *h = NULL;
 
   while (*c && !h) {
     SKIPBLANK(c);
@@ -253,7 +243,46 @@ Hittable *parse_object_line(spmat **materials, char *c) {
         }
       }
 
-      h = sphere_init(center, radius, materials[i]);
+      h = (Surface *)sphere_new(center, radius, materials[i]);
+    } else if (!strncmp(c, "rect:", 5)) {
+      enum plane p = XY;
+      real x1_min = 0, x1_max = 1, x2_min = 0, x2_max = 1, x3 = 0;
+      bool inv = false;
+      size_t i = 0;
+
+      c += 5;
+
+      while (*c) {
+        SKIPBLANK(c);
+
+        if (*c == 'X' || *c == 'Y' || *c == 'Z') {
+          c++;
+          p = *c == 'X' ? ZX : (*c == 'Y' ? XY : YZ);
+          c++;
+        } else if (!strncmp(c, "x1=", 3)) {
+          c += 3;
+          x1_min = strtof(c, &c);
+          c++;
+          x1_max = strtof(c, &c);
+        } else if (!strncmp(c, "x2=", 3)) {
+          c += 3;
+          x2_min = strtof(c, &c);
+          c++;
+          x2_max = strtof(c, &c);
+        } else if (!strncmp(c, "x3=", 3)) {
+          c += 3;
+          x3 = strtof(c, &c);
+        } else if (!strncmp(c, "inverted", 8)) {
+          c += 8;
+          inv = true;
+        } else if (!strncmp(c, "material=", 9)) {
+          c += 9;
+          i = strtoul(c, &c, 10);
+        }
+      }
+
+      h = (Surface *)aarect_new(AARP_(p, x1_min, x1_max, x2_min, x2_max, x3, inv),
+                                materials[i]);
     } else if (!strncmp(c, "box:", 4)) {
       Vec3 cback = {0, 0, 0}, cfront = {1, 1, 1};
       size_t i = 0;
@@ -263,11 +292,11 @@ Hittable *parse_object_line(spmat **materials, char *c) {
       while (*c) {
         SKIPBLANK(c);
 
-        if (!strncmp(c, "cback=", 6)) {
-          c += 6;
+        if (!strncmp(c, "pmin=", 5)) {
+          c += 5;
           cback = parse_vec3(c, &c);
-        } else if (!strncmp(c, "cfront=", 7)) {
-          c += 7;
+        } else if (!strncmp(c, "pmax=", 5)) {
+          c += 5;
           cfront = parse_vec3(c, &c);
         } else if (!strncmp(c, "material=", 9)) {
           c += 9;
@@ -275,7 +304,7 @@ Hittable *parse_object_line(spmat **materials, char *c) {
         }
       }
 
-      h = box_init(cback, cfront, materials[i]);
+      h = (Surface *)aabox_new(cback, cfront, materials[i]);
     } else if (!strncmp(c, "plane:", 6)) {
       Vec3 origin = {0, 0, 0}, normal = {0, 1, 0};
       size_t i = 0;
@@ -297,9 +326,9 @@ Hittable *parse_object_line(spmat **materials, char *c) {
         }
       }
 
-      h = plane_init(origin, normal, materials[i]);
+      h = (Surface *)plane_new(origin, normal, materials[i]);
     } else if (!strncmp(c, "triangle:", 9)) {
-      Vec3 triangle_vertex[3] = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}};
+      Vec3 triangle_vertex[3] = {0};
       size_t i = 0, j = 0;
 
       c += 9;
@@ -316,7 +345,8 @@ Hittable *parse_object_line(spmat **materials, char *c) {
         i = strtoul(c, &c, 10);
       }
 
-      h = triangle_init(triangle_vertex[0], triangle_vertex[1], triangle_vertex[2], materials[i]);
+      h = (Surface *)triangle_new(triangle_vertex[0], triangle_vertex[1],
+                                  triangle_vertex[2], materials[i]);
     } else if (!strncmp(c, "mesh:", 5)) {
       char objpath[MAX_BUF_SIZE], *end;
       size_t leafs = 1000;
@@ -342,7 +372,7 @@ Hittable *parse_object_line(spmat **materials, char *c) {
         }
       }
 
-      h = kdtree_new_from_file(objpath, leafs, materials[i]);
+      h = (Surface *)triangle_mesh_new_from_file(objpath, leafs, materials[i]);
     }
   }
 

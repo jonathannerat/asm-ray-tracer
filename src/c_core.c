@@ -55,7 +55,8 @@ bool plane_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Reco
   if (perpendicular(r->direction, self->normal))
     return false;
 
-  real t = dot(vec3_sub(self->origin, r->origin), self->normal) / dot(r->direction, self->normal);
+  real t = dot(vec3_sub(self->origin, r->origin), self->normal) /
+           dot(r->direction, self->normal);
 
   if (t < t_min || t_max < t)
     return false;
@@ -99,7 +100,8 @@ bool sphere_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Rec
   return true;
 }
 
-bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, Record *hr) {
+bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max,
+                  Record *hr) {
   Triangle *self = (Triangle *)_self;
 
   Vec3 normal = cross(vec3_sub(self->p2, self->p1), vec3_sub(self->p3, self->p1));
@@ -126,8 +128,8 @@ bool triangle_hit(const Hittable *_self, const Ray *r, real t_min, real t_max, R
   return false;
 }
 
-bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
-                        Ray *scattered) {
+bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr,
+                        Color *attenuation, Ray *scattered) {
   Lambertian *self = (Lambertian *)m;
   Vec3 scatter_direction = vec3_add(hr->normal, vec3_rnd_unit_sphere());
 
@@ -139,8 +141,8 @@ bool lambertian_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
   return true;
 }
 
-bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
-                   Ray *scattered) {
+bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr,
+                   Color *attenuation, Ray *scattered) {
   Metal *self = (Metal *)m;
   Vec3 reflected = reflect(normalized(r_in->direction), hr->normal);
 
@@ -153,8 +155,8 @@ bool metal_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *
   return dot(reflected, hr->normal) > 0;
 }
 
-bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Color *attenuation,
-                        Ray *scattered) {
+bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr,
+                        Color *attenuation, Ray *scattered) {
   Dielectric *self = (Dielectric *)m;
   real ref_ratio = hr->front_face ? 1 / self->ir : self->ir;
   Vec3 unit_dir = normalized(r_in->direction);
@@ -174,8 +176,8 @@ bool dielectric_scatter(const Material *m, const Ray *r_in, const Record *hr, Co
   return true;
 }
 
-Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio, real aperture,
-                   real focus_dist) {
+Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
+                   real aperture, real focus_dist) {
   real theta = vfov * M_PI / 180.0; // to radians
   real h = tan(theta / 2);
   real vp_height = 2.0 * h;
@@ -189,9 +191,9 @@ Camera camera_init(Point from, Point to, Vec3 vup, real vfov, real aspect_ratio,
   c.lens_radius = aperture / 2.0;
   c.horizontal = vec3_scale(c.u, focus_dist * vp_width);
   c.vertical = vec3_scale(c.v, focus_dist * vp_height);
-  c.bl_corner =
-    vec3_sub(c.origin, vec3_add(vec3_scale(c.w, focus_dist), vec3_add(vec3_scale(c.horizontal, .5),
-                                                                      vec3_scale(c.vertical, .5))));
+  c.bl_corner = vec3_sub(c.origin, vec3_add(vec3_scale(c.w, focus_dist),
+                                            vec3_add(vec3_scale(c.horizontal, .5),
+                                                     vec3_scale(c.vertical, .5))));
 
   return c;
 }
@@ -246,7 +248,8 @@ Color ray_color(Hittable *world, const Ray *r, Color bg, uint depth) {
   if (!m->scatter(m, r, &rec, &attenuation, &scattered))
     return emitted;
 
-  return vec3_add(emitted, vec3_prod(attenuation, ray_color(world, &scattered, bg, depth - 1)));
+  return vec3_add(emitted,
+                  vec3_prod(attenuation, ray_color(world, &scattered, bg, depth - 1)));
 }
 
 // Internal
@@ -266,7 +269,9 @@ bool perpendicular(const Vec3 a, const Vec3 b) { return fabs(dot(a, b)) < EPS; }
 
 Vec3 normalized(const Vec3 v) { return vec3_scale(v, 1.0 / sqrt(vec3_norm2(v))); }
 
-bool vec3_near_zero(const Vec3 v) { return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS; }
+bool vec3_near_zero(const Vec3 v) {
+  return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS;
+}
 
 Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat) {
   real cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
@@ -275,7 +280,23 @@ Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat) {
   return vec3_add(r_out_perp, r_out_par);
 }
 
-Vec3 reflect(const Vec3 v, const Vec3 n) { return vec3_sub(v, vec3_scale(n, 2 * dot(v, n))); }
+Vec3 refract(const Vec3 uv, const Vec3 n, real etai_over_etat) {
+  real cos_theta = fmin(dot(vec3_inv(uv), n), 1.0);
+  Vec3 r_out_perp = vec3_scale(vec3_add(uv, vec3_scale(n, cos_theta)), etai_over_etat);
+  Vec3 r_out_par = vec3_scale(n, -sqrt(fabs(1.0 - vec3_norm2(r_out_perp))));
+  return vec3_add(r_out_perp, r_out_par);
+}
+
+Vec3 reflect(const Vec3 v, const Vec3 n) {
+  return vec3_sub(v, vec3_scale(n, 2 * dot(v, n)));
+}
+
+real reflectance(real cosine, real ref_idx) {
+  // Use Schlick's approximation for reflectance.
+  real r0 = (1 - ref_idx) / (1 + ref_idx);
+  r0 = r0 * r0;
+  return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
 
 real reflectance(real cosine, real ref_idx) {
   // Use Schlick's approximation for reflectance.

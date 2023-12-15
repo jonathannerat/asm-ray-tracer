@@ -7,4 +7,4 @@ materials:
 objects:
     plane: origin=0,6,0 normal=0,-1,0 material=0
     plane: material=1
-    box: cfront=.9,.9,.9 material=2
+    box: pmax=.9,.9,.9 material=2

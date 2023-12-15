@@ -1,11 +1,11 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "core.h"
-
 #define ARRAY_INITIAL_CAPACITY 16
 
 // inspired by https://github.com/nothings/stb/blob/master/stb_ds.h
+
+typedef unsigned int uint;
 
 struct array_header {
   uint length;
