@@ -218,6 +218,12 @@ AABox *aabox_add(AABox *a, AABox *b) {
 
 void aabox_free(Surface *s) {
   AABox *self = (AABox *)s;
+  Plane **sides = self->sides;
+
+  for (uint i = 0; i < arr_len(sides); i++)
+    plane_free((Surface *)sides[i]);
+
+  arr_free(sides);
 
   if (self->material)
     shpt_free(self->material);

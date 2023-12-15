@@ -19,6 +19,8 @@ struct shpt_header {
   })
 #define shpt_get(p) ((p) ? (shpt_header(p)->ref_count++, (p)) : (p))
 #define shpt_free(p)                                                                     \
-  ((p) ? (--shpt_header(p)->ref_count == 0 ? (free(shpt_header(p)), (p) = NULL, 0) : 0) : 0)
+  ((p)                                                                                   \
+     ? (--(shpt_header(p)->ref_count) == 0 ? (free(shpt_header(p)), (p) = NULL, 0) : 0)  \
+     : 0)
 
 #endif /* end of include guard: SHPT_H */

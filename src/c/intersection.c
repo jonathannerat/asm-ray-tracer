@@ -43,7 +43,7 @@ void save_hit(HitRecord *hit, const Ray *r, real t, const Vec3 n, Material *m) {
   bool is_front_face = vec3_dot(r->direction, n) < 0;
   hit->t = t;
   hit->p = ray_at(r, t);
-  hit->m = shpt_get(m);
+  hit->m = m;
   hit->front_face = is_front_face;
   hit->normal = is_front_face ? n : vec3_inv(n);
 }
