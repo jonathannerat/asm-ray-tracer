@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "../util.h"
+#include "../vec3.h"
 
 typedef struct {
   Point origin;

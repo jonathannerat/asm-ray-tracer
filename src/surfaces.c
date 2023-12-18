@@ -1,9 +1,10 @@
-#include <stdlib.h>
-
+#include "surfaces.h"
 #include "assert.h"
 #include "structures/array.h"
-#include "surfaces.h"
-#include "tracer.h"
+#include "vec3.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 AABox *aabox_add(AABox *, AABox *);
 

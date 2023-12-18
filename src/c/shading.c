@@ -1,5 +1,9 @@
 #include "shading.h"
-#include "../tracer.h"
+#include "../vec3.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 bool lambertian_scatter(const Material *, const Ray *, const HitRecord *, Color *, Ray *);
 bool metal_scatter(const Material *, const Ray *, const HitRecord *, Color *, Ray *);
@@ -36,7 +40,8 @@ bool material_scatter(const Material *self, const Ray *r, const HitRecord *hit,
 
 bool lambertian_scatter(const Material *self, const Ray *r, const HitRecord *hit,
                         Color *attenuation, Ray *scattered) {
-  Vec3 scatter_direction = vec3_add(hit->normal, vec3_rnd_unit_sphere());
+  (void)r;
+  Vec3 scatter_direction = vec3_add(hit->normal, vec3_rand_unit_sphere());
 
   if (vec3_near_zero(scatter_direction))
     scatter_direction = hit->normal;
@@ -50,7 +55,7 @@ bool lambertian_scatter(const Material *self, const Ray *r, const HitRecord *hit
 bool metal_scatter(const Material *self, const Ray *r, const HitRecord *hit,
                    Color *attenuation, Ray *scattered) {
   Vec3 reflected = reflect(vec3_to_normalized(r->direction), hit->normal);
-  Vec3 scatter_dir = vec3_add(reflected, vec3_scale(vec3_rnd_unit_sphere(), self->alpha));
+  Vec3 scatter_dir = vec3_add(reflected, vec3_scale(vec3_rand_unit_sphere(), self->alpha));
 
   *attenuation = self->color;
   *scattered = (Ray){
@@ -70,7 +75,7 @@ bool dielectric_scatter(const Material *self, const Ray *r, const HitRecord *hit
   bool cannot_refract = ref_ratio * sin_theta > 1;
   Vec3 direction;
 
-  if (cannot_refract || reflectance(cos_theta, ref_ratio) > rnd())
+  if (cannot_refract || reflectance(cos_theta, ref_ratio) > frand())
     direction = reflect(unit_dir, hit->normal);
   else
     direction = refract(unit_dir, hit->normal, ref_ratio);

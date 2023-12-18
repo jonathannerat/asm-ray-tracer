@@ -3,14 +3,14 @@
 
 #include <stdio.h>
 
-#include "Camera.h"
 #include "../surfaces.h"
+#include "Camera.h"
 
 typedef struct {
-  int width;
-  int height;
-  int samples_per_pixel;
-  int max_depth;
+  uint width;
+  uint height;
+  uint samples_per_pixel;
+  uint max_depth;
 } Output;
 
 typedef struct {

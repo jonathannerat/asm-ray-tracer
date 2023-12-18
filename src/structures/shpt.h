@@ -1,7 +1,7 @@
 #ifndef SHPT_H
 #define SHPT_H
 
-#include "../util.h"
+#include "../vec3.h"
 
 struct shpt_header {
   uint ref_count;

@@ -1,6 +1,9 @@
 #include "intersection.h"
 #include "../structures/array.h"
-#include "../tracer.h"
+#include "../vec3.h"
+
+#include <stddef.h>
+#include <math.h>
 
 #define IS_PERPENDICULAR(a, b) (fabs(vec3_dot(a, b)) < EPS)
 

@@ -1,11 +1,12 @@
+#include "Scene.h"
+#include "../structures/array.h"
+#include "../surfaces.h"
+#include "../vec3.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../structures/array.h"
-#include "../surfaces.h"
-#include "../tracer.h"
-#include "Scene.h"
 
 #define SKIPBLANK(c)                                                                     \
   while (*c == ' ' || *c == '\t' || *c == '\n')                                          \
@@ -43,7 +44,7 @@ void scene_dump(Scene *s, FILE *f) {
 }
 
 void scene_free(Scene *s) {
-  list_free(s->world);
+  list_free((Surface *)s->world);
   free(s->framebuffer);
   free(s);
 }
@@ -89,8 +90,8 @@ Camera parse_camera_line(char *c) {
   char *p = c + 7; // skip 'camera:'
 
   // camera properties
-  Point from = {0, 1, -1}, to = {0, 0, 0};
-  Vec3 vup = {0, 1, 0};
+  Point from = V(0, 1, -1), to = V3(0);
+  Vec3 vup = V(0, 1, 0);
   real vfov = 45, aspect_ratio = 16.0 / 9.0, aperture = 0;
   real focus_dist = -1;
 
@@ -168,7 +169,7 @@ Material *parse_material_line(char *c) {
       Vec3 albedo = parse_vec3(c, NULL);
       m = lambertian_new(albedo);
     } else if (!strncmp(c, "dielectric:", 11)) {
-      Vec3 albedo = {1, 1, 1};
+      Vec3 albedo = V3(1);
       float ir = 1;
 
       c += 11;
@@ -187,7 +188,7 @@ Material *parse_material_line(char *c) {
 
       m = dielectric_new(albedo, ir);
     } else if (!strncmp(c, "metal:", 6)) {
-      Vec3 albedo = {1, 1, 1};
+      Vec3 albedo = V3(1);
       float fuzz = 0;
 
       c += 6;
@@ -222,7 +223,7 @@ Surface *parse_surface_line(char *c, Material **materials) {
     SKIPBLANK(c);
 
     if (!strncmp(c, "sphere:", 7)) {
-      Vec3 center = {0, 0, 0};
+      Vec3 center = V3(0);
       float radius = 1;
       size_t i = 0;
 
@@ -284,7 +285,7 @@ Surface *parse_surface_line(char *c, Material **materials) {
       h = (Surface *)aarect_new(AARP_(p, x1_min, x1_max, x2_min, x2_max, x3, inv),
                                 materials[i]);
     } else if (!strncmp(c, "box:", 4)) {
-      Vec3 cback = {0, 0, 0}, cfront = {1, 1, 1};
+      Vec3 cback = V3(0), cfront = V3(1);
       size_t i = 0;
 
       c += 4;
@@ -306,7 +307,7 @@ Surface *parse_surface_line(char *c, Material **materials) {
 
       h = (Surface *)aabox_new(cback, cfront, materials[i]);
     } else if (!strncmp(c, "plane:", 6)) {
-      Vec3 origin = {0, 0, 0}, normal = {0, 1, 0};
+      Vec3 origin = V3(0), normal = V(0, 1, 0);
       size_t i = 0;
 
       c += 6;

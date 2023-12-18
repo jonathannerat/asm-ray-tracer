@@ -2,7 +2,7 @@
 #define MATERIAL_H
 
 #include "structures/shpt.h"
-#include "util.h"
+#include "vec3.h"
 
 enum material_type { LAMBERTIAN, METAL, DIELECTRIC, LIGHT, MATERIAL_TYPE_SIZE };
 

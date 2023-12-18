@@ -1,5 +1,9 @@
 #include "util.h"
-#include "tracer.h"
+#include "vec3.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef DEBUG
 #include <stdarg.h>
@@ -10,35 +14,16 @@ void d(const char *fmt, ...) {
   va_end(args);
 }
 #else
-void d(const char *fmt, ...) {}
+void d(const char *fmt, ...) { (void)fmt; }
 #endif
 
-real rnd() { return rand() / (RAND_MAX + 1.0); }
+real frand() { return rand() / (RAND_MAX + 1.0); }
 
 char *strfind(char *c, char f) {
   while (*c && *c != f)
     c++;
 
   return c;
-}
-
-Vec3 parse_vec3(char *c, char **t) {
-  Vec3 v;
-
-  v._ = 0;
-
-  v.x = strtod(c, &c);
-  c++;
-
-  v.y = strtod(c, &c);
-  c++;
-
-  v.z = strtod(c, &c);
-
-  if (t)
-    *t = c;
-
-  return v;
 }
 
 static real clamp(real x, real min, real max) {
@@ -57,8 +42,4 @@ void write_color(Color pixel, uint spp) {
 
   printf("%d %d %d\n", (int)(256 * clamp(r, 0, 1)), (int)(256 * clamp(g, 0, 1)),
          (int)(256 * clamp(b, 0, 1)));
-}
-
-Point ray_at(const Ray *r, real t) {
-  return vec3_add(r->origin, vec3_scale(r->direction, t));
 }
