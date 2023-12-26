@@ -1,4 +1,5 @@
 #include "scene/Scene.h"
+#include "structures/array.h"
 #include "tracer.h"
 #include "util.h"
 #include <stdio.h>
@@ -34,7 +35,7 @@ int main(int argc, char **argv) {
 }
 
 Config parse_config(int argc, char **argv) {
-  Config config = {NULL, ASM};
+  Config config = {NULL, C};
   // mtsrand(0);
 
   for (int i = 1; i < argc;) {
