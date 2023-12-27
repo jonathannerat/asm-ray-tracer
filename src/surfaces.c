@@ -88,16 +88,32 @@ AABox *bounding_box_for(Surface **surfaces) {
  */
 List *list_new(Surface **surfaces) {
   // Surface list should have at least one element
-  assert(arr_len(surfaces) > 0);
+  uint len = arr_len(surfaces);
+  assert(len > 0);
 
   List *l = malloc(sizeof(List));
   AABox *b = bounding_box_for(surfaces);
+  uint count = 0;
+  enum surface_type type = PLANE;
 
   *l =
     (List){{.type = LIST, .bounding_box = b, .reference = b ? b->base.reference : V3(0)},
-           surfaces};
+           surfaces,
+           {0}};
 
-  qsort(surfaces, arr_len(surfaces), sizeof(Surface *), sort_surfaces_by_type);
+  qsort(surfaces, len, sizeof(Surface *), sort_surfaces_by_type);
+
+  for (uint i = 0; i < len; i++) {
+    if (surfaces[i]->type != type) {
+      l->count_by_type[type] = count;
+      count = 0;
+      while (surfaces[i]->type != type)
+        type++;
+    }
+    count++;
+  }
+
+  l->count_by_type[type] = count;
 
   return l;
 }

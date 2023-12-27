@@ -5,7 +5,7 @@
 #include "util.h"
 
 enum surface_type {
-  PLANE,
+  PLANE = 0,
   SPHERE,
   LIST,
   AARECT,
@@ -42,6 +42,7 @@ typedef struct {
 typedef struct {
   Surface base;
   Surface **surfaces;
+  uint count_by_type[SURFACE_TYPE_SIZE];
 } List;
 
 typedef struct {

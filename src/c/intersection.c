@@ -2,42 +2,38 @@
 #include "../structures/array.h"
 #include "../vec3.h"
 
-#include <stddef.h>
 #include <math.h>
+#include <stddef.h>
 
 #define IS_PERPENDICULAR(a, b) (fabs(vec3_dot(a, b)) < EPS)
 
-typedef bool (*hit_func)(Surface *self, const Ray *r, real t_min, real t_max,
-                         HitRecord *hit);
-
-hit_func hit_functions[] = {
-  [PLANE] = plane_hit,   [SPHERE] = sphere_hit,      [LIST] = list_hit,
-  [AARECT] = aarect_hit, [AABOX] = aabox_hit,        [TRIANGLE] = triangle_hit,
-  [KDTREE] = kdtree_hit, [SURFACE_TYPE_SIZE] = NULL,
-};
+#define HIT_SURFACES(s, f)                                                               \
+  t = s;                                                                                 \
+  for (uint j = 0; j < self->count_by_type[t]; i++, j++) {                               \
+    if (f(surfaces[i], r, t_min, closest_hit_so_far, &last_hit)) {                       \
+      hit_anything = true;                                                               \
+      closest_hit_so_far = last_hit.t;                                                   \
+      *hit = last_hit;                                                                   \
+    }                                                                                    \
+  }
 
 bool list_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit) {
   List *self = (List *)s;
   Surface **surfaces = self->surfaces;
   bool hit_anything = false;
   real closest_hit_so_far = t_max;
-  enum surface_type last_type = SURFACE_TYPE_SIZE;
-  hit_func last_hit_func = NULL;
   HitRecord last_hit;
-  uint len = arr_len(surfaces);
 
-  for (uint i = 0; i < len; i++) {
-    if (surfaces[i]->type != last_type) {
-      last_type = surfaces[i]->type;
-      last_hit_func = hit_functions[last_type];
-    }
+  enum surface_type t;
+  uint i = 0;
 
-    if (last_hit_func(surfaces[i], r, t_min, closest_hit_so_far, &last_hit)) {
-      hit_anything = true;
-      closest_hit_so_far = last_hit.t;
-      *hit = last_hit;
-    }
-  }
+  HIT_SURFACES(PLANE, plane_hit)
+  HIT_SURFACES(SPHERE, sphere_hit)
+  HIT_SURFACES(LIST, list_hit)
+  HIT_SURFACES(AARECT, aarect_hit)
+  HIT_SURFACES(AABOX, aabox_hit)
+  HIT_SURFACES(TRIANGLE, triangle_hit)
+  HIT_SURFACES(KDTREE, kdtree_hit)
 
   return hit_anything;
 }
