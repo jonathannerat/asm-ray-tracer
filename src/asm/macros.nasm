@@ -24,11 +24,6 @@
     sub eax, edx
 %endmacro
 
-%macro vec_scale 3 ; vec_scale(v, s, tmp) = (v.x*s, v.y*s, v.z*s, _)
-    shufps %3, %2, 0b00000000
-    mulps %1, %3
-%endmacro
-
 ; Receives a tag to jump in case no hit happens, and places result in xmm6
 ;
 ; Expects xmm0:xmm1 to be the ray, xmm2 and xmm3 to be t_min and t_max, and
@@ -50,4 +45,29 @@
     jb %1
     comiss xmm3, xmm6
     jb %1
+%endmacro
+
+; res = v1 x v2
+; Uses tmp1 and tmp2 as temp variables
+%macro vec_cross 5 ; vec_cross(res, v1, v2, tmp1, tmp2)
+    ; cross product
+    vshufps %4, %2, %2, 0b11001001
+    vshufps %5, %3, %3, 0b11010010
+    vmulps %1, %4, %5
+    vshufps %4, %2, %2, 0b11010010
+    vshufps %5, %3, %3, 0b11001001
+    mulps %4, %5
+    subps %1, %4 ; %1 = %2 x %3
+%endmacro
+
+; Skips the current triangle is p (expected in xmm8) is not left of (p2-p1)
+; Also uses xmm10-14 as temp variables
+%macro is_left_of 2; is_left_of(p1, p2)
+    vsubps xmm10, %2, %1
+    vsubps xmm11, xmm8, %1
+    vec_cross xmm12, xmm10, xmm11, xmm13, xmm14
+    dpps xmm12, xmm9, 0xF1
+    xorps xmm10, xmm10
+    comiss xmm12, xmm10
+    jbe triangle_loop_next
 %endmacro

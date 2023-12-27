@@ -270,11 +270,12 @@ ray_color: ;{{{
     pop rbp
     ret ;}}}
 
-%define SURFACE_TYPE_PLANE  0
-%define SURFACE_TYPE_SPHERE 1
-%define SURFACE_TYPE_LIST   2
-%define SURFACE_TYPE_AARECT 3
-%define SURFACE_TYPE_AABOX  4
+%define SURFACE_TYPE_PLANE     0
+%define SURFACE_TYPE_SPHERE    1
+%define SURFACE_TYPE_LIST      2
+%define SURFACE_TYPE_AARECT    3
+%define SURFACE_TYPE_AABOX     4
+%define SURFACE_TYPE_TRIANGLE  5
 
 ; Check if ray hits any surface on the list
 ; bool[ax] list_hit(List *l[rdi], Ray r[xmm0:xmm1], real t_min[xmm2], real t_max xmm3, HitRecord *hit[rsi])
@@ -295,10 +296,10 @@ list_hit: ;{{{
     ;}}}
 
     xor rbx, rbx ; i = 0
+    mov r14, [rdi+LIST_SURFACES_OFF]
 
     ;FOR j = 0 to plane count {{{
     mov r12d, [rdi+LIST_COUNTS_OFF+4*SURFACE_TYPE_PLANE]
-    mov r14, [rdi+LIST_SURFACES_OFF]
     xor r13d, r13d ; j = 0
     jmp plane_loop_cond
     plane_loop:
@@ -310,7 +311,7 @@ list_hit: ;{{{
 
         ; PLANE HIT
         or byte [rsp+0x10], 1
-        movaps xmm3, xmm6
+        movss xmm3, xmm6
 
         movss [rsi+HITRECORD_T_OFF], xmm6
         mov rdx, [r15+PLANE_MATERIAL_OFF]
@@ -501,7 +502,7 @@ list_hit: ;{{{
 
             ; aabox hit
             or byte [rsp+0x20+0x10], 1
-            movaps xmm3, xmm6
+            movss xmm3, xmm6
 
             mov rsi, [rsp+0x08]
             movss [rsi+HITRECORD_T_OFF], xmm6
@@ -538,6 +539,79 @@ list_hit: ;{{{
     mov rcx, [rsp+0x10]
     add rsp, 0x20 ;}}}
 
+    ;FOR j = 0 to triangle count {{{
+    mov r12d, [rdi+LIST_COUNTS_OFF+4*SURFACE_TYPE_TRIANGLE]
+    xor r13d, r13d ; j = 0
+    jmp triangle_loop_cond
+    triangle_loop:
+        mov r15, [r14+rbx*8]
+        movups xmm4, [r15+TRIANGLE_P1_OFF]
+        movups xmm5, [r15+TRIANGLE_P2_OFF]
+        movups xmm6, [r15+TRIANGLE_P3_OFF]
+
+        ; triangle plane normal
+        vsubps xmm7, xmm5, xmm4
+        vsubps xmm8, xmm6, xmm4
+        vec_cross xmm9, xmm7, xmm8, xmm10, xmm11
+        vdpps xmm10, xmm9, xmm9, 0xF1
+        rsqrtss xmm10, xmm10
+        shufps xmm10, xmm10, 0
+        mulps xmm9, xmm10
+
+        ; ray is perpendicular to triangle plane?
+        vdpps xmm7, xmm1, xmm9, 0xF1
+        put_fabs_mask xmm8
+        andps xmm7, xmm8
+        comiss xmm7, [eps]
+        jb triangle_loop_next
+
+        ; contact is in allowed range?
+        vsubps xmm7, xmm4, xmm0
+        dpps xmm7, xmm9, 0xF1
+        vdpps xmm8, xmm1, xmm9, 0xF1
+        divss xmm7, xmm8
+        comiss xmm7, xmm2
+        jb triangle_loop_next
+        comiss xmm3, xmm7
+        jb triangle_loop_next
+
+        ; xmm8 = ray_at(xmm0:xmm1, xmm7)
+        shufps xmm7, xmm7, 0
+        vmulps xmm8, xmm7, xmm1
+        addps xmm8, xmm0
+
+        ; check that xmm8 is left of each edge
+        is_left_of xmm4, xmm5
+        is_left_of xmm5, xmm6
+        is_left_of xmm6, xmm4
+
+        ; triangle hit
+        or byte [rsp+0x10], 1
+        movss xmm3, xmm7
+
+        movss [rsi+HITRECORD_T_OFF], xmm7
+        mov rdx, [r15+TRIANGLE_MATERIAL_OFF]
+        mov [rsi+HITRECORD_MATERIAL_OFF], rdx
+        vdpps xmm5, xmm1, xmm9, 0xF1
+        xorps xmm6, xmm6
+        xor dl, dl
+        comiss xmm5, xmm6
+
+        jb triangle_front_face ; IF (front_face)
+        vsubps xmm9, xmm6, xmm9
+        triangle_front_face: ; ELSE
+        inc dl
+
+        movups [rsi+HITRECORD_NORMAL_OFF], xmm9
+        mov [rsi+HITRECORD_FFACE_OFF], dl
+        movups [rsi+HITRECORD_P_OFF], xmm8
+
+        triangle_loop_next:
+        inc rbx
+        inc r13d
+        triangle_loop_cond:
+        cmp r13d, r12d
+        jl triangle_loop ;}}}
 
     mov al, [rsp+0x10]
 
