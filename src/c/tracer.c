@@ -16,8 +16,8 @@ void tracer_c(Scene *s) {
       Color pixel = V3(0);
 
       for (uint k = 0; k < s->output.samples_per_pixel; k++) {
-        real u = (i + frand()) / (s->output.width - 1);
-        real v = (j + frand()) / (s->output.height - 1);
+        real u = (i + frand()) / s->output.width;
+        real v = (j + frand()) / s->output.height;
         Ray r = camera_get_ray(&s->camera, u, v);
 
         pixel = vec3_add(pixel, ray_color(s->world, &r, bg_color, s->output.max_depth));
