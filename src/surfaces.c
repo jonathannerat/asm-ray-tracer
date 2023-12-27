@@ -16,7 +16,7 @@ Plane *plane_new(Point origin, Vec3 normal, Material *material) {
       .type = PLANE, .bounding_box = NULL /* an infinite surface cannot be enclosed */
     },
     origin,
-    normal,
+    vec3_to_normalized(normal),
     shpt_get(material)};
 
   return p;

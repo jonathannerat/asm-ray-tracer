@@ -153,7 +153,7 @@ bool aabox_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit)
 bool triangle_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit) {
   Triangle *self = (Triangle *)s;
 
-  Vec3 normal = vec3_cross(vec3_sub(self->p2, self->p1), vec3_sub(self->p3, self->p1));
+  Vec3 normal = vec3_to_normalized(vec3_cross(vec3_sub(self->p2, self->p1), vec3_sub(self->p3, self->p1)));
 
   if (IS_PERPENDICULAR(normal, r->direction))
     return false;
