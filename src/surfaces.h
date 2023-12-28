@@ -8,7 +8,6 @@ enum surface_type {
   PLANE = 0,
   SPHERE,
   LIST,
-  AARECT,
   AABOX,
   TRIANGLE,
   KDTREE,
@@ -53,26 +52,6 @@ typedef struct {
 
 enum plane { YZ = 0, ZX, XY };
 
-typedef struct {
-  real x1_min;
-  real x1_max;
-  real x2_min;
-  real x2_max;
-  real x3;
-  enum plane plane;
-  bool inverted;
-} AARectParams;
-
-#define AARP_(a1, a2, b1, b2, c, p, i) ((AARectParams){a1, a2, b1, b2, c, p, i})
-#define AARP(a1, a2, b1, b2, c, p) (AARP_(a1, a2, b1, b2, c, p, false))
-#define AARP_INV(a1, a2, b1, b2, c, p) (AARP_(a1, a2, b1, b2, c, p, true))
-
-typedef struct {
-  Surface base;
-  AARectParams params;
-  Material *material;
-} AARect;
-
 struct _aabox {
   Surface base;
   /** Corner of the box with the lowest coordinates */
@@ -104,9 +83,6 @@ void sphere_free(Surface *);
 
 List *list_new(Surface **);
 void list_free(Surface *);
-
-AARect *aarect_new(AARectParams, Material *);
-void aarect_free(Surface *);
 
 AABox *aabox_new(Point, Point, Material *);
 void aabox_free(Surface *);

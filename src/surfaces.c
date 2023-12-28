@@ -122,7 +122,7 @@ typedef void (*free_func)(Surface *self);
 
 free_func free_functions[] = {
   [PLANE] = plane_free,   [SPHERE] = sphere_free,     [LIST] = list_free,
-  [AARECT] = aarect_free, [AABOX] = aabox_free,       [TRIANGLE] = triangle_free,
+  [AABOX] = aabox_free,       [TRIANGLE] = triangle_free,
   [KDTREE] = kdtree_free, [SURFACE_TYPE_SIZE] = NULL,
 };
 
@@ -145,34 +145,6 @@ void list_free(Surface *s) {
   }
 
   arr_free(surfaces);
-  free(s);
-}
-
-AARect *aarect_new(AARectParams params, Material *material) {
-  AARect *r = malloc(sizeof(AARect));
-
-  // Set pmin and pmax so that at the axis perpendicular to its plane, the width is EPS,
-  // and at the remaining axis, the width is given by its size
-  Point pmin, pmax;
-  VEC_AT(pmin, params.plane) = params.x3 - EPS / 2;
-  VEC_AT(pmin, (params.plane + 1) % 3) = params.x1_min;
-  VEC_AT(pmin, (params.plane + 2) % 3) = params.x2_min;
-  VEC_AT(pmax, params.plane) = params.x3 + EPS / 2;
-  VEC_AT(pmax, (params.plane + 1) % 3) = params.x1_max;
-  VEC_AT(pmax, (params.plane + 2) % 3) = params.x2_max;
-
-  *r = (AARect){{.type = AARECT,
-                 .bounding_box = aabox_new(pmin, pmax, NULL),
-                 .reference = vec3_unscale(vec3_add(pmin, pmax), 2)},
-                params,
-                shpt_get(material)};
-
-  return r;
-}
-
-void aarect_free(Surface *s) {
-  shpt_free(((AARect *)s)->material);
-  aabox_free((Surface *)s->bounding_box);
   free(s);
 }
 

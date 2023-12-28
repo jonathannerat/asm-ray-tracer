@@ -18,8 +18,6 @@ bool plane_hit(Surface *, const Ray *, real, real, HitRecord*);
 
 bool sphere_hit(Surface *, const Ray *, real, real, HitRecord*);
 
-bool aarect_hit(Surface *, const Ray *, real, real, HitRecord*);
-
 bool aabox_hit(Surface *, const Ray *, real, real, HitRecord*);
 
 bool triangle_hit(Surface *, const Ray *, real, real, HitRecord*);

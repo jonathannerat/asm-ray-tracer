@@ -273,10 +273,9 @@ ray_color: ;{{{
 %assign SURFACE_TYPE_PLANE     0
 %assign SURFACE_TYPE_SPHERE    1
 %assign SURFACE_TYPE_LIST      2
-%assign SURFACE_TYPE_AARECT    3
-%assign SURFACE_TYPE_AABOX     4
-%assign SURFACE_TYPE_TRIANGLE  5
-%assign SURFACE_TYPE_KDTREE    6
+%assign SURFACE_TYPE_AABOX     3
+%assign SURFACE_TYPE_TRIANGLE  4
+%assign SURFACE_TYPE_KDTREE    5
 
 ; Check if ray hits any surface on the list
 ; bool[ax] list_hit(List *l[rdi], Ray r[xmm0:xmm1], real t_min[xmm2], real t_max xmm3, HitRecord *hit[rsi])
@@ -430,8 +429,6 @@ list_hit: ;{{{
         list_loop_cond:
         cmp r13d, r12d
         jl list_loop ;}}}
-
-    ;FOR j = 0 to aarect count {{{}}}
 
     ;FOR j = 0 to aabox count {{{
     mov [rsp], rdi

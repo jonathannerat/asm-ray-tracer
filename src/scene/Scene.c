@@ -245,45 +245,6 @@ Surface *parse_surface_line(char *c, Material **materials) {
       }
 
       h = (Surface *)sphere_new(center, radius, materials[i]);
-    } else if (!strncmp(c, "rect:", 5)) {
-      enum plane p = XY;
-      real x1_min = 0, x1_max = 1, x2_min = 0, x2_max = 1, x3 = 0;
-      bool inv = false;
-      size_t i = 0;
-
-      c += 5;
-
-      while (*c) {
-        SKIPBLANK(c);
-
-        if (*c == 'X' || *c == 'Y' || *c == 'Z') {
-          c++;
-          p = *c == 'X' ? ZX : (*c == 'Y' ? XY : YZ);
-          c++;
-        } else if (!strncmp(c, "x1=", 3)) {
-          c += 3;
-          x1_min = strtof(c, &c);
-          c++;
-          x1_max = strtof(c, &c);
-        } else if (!strncmp(c, "x2=", 3)) {
-          c += 3;
-          x2_min = strtof(c, &c);
-          c++;
-          x2_max = strtof(c, &c);
-        } else if (!strncmp(c, "x3=", 3)) {
-          c += 3;
-          x3 = strtof(c, &c);
-        } else if (!strncmp(c, "inverted", 8)) {
-          c += 8;
-          inv = true;
-        } else if (!strncmp(c, "material=", 9)) {
-          c += 9;
-          i = strtoul(c, &c, 10);
-        }
-      }
-
-      h = (Surface *)aarect_new(AARP_(p, x1_min, x1_max, x2_min, x2_max, x3, inv),
-                                materials[i]);
     } else if (!strncmp(c, "box:", 4)) {
       Vec3 cback = V3(0), cfront = V3(1);
       size_t i = 0;

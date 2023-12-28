@@ -30,7 +30,6 @@ bool list_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit) 
   HIT_SURFACES(PLANE, plane_hit)
   HIT_SURFACES(SPHERE, sphere_hit)
   HIT_SURFACES(LIST, list_hit)
-  HIT_SURFACES(AARECT, aarect_hit)
   HIT_SURFACES(AABOX, aabox_hit)
   HIT_SURFACES(TRIANGLE, triangle_hit)
   HIT_SURFACES(KDTREE, kdtree_hit)
@@ -90,34 +89,6 @@ bool sphere_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit
   Vec3 outward_normal =
     vec3_unscale(vec3_sub(ray_at(r, root), self->center), self->radius);
   save_hit(hit, r, root, outward_normal, self->material);
-
-  return true;
-}
-
-bool aarect_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit) {
-  AARect *self = (AARect *)s;
-  AARectParams params = self->params;
-  enum plane p = params.plane;
-
-  real ray_orig_k = VEC_AT(r->origin, p);
-  real ray_dir_k = VEC_AT(r->direction, p);
-  real t = (params.x3 - ray_orig_k) / ray_dir_k;
-
-  if (t < t_min || t > t_max)
-    return false;
-
-  real a1 = VEC_AT(r->origin, (p + 1) % 3) + t * VEC_AT(r->direction, (p + 1) % 3);
-  real a2 = VEC_AT(r->origin, (p + 2) % 3) + t * VEC_AT(r->direction, (p + 2) % 3);
-
-  if (a1 < params.x1_min || a1 > params.x1_max || a2 < params.x2_min ||
-      a2 > params.x2_max)
-    return false;
-
-  int f = params.inverted ? -1 : 1;
-  /** If plane==XY, then outward normal should be (0, 0, 1/-1). Which one depends on
-   * wether inverted is on. */
-  Vec3 outward_normal = V(YZ == p ? f : 0, ZX == p ? f : 0, XY == p ? f : 0);
-  save_hit(hit, r, t, outward_normal, self->material);
 
   return true;
 }
