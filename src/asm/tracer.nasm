@@ -189,14 +189,14 @@ camera_get_ray:  ;{{{
     pop rbp
     ret ;}}}
 
-%define RAYCOLOR_HR_OFF 0
-%define RAYCOLOR_RAY_OFF HITRECORD_SIZE ; 48
-%define RAYCOLOR_SCATTERED_OFF RAYCOLOR_RAY_OFF+RAY_SIZE ; 80
-%define RAYCOLOR_ATTENUATION_OFF RAYCOLOR_SCATTERED_OFF+RAY_SIZE ; 112
-%define RAYCOLOR_EMITTED_OFF RAYCOLOR_ATTENUATION_OFF+VEC3_SIZE ;128
-%define RAYCOLOR_WORLD_OFF RAYCOLOR_EMITTED_OFF+VEC3_SIZE ; 144
-%define RAYCOLOR_DEPTH_OFF RAYCOLOR_WORLD_OFF+POINTER_SIZE ; 152
-%define RAYCOLOR_SIZE RAYCOLOR_DEPTH_OFF+INT_SIZE+4 ; 156 + 4 (padding) = 160 bytes
+%assign RAYCOLOR_HR_OFF 0
+%assign RAYCOLOR_RAY_OFF HITRECORD_SIZE ; 48
+%assign RAYCOLOR_SCATTERED_OFF RAYCOLOR_RAY_OFF+RAY_SIZE ; 80
+%assign RAYCOLOR_ATTENUATION_OFF RAYCOLOR_SCATTERED_OFF+RAY_SIZE ; 112
+%assign RAYCOLOR_EMITTED_OFF RAYCOLOR_ATTENUATION_OFF+VEC3_SIZE ;128
+%assign RAYCOLOR_WORLD_OFF RAYCOLOR_EMITTED_OFF+VEC3_SIZE ; 144
+%assign RAYCOLOR_DEPTH_OFF RAYCOLOR_WORLD_OFF+POINTER_SIZE ; 152
+%assign RAYCOLOR_SIZE RAYCOLOR_DEPTH_OFF+INT_SIZE+4 ; 156 + 4 (padding) = 160 bytes
 
 
 ; Calculate color for a ray
@@ -270,12 +270,13 @@ ray_color: ;{{{
     pop rbp
     ret ;}}}
 
-%define SURFACE_TYPE_PLANE     0
-%define SURFACE_TYPE_SPHERE    1
-%define SURFACE_TYPE_LIST      2
-%define SURFACE_TYPE_AARECT    3
-%define SURFACE_TYPE_AABOX     4
-%define SURFACE_TYPE_TRIANGLE  5
+%assign SURFACE_TYPE_PLANE     0
+%assign SURFACE_TYPE_SPHERE    1
+%assign SURFACE_TYPE_LIST      2
+%assign SURFACE_TYPE_AARECT    3
+%assign SURFACE_TYPE_AABOX     4
+%assign SURFACE_TYPE_TRIANGLE  5
+%assign SURFACE_TYPE_KDTREE    6
 
 ; Check if ray hits any surface on the list
 ; bool[ax] list_hit(List *l[rdi], Ray r[xmm0:xmm1], real t_min[xmm2], real t_max xmm3, HitRecord *hit[rsi])
@@ -313,25 +314,10 @@ list_hit: ;{{{
         or byte [rsp+0x10], 1
         movss xmm3, xmm6
 
-        movss [rsi+HITRECORD_T_OFF], xmm6
-        mov rdx, [r15+PLANE_MATERIAL_OFF]
-        mov [rsi+HITRECORD_MATERIAL_OFF], rdx
-        vdpps xmm8, xmm1, xmm5, 0xF1
-        xorps xmm7, xmm7
-        xor dl, dl
-        comiss xmm8, xmm7
-
-        jb plane_front_face ; IF (front_face)
-        vsubps xmm5, xmm7, xmm5
-        plane_front_face: ; ELSE
-        inc dl
-
-        movups [rsi+HITRECORD_NORMAL_OFF], xmm5
-        mov [rsi+HITRECORD_FFACE_OFF], dl
         shufps xmm6, xmm6, 0
         mulps xmm6, xmm1
         addps xmm6, xmm0
-        movups [rsi+HITRECORD_P_OFF], xmm6
+        save_hit PLANE, r15, xmm6
 
         plane_loop_next:
         inc rbx
@@ -395,25 +381,10 @@ list_hit: ;{{{
         subps xmm7, xmm4
         shufps xmm5, xmm5, 0
         vdivps xmm5, xmm7, xmm5
-        movss [rsi+HITRECORD_T_OFF], xmm6
-        mov rdx, [r15+SPHERE_MATERIAL_OFF]
-        mov [rsi+HITRECORD_MATERIAL_OFF], rdx
-        vdpps xmm8, xmm1, xmm5, 0xF1
-        xorps xmm7, xmm7
-        xor dl, dl
-        comiss xmm8, xmm7
 
-        jb sphere_front_face ; IF (front_face)
-        vsubps xmm5, xmm7, xmm5
-        sphere_front_face: ; ELSE
-        inc dl
-
-        movups [rsi+HITRECORD_NORMAL_OFF], xmm5
-        mov [rsi+HITRECORD_FFACE_OFF], dl
-        shufps xmm6, xmm6, 0
-        vmulps xmm5, xmm1, xmm6
-        vaddps xmm6, xmm5, xmm0
-        movups [rsi+HITRECORD_P_OFF], xmm6
+        mulps xmm6, xmm1
+        addps xmm6,  xmm0
+        save_hit SPHERE, r15, xmm6
 
         sphere_loop_next:
         inc rbx
@@ -463,81 +434,23 @@ list_hit: ;{{{
     ;FOR j = 0 to aarect count {{{}}}
 
     ;FOR j = 0 to aabox count {{{
-    sub rsp, 0x20
     mov [rsp], rdi
-    mov [rsp+0x08], rsi
-    mov [rsp+0x10], rcx
 
     mov r12d, [rdi+LIST_COUNTS_OFF+4*SURFACE_TYPE_AABOX]
     xor r13d, r13d ; j = 0
     jmp aabox_loop_cond
     aabox_loop:
+        mov rdi, [r14+rbx*8]
+        call aabox_hit
+        or [rsp+0x10], al
 
-        mov r15, [r14+rbx*8]
-        mov rdi, [r15+AABOX_SIDES_OFF]
-
-        xor cx, cx
-        aabox_sides_loop: ;{{{
-            mov rsi, [rdi+rcx*8]
-            movups xmm4, [rsi+PLANE_ORIGIN_OFF]
-            movups xmm5, [rsi+PLANE_NORMAL_OFF]
-
-            plane_hit_macro aabox_sides_next
-
-            vshufps xmm4, xmm6, xmm6, 0
-            mulps xmm4, xmm1
-            addps xmm4, xmm0
-
-            movups xmm7, [r15+AABOX_PMIN_OFF]
-            movups xmm8, [eps]
-            subps xmm7, xmm8
-            vminps xmm9, xmm7, xmm4 ; xmm9 = packed_min(xmm7, xmm4)
-            ptest xmm9, xmm7 ; CF = 1 <==> xmm9 == xmm7 <==> xmm7 <= xmm4
-            jnc aabox_sides_next ; CF == 0 ==> point is not inside box
-
-            addps xmm8, [r15+AABOX_PMAX_OFF]
-            vminps xmm9, xmm8, xmm4 ; xmm9 = packed_min(xmm8, xmm6)
-            ptest xmm9, xmm4 ; CF = 1 <==> xmm9 == xmm4 <==> xmm4 <= xmm8
-            jnc aabox_sides_next ; CF == 0 ==> point is not inside box
-
-            ; aabox hit
-            or byte [rsp+0x20+0x10], 1
-            movss xmm3, xmm6
-
-            mov rsi, [rsp+0x08]
-            movss [rsi+HITRECORD_T_OFF], xmm6
-            mov rdx, [r15+AABOX_MATERIAL_OFF]
-            mov [rsi+HITRECORD_MATERIAL_OFF], rdx
-            vdpps xmm8, xmm1, xmm5, 0xF1
-            xorps xmm7, xmm7
-            xor dl, dl
-            comiss xmm8, xmm7
-
-            jb aabox_side_front_face ; IF (front_face)
-            vsubps xmm5, xmm7, xmm5
-            aabox_side_front_face: ; ELSE
-            inc dl
-
-            movups [rsi+HITRECORD_NORMAL_OFF], xmm5
-            mov [rsi+HITRECORD_FFACE_OFF], dl
-            movups [rsi+HITRECORD_P_OFF], xmm4
-
-            aabox_sides_next:
-            inc cx
-            cmp cx, 6
-            jl aabox_sides_loop ;}}}
-
-        aabox_loop_next:
         inc rbx
         inc r13d
         aabox_loop_cond:
         cmp r13d, r12d
         jl aabox_loop
 
-    mov rdi, [rsp]
-    mov rsi, [rsp+0x08]
-    mov rcx, [rsp+0x10]
-    add rsp, 0x20 ;}}}
+    mov rdi, [rsp] ;}}}
 
     ;FOR j = 0 to triangle count {{{
     mov r12d, [rdi+LIST_COUNTS_OFF+4*SURFACE_TYPE_TRIANGLE]
@@ -589,22 +502,9 @@ list_hit: ;{{{
         or byte [rsp+0x10], 1
         movss xmm3, xmm7
 
-        movss [rsi+HITRECORD_T_OFF], xmm7
-        mov rdx, [r15+TRIANGLE_MATERIAL_OFF]
-        mov [rsi+HITRECORD_MATERIAL_OFF], rdx
-        vdpps xmm5, xmm1, xmm9, 0xF1
-        xorps xmm6, xmm6
-        xor dl, dl
-        comiss xmm5, xmm6
-
-        jb triangle_front_face ; IF (front_face)
-        vsubps xmm9, xmm6, xmm9
-        triangle_front_face: ; ELSE
-        inc dl
-
-        movups [rsi+HITRECORD_NORMAL_OFF], xmm9
-        mov [rsi+HITRECORD_FFACE_OFF], dl
-        movups [rsi+HITRECORD_P_OFF], xmm8
+        movaps xmm5, xmm9 ; move normal to xmm5
+        movaps xmm6, xmm8 ; move point to xmm6
+        save_hit TRIANGLE, r15, xmm6
 
         triangle_loop_next:
         inc rbx
@@ -613,6 +513,45 @@ list_hit: ;{{{
         cmp r13d, r12d
         jl triangle_loop ;}}}
 
+    ;FOR j = 0 to kdtree count {{{
+    mov r12d, [rdi+LIST_COUNTS_OFF+4*SURFACE_TYPE_KDTREE]
+    xor r13d, r13d ; j = 0
+    jmp kdtree_loop_cond
+    kdtree_loop:
+        sub rsp, 0x50
+        mov [rsp+HITRECORD_SIZE], rdi
+        mov [rsp+HITRECORD_SIZE+8], rsi
+        mov rdi, [r14+rbx*8]
+        mov rdi, [rdi+KDTREE_ROOT_OFF]
+        mov rsi, rsp
+
+        call kdtree_node_hit
+
+        mov rdi, [rsp+HITRECORD_SIZE]
+        mov rsi, [rsp+HITRECORD_SIZE+8]
+        add rsp, 0x50
+
+        test al, al
+        jz kdtree_loop_next
+
+        or [rsp+0x10], al
+        movss xmm3, [rsp-0x50+HITRECORD_T_OFF]
+
+        ; copy all 48 bytes of the HitRecord
+        movaps xmm4, [rsp-0x50]
+        movaps [rsi], xmm4
+        movaps xmm4, [rsp-0x40]
+        movaps [rsi+0x10], xmm4
+        movaps xmm4, [rsp-0x30]
+        movaps [rsi+0x20], xmm4
+
+        kdtree_loop_next:
+        inc rbx
+        inc r13d
+        kdtree_loop_cond:
+        cmp r13d, r12d
+        jl kdtree_loop ;}}}
+
     mov al, [rsp+0x10]
 
     add rsp, 0x20
@@ -620,6 +559,142 @@ list_hit: ;{{{
     pop r13
     pop r12
     pop rbx
+    pop rbp
+    ret ;}}}
+
+; Check if ray hits any surface on the node
+; bool[ax] kdtree_node_hit(KDTreeNode *l[rdi], Ray r[xmm0:xmm1], real t_min[xmm2], real t_max xmm3, HitRecord *hit[rsi])
+; ret & args: rax, rdi, rsi, xmm0-xmm3
+kdtree_node_hit: ; {{{
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push r12
+    push r13
+    push rdx
+    sub rsp, 2*HITRECORD_SIZE+0x10
+
+    mov r12, rdi
+    mov r13, rsi
+    movaps [rsp+2*HITRECORD_SIZE], xmm3
+
+    mov rdi, [rdi+SURFACE_BBOX_OFF]
+    mov rsi, rsp
+    call aabox_hit
+
+    mov dl, al
+    xor al, al
+    test dl, dl
+    jz kdtree_node_ret
+
+    mov rdi, [r12+KDTREE_NODE_OBJECTS_OFF]
+    movaps xmm3, [rsp+2*HITRECORD_SIZE]
+
+    test rdi, rdi
+    jz kdtree_node_recursive
+
+    ; Call list_hit on node objects, and return
+    mov rsi, r13
+    call list_hit
+    jmp kdtree_node_ret
+
+    ; Recursively call kdtree_node_hit on each leaf
+    kdtree_node_recursive:
+    mov rdi, [r12+KDTREE_NODE_LEFT_OFF]
+    mov rsi, rsp
+    call kdtree_node_hit
+    mov dl, al
+
+    mov rdi, [r12+KDTREE_NODE_RIGHT_OFF]
+    lea rsi, [rsp+HITRECORD_SIZE]
+    call kdtree_node_hit
+
+    ; dl == left_hit, al == right_hit
+    mov rbx, rsp ; rbx = left_rec
+
+    test dl, al
+    jz kdtree_node_check_right ; IF (left_hit && right_hit) {{{
+        movss xmm3, [rsp+HITRECORD_T_OFF]
+        comiss xmm3, [rsp+HITRECORD_SIZE+HITRECORD_T_OFF]
+        jb kdtree_node_save_hit ; left.t < right.t ? save hit as is
+        ; else, keep going and eventually add HITRECORD_SIZE to rbx, so we use right_rec
+    ;}}}
+
+    kdtree_node_check_right:
+    test al, al
+    jz kdtree_node_save_hit
+    add rbx, HITRECORD_SIZE
+
+    kdtree_node_save_hit:
+    movups xmm3, [rbx]
+    movups [r13], xmm3
+    movups xmm3, [rbx+0x10]
+    movups [r13+0x10], xmm3
+    movups xmm3, [rbx+0x20]
+    movups [r13+0x20], xmm3
+
+    or al, dl
+
+    kdtree_node_ret:
+    movaps xmm3, [rsp+2*HITRECORD_SIZE]
+
+    add rsp, 2*HITRECORD_SIZE+0x10
+    pop rdx
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret ;}}}
+
+; Hit an AABox
+; bool[ax] aabox_hit(AABox *a[rdi], Ray r[xmm0:xmm1], real t_min[xmm2], real t_max xmm3, HitRecord *hit[rsi])
+; ret & args: rax, rdi, rsi, xmm0-xmm3
+aabox_hit: ;{{{
+    push rbp
+    mov rbp, rsp
+    push rcx
+    push rdx
+
+    xor al, al
+
+    xor cx, cx
+    aabox_sides_loop: ;{{{
+        mov rdx, [rdi+AABOX_SIDES_OFF]
+        mov rdx, [rdx+rcx*8]
+        movups xmm4, [rdx+PLANE_ORIGIN_OFF]
+        movups xmm5, [rdx+PLANE_NORMAL_OFF]
+
+        plane_hit_macro aabox_sides_next
+
+        vshufps xmm4, xmm6, xmm6, 0
+        mulps xmm4, xmm1
+        addps xmm4, xmm0
+
+        movups xmm7, [rdi+AABOX_PMIN_OFF]
+        movups xmm8, [eps]
+        subps xmm7, xmm8
+        vminps xmm9, xmm7, xmm4 ; xmm9 = packed_min(xmm7, xmm4)
+        ptest xmm9, xmm7 ; CF = 1 <==> xmm9 == xmm7 <==> xmm7 <= xmm4
+        jnc aabox_sides_next ; CF == 0 ==> point is not inside box
+
+        addps xmm8, [rdi+AABOX_PMAX_OFF]
+        vminps xmm9, xmm8, xmm4 ; xmm9 = packed_min(xmm8, xmm6)
+        ptest xmm9, xmm4 ; CF = 1 <==> xmm9 == xmm4 <==> xmm4 <= xmm8
+        jnc aabox_sides_next ; CF == 0 ==> point is not inside box
+
+        ; aabox hit
+        or al, 1
+        movss xmm3, xmm6
+
+        save_hit AABOX, rdi, xmm4
+
+        aabox_sides_next:
+        inc cx
+        cmp cx, 6
+        jl aabox_sides_loop ;}}}
+
+    pop rdx
+    pop rcx
     pop rbp
     ret ;}}}
 

@@ -71,3 +71,23 @@
     comiss xmm12, xmm10
     jbe triangle_loop_next
 %endmacro
+
+; Save hit record info
+%macro save_hit 3 ; save_hit(TAG, src, hit_point)
+    movss [rsi+HITRECORD_T_OFF], xmm3
+    mov rdx, [%2+%1_MATERIAL_OFF]
+    mov [rsi+HITRECORD_MATERIAL_OFF], rdx
+    vdpps xmm8, xmm1, xmm5, 0xF1
+    xorps xmm7, xmm7
+    xor dl, dl
+    comiss xmm8, xmm7
+
+    jb %1_front_face ; IF (front_face)
+    vsubps xmm5, xmm7, xmm5
+    %1_front_face: ; ELSE
+    inc dl
+
+    movups [rsi+HITRECORD_NORMAL_OFF], xmm5
+    mov [rsi+HITRECORD_FFACE_OFF], dl
+    movups [rsi+HITRECORD_P_OFF], %3
+%endmacro
