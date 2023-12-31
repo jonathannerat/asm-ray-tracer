@@ -7,12 +7,9 @@ global tracer_asm
 section .data
 
 ; 32-bit absolute value mask
-rand_descale:  dd 0x2FFFFFFD
 eps:  times 3 dd 1.0e-4
 zero: dd 0.0e0
 inf:  dd 0x7F800000
-half: dd 0.5e0
-halfdegtorad: dd 0x3C0EFA35
 
 ; Mersenne Twister
 g_aiMT: times MT_SIZE dd 0 ; MT array
@@ -375,14 +372,12 @@ list_hit: ;{{{
         movss xmm3, xmm6
 
         shufps xmm6, xmm6, 0
-        vmulps xmm7, xmm6, xmm1
-        addps xmm7, xmm0
-        subps xmm7, xmm4
+        mulps xmm6, xmm1
+        addps xmm6, xmm0
+        vsubps xmm7, xmm6, xmm4
         shufps xmm5, xmm5, 0
         vdivps xmm5, xmm7, xmm5
 
-        mulps xmm6, xmm1
-        addps xmm6,  xmm0
         save_hit SPHERE, r15, xmm6
 
         sphere_loop_next:
@@ -765,8 +760,7 @@ material_scatter: ;{{{
     ; METAL {{{
     material_scatter_check_metal:
     dec ebx
-    test ebx, ebx
-    jnz material_scatter_done
+    jnz material_scatter_check_dielectric
 
     vdpps xmm5, xmm1, xmm1, 0xF1
     rsqrtss xmm5, xmm5
@@ -798,7 +792,92 @@ material_scatter: ;{{{
     mov al, 1
     ;}}}
 
+    ; DIELECTRIC {{{
+    material_scatter_check_dielectric:
+    dec ebx
+    jnz material_scatter_done
+
+    movups xmm2, [rdi+MATERIAL_COLOR_OFF]
+    movups xmm3, [rsi+HITRECORD_P_OFF]
+    movss xmm5, [rdi+MATERIAL_ALPHA_OFF]
+
+    mov al, [rsi+HITRECORD_FFACE_OFF] ; IF (front face) {{{
+    test al, al
+    jz skip_invert
+    rcpss xmm5, xmm5
+    skip_invert: ;}}}
+
+    ; normaliza r->direction
+    vdpps xmm6, xmm1, xmm1, 0xF1
+    rsqrtss xmm6, xmm6
+    shufps xmm6, xmm6, 0
+    mulps xmm6, xmm1 ; unit_dir
+
+    ; calculate cos(theta) of angle between ray dir and surface normal
+    movups xmm7, [rsi+HITRECORD_NORMAL_OFF]
+    xorps xmm8, xmm8
+    subps xmm8, xmm6
+    dpps xmm8, xmm7, 0xF1
+    put_ones xmm9 ; ones
+    minss xmm8, xmm9 ; cos_theta
+
+    ; calculate sin(theta)
+    vmulss xmm10, xmm8, xmm8
+    vsubss xmm10, xmm9, xmm10
+    sqrtss xmm10, xmm10 ; sin_theta
+
+    ; check if refraction is posible
+    mulss xmm10, xmm5
+    comiss xmm10, xmm9
+    ja dielectric_reflect ; cannot refract, so we reflect
+
+    ; Schlick's approximation for reflactance
+    vsubss xmm10, xmm9, xmm5
+    vaddss xmm11, xmm9, xmm5
+    divss xmm10, xmm11
+    mulss xmm10, xmm10 ; r0 ** 2
+    vsubss xmm11, xmm9, xmm8
+    movss xmm12, xmm11 ; (1-cos)
+    mulss xmm11, xmm11 ; (1-cos) ** 2
+    mulss xmm11, xmm11 ; (1-cos) ** 4
+    mulss xmm11, xmm12 ; (1-cos) ** 5
+    vsubss xmm12, xmm9, xmm10
+    mulss xmm12, xmm11
+    addss xmm12, xmm10
+
+    movaps [rsp], xmm0
+    call mtfrand
+    movss xmm10, xmm0
+    movaps xmm0, [rsp]
+    comiss xmm12, xmm10
+    ja dielectric_reflect
+
+    ; refract
+    shufps xmm8, xmm8, 0
+    mulps xmm8, xmm7
+    addps xmm8, xmm6
+    shufps xmm5, xmm5, 0
+    mulps xmm8, xmm5 ; r_out_perp
+    vdpps xmm10, xmm8, xmm8, 0xF1
+    subss xmm9, xmm10
+    put_fabs_mask xmm10
+    andps xmm9, xmm10
+    sqrtss xmm9, xmm9
+    shufps xmm9, xmm9, 0
+    mulps xmm9, xmm7 ; r_out_par
+    vsubps xmm4, xmm8, xmm9
+    jmp material_scatter_done
+
+    dielectric_reflect:
+    vdpps xmm10, xmm7, xmm6, 0xF1
+    addss xmm10, xmm10
+    shufps xmm10, xmm10, 0
+    mulps xmm10, xmm7
+    vsubps xmm4, xmm6, xmm10
+    ;}}}
+
     material_scatter_done:
+    mov al, 1
     movaps xmm5, [rsp+0x10]
     movaps xmm6, [rsp+0x20]
     movaps xmm7, [rsp+0x30]

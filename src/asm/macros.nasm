@@ -84,6 +84,7 @@
 
     jb %1_front_face ; IF (front_face)
     vsubps xmm5, xmm7, xmm5
+    dec dl
     %1_front_face: ; ELSE
     inc dl
 
