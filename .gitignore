@@ -1,6 +1,10 @@
 # build files
 ray_tracer
 build/
+.env
+.ninja_deps
+.ninja_log
+build.ninja
 
 # other
 images/
@@ -8,3 +12,6 @@ images/
 # LSP Files
 .ccls-cache/
 .cache/
+
+# debugging
+.gdbinit
