@@ -44,7 +44,7 @@ del area correspondiente a cada pixel).
 \paragraph{Cámara de escena} Se permite parametrizar la posición, dirección,
 dirección ``arriba'' (fija la posición y dirección a la que apunta la cámara, la
 dirección ``arriba'' indicaría la rotación sobre el eje definido), amplitud del
-ángulo de \textit{field of view}, y la apertura.
+ángulo de \textit{field of view}, y la apertura de la lente.
 
 \paragraph{Optimización} Se agregó una estructura KDTree para optimizar el
 método hit de los rayos para escenas con muchos objetos (por ejemplo, malla de
@@ -56,22 +56,22 @@ la forma en la que cada uno maneja las luces.
 \subsection{Implementación original en C++}
 
 La implementación en C++ hace uso de propiedades de la programación orientada a
-objetos, como herencia, polimorfismo, etc. Esta implementación simula estas
-propiedades usando punteros a funciones y propiedades del layout en memoria de
-los \texttt{struct}.
+objetos, como herencia, polimorfismo, etc. Para este proyecto, simplificamos el
+código para mejorar la \textit{performance} en la implementación en ASM.
 
-Además, hace uso de estructuras de la librería estándar de C++, como
-\texttt{vector} y \texttt{smart\_ptr}. Se implementaron estructuras básicas que
-proveen solamente la funcionalidad que se usa en este proyecto.
+En un principio, se pensó que lo ideal sería simular herencia y polimorfismo con
+estructuras y punteros a funciones para facilitar la implementación en C, pero
+termino siendo contraproducente ya que la diferencia de performance entre C y
+ASM resulto ser insignificante. En su lugar, se simplificaron las estructuras de
+objetos (esferas, planos, etc.) y materiales (lambertiano, metálico, etc.) para
+que compartan una estructura \textit{header} común (herencia) con un campo
+\texttt{type} que determine el tipo concreto (polimorfismo).
 
-El código tiene una arquitectura distinta, ya que debe permitir la
-implementación de algunas partes tanto en C como en ASM. Para esto, movemos las
-operaciones que se pueden optimizar con SIMD a un \textit{core}
-(\texttt{c\_core.c} o \texttt{asm\_core.nasm}). Ambos implementan la interfaz
-definida en \texttt{core.h}.
+Por otro lado, como la implementación original hace uso de estructuras de la
+librería estándar de C++, como \texttt{vector} y \texttt{smart\_ptr}, se
+implementaron estructuras básicas similares que proveen solamente la
+funcionalidad que se usa en este proyecto.
 
-Operaciones como el parsing de la entrada y el overhead inicial de la creación de
-objetos no se consideran para medir el rendimiento, y por lo tanto, no entran en
-algún core y se implementan en C. Por otro lado, los métodos de los objetos de
-una escena, o de los materiales de los mismos, sí se implementan en cada
-core ya que son secciones críticas del programa.
+Operaciones como el parsing de la entrada, el overhead inicial de la creación de
+objetos y el overhead final en el que se liberan los recursos no se consideran
+para medir el rendimiento, y por lo tanto, se implementan en C.

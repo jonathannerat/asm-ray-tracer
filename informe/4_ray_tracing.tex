@@ -9,9 +9,9 @@ incidió (Figura \ref{fig:rt-camera-window-scene}).
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=.7\textwidth]{imgs/rt-camera-window-scene.png}
+    \includegraphics[width=.7\textwidth]{imgs/rt-camera-throwing-rays-into-scene.png}
     \caption{Cámara lanzando rayos por una ventana hacia una escena}
-    \label{fig:rt-camera-window-scene}
+    \label{fig:rt-camera-throwing-rays-into-scene}
 \end{figure}
 
 En esta situación, la imagen final es el resultado de muchas variables:
@@ -30,8 +30,8 @@ A continuación explicaremos como cada uno influye en la imagen final.
 \subsection{Cámara} \label{ssec:rt-camera}
 
 Como ya se mencionó, el origen de los rayos estará dado por la cámara. No
-solamente por la posición de la misma, sino también por la apertura de la lente
-y la distancia de foco.
+solamente por su posición, sino también por su orientación (es decir, que
+dirección es la de ``arriba''), la apertura de la lente y la distancia de foco.
 
 Para poder controlar el ``nivel de enfoque'' de la imagen, la implementación
 simula la lente de la cámara usando como verdadero origen de los rayos a un
@@ -40,7 +40,7 @@ es la distancia entre el disco y el plano de foco.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=.7\textwidth]{imgs/rt-camera-plano-foco.png}
+    \includegraphics[width=.7\textwidth]{imgs/rt-camera-rays-through-lens.png}
     \caption{Lente y plano de foco}
     \label{fig:rt-camera-plano-foco}
 \end{figure}
