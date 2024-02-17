@@ -82,4 +82,3 @@
 %assign SCENE_SIZE         SCENE_FRAME_OFF+POINTER_SIZE ; 152 
 
 %assign MT_SIZE 624
-%assign MT_SEED 0x20221218 ;   

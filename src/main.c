@@ -5,14 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEFAULT_SEED 0x20221218
+
 enum tracer_type { C, ASM };
 
 typedef struct {
   char *scene_path;
   enum tracer_type tracer_type;
+  int seed;
 } Config;
 
 Config parse_config(int argc, char **argv);
+void print_usage(char *);
 
 int main(int argc, char **argv) {
   Scene *s;
@@ -22,6 +26,8 @@ int main(int argc, char **argv) {
     s = scene_new_from_file(c.scene_path);
   else
     s = scene_new_from_stdin();
+
+  mtsrand(c.seed);
 
   if (c.tracer_type == C)
     tracer_c(s);
@@ -35,8 +41,7 @@ int main(int argc, char **argv) {
 }
 
 Config parse_config(int argc, char **argv) {
-  Config config = {NULL, C};
-  // mtsrand(0);
+  Config config = {NULL, C, DEFAULT_SEED};
 
   for (int i = 1; i < argc;) {
     if (argv[i][0] == '-') {
@@ -53,12 +58,34 @@ Config parse_config(int argc, char **argv) {
         config.scene_path = argv[i + 1];
         i += 2;
         break;
+      case 'r':
+        config.seed = atoi(argv[i+1]);
+        i += 2;
+        break;
+      case 'h':
+        print_usage(argv[0]);
+        exit(EXIT_SUCCESS);
+        break;
+      default:
+        fprintf(stderr, "Invalid option: %s", argv[i]);
+        print_usage(argv[0]);
+        exit(EXIT_FAILURE);
+        break;
       }
     } else {
       fprintf(stderr, "Invalid option: %s", argv[i]);
+      print_usage(argv[0]);
       exit(EXIT_FAILURE);
     }
   }
 
   return config;
+}
+
+void print_usage(char *binary) {
+  fprintf(stderr, "Usage: %s [-c|-a] [-s SCENE] [-r SEED]\n", binary);
+  fprintf(stderr, "-c        Run using C implementation (default)\n"
+                  "-a        Run using ASM implementation\n"
+                  "-s SCENE  Render the scene described in SCENE\n"
+                  "-r SEED   Seed the RNG with SEED\n");
 }

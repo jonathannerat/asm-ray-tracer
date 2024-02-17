@@ -1,5 +1,5 @@
 #include "vec3.h"
-#include "util.h"
+#include "tracer.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -27,7 +27,7 @@ Vec3 vec3_cross(const Vec3 a, const Vec3 b) {
 
 Vec3 vec3_rand_unit_sphere() {
   while (1) {
-    Vec3 p = V(frand() * 2 - 1, frand() * 2 - 1, frand() * 2 - 1);
+    Vec3 p = V(mtfrand() * 2 - 1, mtfrand() * 2 - 1, mtfrand() * 2 - 1);
 
     if (vec3_norm2(p) >= 1)
       continue;

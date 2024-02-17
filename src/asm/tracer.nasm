@@ -1,5 +1,7 @@
 ; vi: ft=nasm ts=4 sw=4 et fdm=marker
 global tracer_asm
+global mtsrand
+global mtfrand
 
 %include "constants.nasm"
 %include "macros.nasm"
@@ -52,12 +54,10 @@ tracer_asm: ;{{{
     mov [rsp+0x28], rcx
     ;}}}
 
-    ; seed rng
-    mov edi, MT_SEED
-    call mtsrand
-
     xor r12d, r12d ; j = 0
     height_loop: ;{{{
+
+        ; error on j==19 && i == 111 && k == (24;30)
 
         xor r13d, r13d ; i = 0
         width_loop: ;{{{

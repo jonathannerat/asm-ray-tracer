@@ -1,5 +1,6 @@
 #include "shading.h"
 #include "../vec3.h"
+#include "../tracer.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -75,7 +76,7 @@ bool dielectric_scatter(const Material *self, const Ray *r, const HitRecord *hit
   bool cannot_refract = ref_ratio * sin_theta > 1;
   Vec3 direction;
 
-  if (cannot_refract || reflectance(cos_theta, ref_ratio) > frand())
+  if (cannot_refract || reflectance(cos_theta, ref_ratio) > mtfrand())
     direction = reflect(unit_dir, hit->normal);
   else
     direction = refract(unit_dir, hit->normal, ref_ratio);
