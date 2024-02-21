@@ -5,7 +5,7 @@ crea identificando los objetos que contribuyen a cada pixel (\textit{image-order
 rendering}). Dada una escena con objetos tridimensionales, se puede obtener una
 imagen de la misma lanzando rayos desde un origen (cámara) hacia una ventana, y
 trazando la trayectoria de los mismos para ver sobre que objetos / materiales
-incidió (Figura \ref{fig:rt-camera-window-scene}).
+incidió (Figura \ref{fig:rt-camera-throwing-rays-into-scene}).
 
 \begin{figure}[H]
     \centering
@@ -18,7 +18,7 @@ En esta situación, la imagen final es el resultado de muchas variables:
 
 \begin{itemize}
     \item Cámara: posición, dirección, inclinación, apertura de la lente,
-        distancia de foco.
+        distancia de foco.ray tra
     \item Objetos: ubicación, tamaños, formas, etc.
     \item Materiales (de cada objeto): tipos (lambertiano, metálico, etc),
     color, reflexión, refracción, etc.
@@ -33,10 +33,16 @@ Como ya se mencionó, el origen de los rayos estará dado por la cámara. No
 solamente por su posición, sino también por su orientación (es decir, que
 dirección es la de ``arriba''), la apertura de la lente y la distancia de foco.
 
+También depende de las propiedades de la imagen final: dimensiones,
+\textit{samples per pixel} (cantidad de rayos que se emiten por cada pixel),
+\textit{max. depth} (máxima cantidad de veces que un rayo se puede reflejar /
+refractar para calcular el color).
+
 Para poder controlar el ``nivel de enfoque'' de la imagen, la implementación
 simula la lente de la cámara usando como verdadero origen de los rayos a un
 disco. La apertura es el diámetro de la lente, y la distancia de foco
-es la distancia entre el disco y el plano de foco.
+es la distancia entre el disco y el plano de foco (plano sobre el que estará la
+``grilla'' que determinará los pixeles de la imagen).
 
 \begin{figure}[H]
     \centering
@@ -52,19 +58,33 @@ foco del objetivo, más nítida será la imagen. Por el contrario, si la lente e
 muy grande, o el plano de foco se encuentra lejos del objetivo, la imagen se
 verá más borrosa.
 
+Cuando un rayo colisione con un objeto, quedará determinado un nuevo rayo
+saliente del punto de intersección, siempre y cuando no se supere el
+\textit{max. depth}. El nuevo rayo puede generarse por reflexión o por
+refracción (dependiendo del material del objeto), y su dirección también depende
+de la forma del objeto.
+
+Por cada pixel de la imagen, se envían tantos rayos como lo indique la propiedad
+\textit{samples per pixel}. Estos se mueven por la escena hasta que se supere el
+\textit{max. depth}, y entonces se acumula el color de todos los objetos con los
+que el rayo colisiono en su trayectoria (en nuestro caso, se multiplica los
+colores), y luego el color de todos los rayos se promedia para calcular el color
+final del pixel.
+
 \subsection{Objetos}
 
 Los objetos son cuerpos del espacio tridimensional que pueden colisionar con los
 rayos y en consecuencia, modificar la trayectoria de los mismos y finalmente  la
 imagen. Dependiendo del material de su superficie, estos pueden reflejar o
 refractar los rayos, y cambiar el color de cada pixel. En este trabajo se
-implementaron 4 objetos
+implementaron 5 tipos objetos:
 
 \begin{itemize}
     \item Esferas
     \item Planos
     \item Cubos
     \item Triángulos
+    \item KDTree
 \end{itemize}
 
 Cada objeto es definido por una función que indica si un rayo colisiona o no con
@@ -169,8 +189,10 @@ no con la esfera, y en cuantos puntos lo hace. Si la función no tiene raíces, 
 existe $t$ que satisfaga la ecuación de la esfera, y por lo tanto, no hay
 intersección. Si la función tiene 1 raíz, el rayo intersecta a la esfera en
 \textbf{un} único punto, y es tangente a la superficie de la misma. Por otro
-lado, si la función tiene 2 raíces, el rayo atraviesa a esfera y la intersecta
+lado, si la función tiene 2 raíces, el rayo atraviesa la esfera y la intersecta
 en 2 puntos, uno de entrada y uno de salida.
+
+% TODO: incluir imagen del rayo intersectando a la espera en 0, 1 y 2 puntos
 
 Para decidir si el rayo intersecta o no, podemos calcular el discriminante y ver
 si es negativo (no intersecta) o no.
@@ -219,7 +241,7 @@ volumen del cubo.
 
 % TODO: incluir imagen de lo descripto anteriormente
 
-Debido a que los planos son infinitos y estan sobre cada eje del espacio,
+Debido a que los planos son infinitos y están sobre cada eje del espacio,
 cualquier rayo intersecará con al menos 2 planos del cubo. Para decidir si
 alguna de estas intersecciones corresponde a alguna cara del cubo, tenemos que
 verificar que el punto se encuentre dentro del volumen del mismo. Para esto
@@ -259,27 +281,30 @@ los vertices.
 En el algoritmo \ref{alg:box-hit}, $hitAnyFace$ es \texttt{True} si y solo si el
 rayo $Ray$ interseca a alguna cara del cubo y lo hace dentro de las coordenadas
 definidas por los limites del mismo ($vmin$ y $vmax$). En ese caso, se setea
-$closestSoFar$ para ignorar las proximas intersecciones que podrían quedar detrás
-de la más cercana a la camara, y se guarda el registro de la interseccion en
+$closestSoFar$ para ignorar las próximas intersecciones que podrían quedar detrás
+de la más cercana a la cámara, y se guarda el registro de la intersección en
 $cubeRecord$.
 
 \subsubsection{Triangulos}
 
 Nuevamente podemos utilizar lo que conocemos sobre planos para definir un
-triangulo. Al definir el triangulo con 3 puntos, definimos tambin el plano sobre
-el que se encuentra. Para acomodarnos a la representacion que adoptamos para los
+triangulo. Al definir el triangulo con 3 puntos, definimos también el plano sobre
+el que se encuentra. Para acomodarnos a la representación que adoptamos para los
 planos, podemos usar alguno de los vertices como origen, y calcular la normal
-como el producto vectorial de los vectores que inciden sobre el origen.
+como el producto vectorial de los vectores que salen del origen a los otros 2
+vertices.
 
 % TODO: incluir grafico que ilustre esto.
 
-Al igual que hicimos con el cubo, primero calcularemos el punto de interseccin
+Al igual que hicimos con el cubo, primero calcularemos el punto de intersección
 entre el rayo y el plano, y luego verificaremos que el punto se encuentre entre
 los vertices del triangulo para determinar si el rayo intersecta o no con el
 mismo. Para verificar esto, tenemos que definir una convención para indicar que
 cara del triangulo es la ``visible'' (es decir, en que sentido apunta la normal
 del plano). Sean $P_1$, $P_2$ y $P_3$ los vertices del triangulo, entonces llamamos
 cara ``visible'' a la cara en la que estos vértices aparecen en sentido anti-horario.
+
+% TODO: incluir grafico que ilustre la cara visible
 
 Si sabemos que los vertices aparecen en cierto orden, detectar un punto dentro de
 la superficie del triangulo consiste en verificar que el punto se encuentra ``dentro''
@@ -291,14 +316,14 @@ para cada borde. Es decir, sea $P$ un punto en el plano del triangulo, si:
     \item $(P_1 - P_3) \times (P - P_3)$ apunta en el sentido de la normal
 \end{itemize}
 
-significa que $P$ esta ``dentro'' del triangulo para cada borde.
+, significa que $P$ esta ``dentro'' del triangulo para cada borde.
 
 \begin{algorithm}[H]
 \begin{algorithmic}[1]
 \Function{TriangleHit}{$Triangle, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \State $P_1, P_2, P_3 \gets Triangle$ \Comment{Obtenemos los vertices del triangulo}
     \State $normal \gets (P_2 - P_1) \times (P_3 - P_1)$
-    
+
     \If {$normal \perp Ray.dir$}
         \State \Return (False, NIL) \Comment{Si el rayo es paralelo al plano, no hay hit}
     \EndIf
@@ -322,14 +347,148 @@ significa que $P$ esta ``dentro'' del triangulo para cada borde.
     \State \Return (False, NIL)
 \EndFunction
 \end{algorithmic}
-\caption{Algoritmo \textit{hit} para triangulos}
+\caption{Algoritmo \textit{hit} para triángulos}
 \label{alg:triangle-hit}
 \end{algorithm}
 
-Se puede comprobar que el sentido de dos vectores es el mismo al ver el signo de
-su producto interno, ya que $A \cdot B = \vert A \vert \vert B \vert
-\cos{\theta}$, donde $\theta$ es el angulo entre $A$ y $B$. En este caso,
-$\theta$ o bien es 0 y $\cos{0} = 1$, o bien es 180 y $\cos{180}=-1$.
+\subsubsection{KDTree}
+
+El KDTree es una estructura que agrupa muchos objetos y optimiza la búsqueda del
+objeto con el que finalmente intersectan los rayos.
+
+Consiste de una jerarquía de nodos que forman un árbol binario, en el que cada
+uno o bien tiene una lista de objetos (hojas), o bien tiene dos nodos hijos
+(intermedios). Cada nodo es representado por un \textbf{cubo} llamado
+\textit{bounding box}, que esta definido como:
+
+\begin{itemize}
+    \item Para nodos hoja: el cubo más chico que contiene a todos los objetos en su interior
+    \item Para nodos intermedios: la cubo más chico que contiene a los cubos de
+        sus nodos hijos.
+\end{itemize}
+
+Para crear un KDTree, se necesita un conjunto de objetos que contendrá la
+estructura, y una cantidad \textit{max leaf size}. Luego, se crea un nodo que
+contenga a todos los objetos, y se lo ``divide'' en dos nodos hijos mientras
+cada nodo tenga más de \textit{max leaf size} objetos. Los objetos del nodo
+padre se dividen en dos mitades (usando el eje sobre el que están mejor
+distribuidos como referencia), y se reparten a cada nodo hijo.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{imgs/kdtree-scene-without-bbox.png}
+        \caption{Sin \textit{bounding boxes}.}
+        \label{fig:kdtree-without-bounding-boxes}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{imgs/kdtree-scene-with-bbox.png}
+        \caption{Con \textit{bounding boxes}: en gris del nodo raíz, en rosa
+        nodos del primer nivel, y naranja del segundo.}
+        \label{fig:kdtree-with-bounding-boxes}
+    \end{subfigure}
+    \caption{Escena 2D con y sin \textit{bounding boxes} para un \textit{max
+    leaf size} de 2.}
+    \label{fig:kdtree-bounding-boxes}
+\end{figure}
+
+En la figura \ref{fig:kdtree-bounding-boxes} podemos observar como se
+distribuyen los \textit{bounding boxes} de cada nodo del KDTree. El nodo raíz
+contiene a todos los objetos, los nodos del primer nivel del árbol se
+reparten los objetos a la mitad usando el eje horizontal como referencia (en
+rosa), y finalmente los del segundo nivel los reparten usando eje vertical (en
+naranja).
+
+El KDTree optimiza el calculo de intersección de rayos con sus objetos
+utilizando los \textit{bounding boxes}. En lugar de calcular la intersección
+entre un rayo y cada objeto, hacemos una búsqueda binaria en la jerarquía de
+nodos, intersectando el rayo con el \textit{bounding box} de cada nodo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{imgs/kdtree-ray-intersection.png}
+    \caption{Intersección entre un rayo y el KDTree}
+    \label{fig:kdtree-ray-intersection}
+\end{figure}
+
+Supongamos que tenemos que calcular la intersección con un rayo como se muestra
+en la figura \ref{fig:kdtree-ray-intersection}. Primero calculamos la
+intersección con el bounding box del nodo raíz del arbol: si no hay
+intersección, tampoco la habrá con ningún objeto del KDTree. En este caso, hay
+intersección, por lo que seguimos probando con los nodos hijos del nodo raíz
+(borde rosa). Continuamos de la misma forma hasta llegar a un nodo que no tenga
+hijos, y entonces hacemos una búsqueda lineal con los objetos que éste contiene.
+
+Si establecemos una cantidad fija para \textit{max leaf size}, podemos optimizar
+la búsqueda del objeto con el que un rayo intersecta. Por ejemplo, si tenemos un
+modelo hecho en malla de triángulos (que puede tener miles de triángulos), y lo
+ubicamos en una escena, usar un KDTree puede mejorar significativamente la
+performance del Ray Tracer.
+
+Si el modelo no ocupa mucho espacio de la imagen final, por cada rayo que no
+intersecta con el modelo nos ahorramos miles de cálculos de intersecciones con
+los triángulos de la malla, ya que simplemente se comprueba la intersección con
+el bounding box del nodo raíz.
+
+En el mejor caso (o el caso más común), la cantidad de intersecciones que se
+calculan es como máximo $O(\log n)$ siendo $n$ la cantidad de triángulos. Se
+puede dar un peor caso si todos los objetos están alineados sobre un eje de cara
+a la cámara, de modo que los rayos intersecten a todos los objetos, por lo que
+se realizarían $O(n+\log n)=O(n)$ intersecciones. Pero en mallas de triángulos
+(que es el principal uso que le daremos), ese caso no es tan común.
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\Function{NodeHit}{$Node, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
+    \If {$Ray$ doesn't hit $Node.bounding\_box$}
+        \State \Return (False, NIL)
+    \EndIf
+
+    \If {$Node$ has objects}
+    \State \Return \textsc{ListHit}($Node.objects$, $Ray$, $t_{min}$, $t_{max}$)
+    \Else
+        \State $LeftNode \gets Node.left\_child$ 
+        \State $RightNode \gets Node.right\_child$ 
+        \State $LeftHit, LeftRec \gets$ \textsc{NodeHit}($LeftNode$, $Ray$,
+        $t_{min}$, $t_{max}$)
+        \State $RightHit, RightRec \gets$ \textsc{NodeHit}($RightNode$, $Ray$,
+        $t_{min}$, $t_{max}$)
+
+        \State $ClosestRec \gets$ NIL
+
+        \If {$LeftHit \land RightHit$}
+            \State $ClosestRec \gets LeftRec.t < RightRec.t ? LeftRec : RightRec$
+        \ElsIf {$LeftHit$}
+            \State $ClosestRec \gets LeftRec$
+        \ElsIf {$RightHit$}
+            \State $ClosestRec \gets RightRec$
+        \EndIf
+
+        \State \Return ($LeftHit \lor RightHit$, $ClosestRec$)
+    \EndIf
+
+
+    \State \Return (False, NIL)
+\EndFunction
+\end{algorithmic}
+\caption{Algoritmo \textit{hit} para nodos de un KDTree}
+\label{alg:node-hit}
+\end{algorithm}
+
+La implementación del KDTree en el algoritmo \ref{alg:node-hit} no hace más que
+recorrer los nodos del árbol desde el nodo raíz hacia las hojas que contienen la
+lista de objetos. Como ya mencionamos, se puede dar que para un nodos ambos
+hijos devuelvan una intersección. Lo que se hace en ese caso es explorar ambas
+ramas del árbol hasta llegar a los objetos en cuestión , y devolver la
+intersección que sea más cercana a la cámara (es decir, la que finalmente se
+puede ver).
+
+El método \textsc{ListHit} que aparece en el algoritmo simplemente hace una
+búsqueda lineal en una lista de objetos, y devuelve la intersección más cercana
+a la cámara.
 
 \subsection{Materiales}
 
@@ -353,7 +512,7 @@ Cada material implementa 2 métodos: \texttt{Scatter} (atenuar / dispersar) y
         colisión ($rec$) que se dio sobre el objeto al que esta asociado el
         material. Devuelve 3 valores: \textit{did\_scatter} que indica si el
         material puede dispersar rayos en el punto de intersección,
-        \textit{R\_{out}} el rayo dispersado en caso de que el anterior sea
+        $R\_{out}$ el rayo dispersado en caso de que el anterior sea
         \texttt{TRUE}, y $A$ la atenuación del color que produce el material.
     \item \texttt{Emit} solamente recibe el material $M$ y retorna el color que
         emite el mismo.
@@ -585,3 +744,9 @@ la aproximación es que sea mayor que un valor aleatorio entre $[0, 1]$.
 \caption{Algoritmo \textit{Scatter} para material dieléctrico}
 \label{alg:dielectric-scatter}
 \end{algorithm}
+
+Finalmente en el algoritmo \ref{alg:dielectric-scatter} juntamos todo lo visto.
+Primero definimos $r$ como la relación entre los indices de refracción (que
+depende de qué lado se da la colisión). Luego calculamos $\cos_{\theta}$ y
+$\sin_{\theta}$, y decidimos si en esa oportunidad se refleja o se refracta el
+rayo.
