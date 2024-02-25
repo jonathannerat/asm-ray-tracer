@@ -88,7 +88,7 @@ bool dielectric_scatter(const Material *self, const Ray *r, const HitRecord *hit
 }
 
 bool vec3_near_zero(const Vec3 v) {
-  return fabs(v.x) < EPS && fabs(v.y) < EPS && fabs(v.z) < EPS;
+  return fabs(v.x) <= EPS && fabs(v.y) <= EPS && fabs(v.z) <= EPS;
 }
 
 Vec3 reflect(const Vec3 v, const Vec3 n) {

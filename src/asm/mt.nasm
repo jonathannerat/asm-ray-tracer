@@ -117,10 +117,6 @@ mtfrand: ;{{{
 
     call mtrand
     abs_eax
-    jz mtfrand_skip_dec ; IF (x != 0) {{{
-    ; substract 1 while keeping it positive, to ensure output is in [0, 1)
-    dec eax
-    mtfrand_skip_dec: ;}}}
     cvtsi2ss xmm0, eax
 
     xor eax, eax
@@ -134,7 +130,7 @@ mtfrand: ;{{{
     pop rbp
     ret ;}}}
 
-; Vec with (mtfrand(), mtfrand(), mtfrand(), 0)
+; Random vector with components between [-1, 1]
 ; float[xmm0] mtfrand_vec()
 ; ret & args: xmm0
 ; also uses: rax, rdx
@@ -142,30 +138,20 @@ mtfrand_vec: ;{{{
     push rbp
     mov rbp, rsp
     sub rsp, 0x20
-    movaps [rsp], xmm1
 
     call mtrand
     abs_eax
-    jz mtfrand_vec_skip_dec1 ; IF (x1 != 0) {{{
-    dec eax
-    mtfrand_vec_skip_dec1: ;}}}
     mov [rsp+0x10], eax
 
     call mtrand
     abs_eax
-    jz mtfrand_vec_skip_dec2 ; IF (x2 != 0) {{{
-    dec eax
-    mtfrand_vec_skip_dec2: ;}}}
     mov [rsp+0x14], eax
 
     call mtrand
     abs_eax
-    jz mtfrand_vec_skip_dec3 ; IF (x3 != 0) {{{
-    dec eax
-    mtfrand_vec_skip_dec3: ;}}}
     mov [rsp+0x18], eax
 
-    mov qword [rsp+0x1C], 0 ; [rsp+0x10] = {mtrand(), mtrand(), mtrand(), 0}
+    mov dword [rsp+0x1C], 0 ; [rsp+0x10] = {mtrand(), mtrand(), mtrand(), 0}
 
     cvtdq2ps xmm0, [rsp+0x10]
     put_fabs_mask xmm1 ; xmm1 = {0x7f...f * 4}
@@ -174,7 +160,15 @@ mtfrand_vec: ;{{{
     cvtdq2ps xmm1, [rsp+0x10] ; xmm1 = {(float) MAX_INT32 * 4}
     divps xmm0, xmm1 ; xmm0 /= xmm1
 
-    movaps xmm1, [rsp]
+    ; xmm0 = rand in [0, 1]
+    addps xmm0, xmm0 ; xmm0 = rand in [0, 2]
+    put_ones xmm1
+    subps xmm0, xmm1 ; xmm0 = rand in [-1, 1]
+
+    ; split random vec in 2 xmm registers to comply with C standard
+    vshufps xmm1, xmm0, xmm0, 0b11111110
+    shufps xmm0, xmm0, 0b11110100
+
     add rsp, 0x20
     pop rbp
     ret ;}}}

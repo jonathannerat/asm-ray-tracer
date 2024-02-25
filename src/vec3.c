@@ -27,9 +27,9 @@ Vec3 vec3_cross(const Vec3 a, const Vec3 b) {
 
 Vec3 vec3_rand_unit_sphere() {
   while (1) {
-    Vec3 p = V(mtfrand() * 2 - 1, mtfrand() * 2 - 1, mtfrand() * 2 - 1);
+    Vec3 p = mtfrand_vec();
 
-    if (vec3_norm2(p) >= 1)
+    if (vec3_norm2(p) > 1)
       continue;
 
     return p;

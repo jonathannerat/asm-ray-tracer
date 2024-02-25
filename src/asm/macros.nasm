@@ -92,3 +92,10 @@
     mov [rsi+HITRECORD_FFACE_OFF], dl
     movups [rsi+HITRECORD_P_OFF], %3
 %endmacro
+
+%macro normalize 3; dst = normalize(src, aux)
+    vdpps %3, %2, %2, 0xf1
+    sqrtss %3, %3
+    shufps %3, %3, 0x00
+    vdivps %1, %2, %3
+%endmacro
