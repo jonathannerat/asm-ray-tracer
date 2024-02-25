@@ -1,5 +1,8 @@
 ; vi: ft=nasm ts=4 sw=4 et fdm=marker
 global tracer_asm
+global mtsrand
+global mtfrand
+global mtfrand_vec
 
 %include "constants.nasm"
 %include "macros.nasm"
@@ -52,12 +55,10 @@ tracer_asm: ;{{{
     mov [rsp+0x28], rcx
     ;}}}
 
-    ; seed rng
-    mov edi, MT_SEED
-    call mtsrand
-
     xor r12d, r12d ; j = 0
     height_loop: ;{{{
+
+        ; error on j==19 && i == 111 && k == (24;30)
 
         xor r13d, r13d ; i = 0
         width_loop: ;{{{
@@ -117,10 +118,9 @@ rand_vec_in_unit: ;{{{
 
     rviu_loop:
         call mtfrand_vec
-        addps xmm0, xmm0
-        put_ones xmm1
-        subps xmm0, xmm1
+        shufps xmm0, xmm1, 0b01000100
         vdpps xmm2, xmm0, xmm0, 0xF1
+        put_ones xmm1
         comiss xmm2, xmm1
         ja rviu_loop
 
@@ -174,10 +174,10 @@ camera_get_ray:  ;{{{
     movups xmm0, [rdi+CAMERA_ORIGIN_OFF]
     addps xmm0, xmm3 ; ray origin
     mulps xmm1, [rdi+CAMERA_HORIZ_OFF]
-    mulps xmm2, [rdi+CAMERA_VERTI_OFF]
-    addps xmm1, xmm2
     addps xmm1, [rdi+CAMERA_BLCORN_OFF]
-    subps xmm1, xmm0 ; ray direction
+    mulps xmm2, [rdi+CAMERA_VERTI_OFF]
+    subps xmm2, xmm0
+    addps xmm1, xmm2
 
     movaps xmm4, [rsp+0x20]
     movaps xmm3, [rsp+0x10]
@@ -307,7 +307,7 @@ list_hit: ;{{{
         plane_hit_macro plane_loop_next
 
         ; PLANE HIT
-        or byte [rsp+0x10], 1
+        mov byte [rsp+0x10], 1
         movss xmm3, xmm6
 
         shufps xmm6, xmm6, 0
@@ -349,34 +349,30 @@ list_hit: ;{{{
         vsubss xmm8, xmm6, xmm8 ; -hb
         vsubss xmm6, xmm8, xmm9
         divss xmm6, xmm7 ; (-hb - sqrtd) / a
+
+        comiss xmm6, xmm2
+        jb sphere_loop_check_2nd_root
+        comiss xmm3, xmm6
+        jb sphere_loop_check_2nd_root
+        jmp sphere_loop_hit
+
+        sphere_loop_check_2nd_root:
         addss xmm8, xmm9
-        vdivss xmm7, xmm8, xmm7 ; (-hb + sqrtd) / a
-
-        xorps xmm10, xmm10
-        vsubss xmm8, xmm6, xmm2
-        vsubss xmm9, xmm3, xmm6
-        mulss xmm8, xmm9
-        comiss xmm8, xmm10
-        jae sphere_loop_hit
-
-        movss xmm6, xmm7
-        vsubss xmm8, xmm7, xmm2
-        vsubss xmm9, xmm3, xmm7
-        mulss xmm8, xmm9
-        comiss xmm8, xmm10
-        jae sphere_loop_hit
-        jmp sphere_loop_next
+        vdivss xmm6, xmm8, xmm7 ; (-hb + sqrtd) / a
+        comiss xmm6, xmm2
+        jb sphere_loop_next
+        comiss xmm3, xmm6
+        jb sphere_loop_next
 
         sphere_loop_hit:
-        or byte [rsp+0x10], 1
+        mov byte [rsp+0x10], 1
         movss xmm3, xmm6
 
         shufps xmm6, xmm6, 0
         mulps xmm6, xmm1
         addps xmm6, xmm0
         vsubps xmm7, xmm6, xmm4
-        shufps xmm5, xmm5, 0
-        vdivps xmm5, xmm7, xmm5
+        normalize xmm5, xmm7, xmm8
 
         save_hit SPHERE, r15, xmm6
 
@@ -407,7 +403,7 @@ list_hit: ;{{{
         test al, al
         jz list_loop_next
 
-        or [rsp+0x10], al
+        mov byte [rsp+0x10], al
         movss xmm3, [rsp-0x50+HITRECORD_T_OFF]
 
         ; copy all 48 bytes of the HitRecord
@@ -458,10 +454,8 @@ list_hit: ;{{{
         vsubps xmm7, xmm5, xmm4
         vsubps xmm8, xmm6, xmm4
         vec_cross xmm9, xmm7, xmm8, xmm10, xmm11
-        vdpps xmm10, xmm9, xmm9, 0xF1
-        rsqrtss xmm10, xmm10
-        shufps xmm10, xmm10, 0
-        mulps xmm9, xmm10
+
+        normalize xmm9, xmm9, xmm10
 
         ; ray is perpendicular to triangle plane?
         vdpps xmm7, xmm1, xmm9, 0xF1
@@ -491,7 +485,7 @@ list_hit: ;{{{
         is_left_of xmm6, xmm4
 
         ; triangle hit
-        or byte [rsp+0x10], 1
+        mov byte [rsp+0x10], 1
         movss xmm3, xmm7
 
         movaps xmm5, xmm9 ; move normal to xmm5
@@ -526,7 +520,7 @@ list_hit: ;{{{
         test al, al
         jz kdtree_loop_next
 
-        or [rsp+0x10], al
+        mov byte [rsp+0x10], 1
         movss xmm3, [rsp-0x50+HITRECORD_T_OFF]
 
         ; copy all 48 bytes of the HitRecord
@@ -666,16 +660,18 @@ aabox_hit: ;{{{
         movups xmm8, [eps]
         subps xmm7, xmm8
         vminps xmm9, xmm7, xmm4 ; xmm9 = packed_min(xmm7, xmm4)
-        ptest xmm9, xmm7 ; CF = 1 <==> xmm9 == xmm7 <==> xmm7 <= xmm4
-        jnc aabox_sides_next ; CF == 0 ==> point is not inside box
+        xorps xmm9, xmm7 ; all 0s if p is inside
+        ptest xmm9, xmm9 ; set ZF if p is inside
+        jnz aabox_sides_next ; ZF == 0 ==> point is not inside box
 
         addps xmm8, [rdi+AABOX_PMAX_OFF]
-        vminps xmm9, xmm8, xmm4 ; xmm9 = packed_min(xmm8, xmm6)
-        ptest xmm9, xmm4 ; CF = 1 <==> xmm9 == xmm4 <==> xmm4 <= xmm8
-        jnc aabox_sides_next ; CF == 0 ==> point is not inside box
+        vminps xmm9, xmm8, xmm4 ; xmm9 = packed_min(xmm8, xmm4)
+        xorps xmm9, xmm4
+        ptest xmm9, xmm9
+        jnz aabox_sides_next ; ZF == 0 ==> point is not inside box
 
         ; aabox hit
-        or al, 1
+        mov al, 1
         movss xmm3, xmm6
 
         save_hit AABOX, rdi, xmm4
@@ -718,7 +714,7 @@ material_scatter: ;{{{
 
     xor al, al
     mov ebx, [rdi+MATERIAL_TYPE_OFF]
-    cmp ebx, 3
+    cmp ebx, 3 ; is light? then skip scatter
     je material_scatter_skip
 
     sub rsp, 0x50
@@ -744,7 +740,7 @@ material_scatter: ;{{{
     put_fabs_mask xmm7
     andps xmm7, xmm5 ; fabs(scatter_dir)
     movups xmm8, [eps]
-    vminps xmm8, xmm7, xmm8 ; xmm8 = min(fabs(scatter_dir), (eps,eps,eps,0))
+    minps xmm8, xmm7 ; xmm8 = min(fabs(scatter_dir), (eps,eps,eps,0))
     ptest xmm7, xmm8 ; set CF if xmm7 = xmm8 (i.e. fabs(scatter_dir) <= (eps,...))
     jnc not_near_zero ; if CF=0, scatter is not near zero
     movaps xmm5, xmm6
@@ -762,10 +758,7 @@ material_scatter: ;{{{
     dec ebx
     jnz material_scatter_check_dielectric
 
-    vdpps xmm5, xmm1, xmm1, 0xF1
-    rsqrtss xmm5, xmm5
-    shufps xmm5, xmm5, 0
-    mulps xmm5, xmm1
+    normalize xmm5, xmm1, xmm5
     vdpps xmm7, xmm5, xmm6, 0xF1
     addss xmm7, xmm7
     shufps xmm7, xmm7, 0
@@ -808,10 +801,7 @@ material_scatter: ;{{{
     skip_invert: ;}}}
 
     ; normaliza r->direction
-    vdpps xmm6, xmm1, xmm1, 0xF1
-    rsqrtss xmm6, xmm6
-    shufps xmm6, xmm6, 0
-    mulps xmm6, xmm1 ; unit_dir
+    normalize xmm6, xmm1, xmm6
 
     ; calculate cos(theta) of angle between ray dir and surface normal
     movups xmm7, [rsi+HITRECORD_NORMAL_OFF]

@@ -86,8 +86,7 @@ bool sphere_hit(Surface *s, const Ray *r, real t_min, real t_max, HitRecord *hit
       return false;
   }
 
-  Vec3 outward_normal =
-    vec3_unscale(vec3_sub(ray_at(r, root), self->center), self->radius);
+  Vec3 outward_normal = vec3_to_normalized(vec3_sub(ray_at(r, root), self->center));
   save_hit(hit, r, root, outward_normal, self->material);
 
   return true;
