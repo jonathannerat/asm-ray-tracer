@@ -797,7 +797,8 @@ material_scatter: ;{{{
     mov al, [rsi+HITRECORD_FFACE_OFF] ; IF (front face) {{{
     test al, al
     jz skip_invert
-    rcpss xmm5, xmm5
+    put_ones xmm7
+    vdivss xmm5, xmm7, xmm5
     skip_invert: ;}}}
 
     ; normaliza r->direction
