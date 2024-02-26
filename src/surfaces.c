@@ -49,7 +49,7 @@ void sphere_free(Surface *s) {
 }
 
 int sort_surfaces_by_type(const void *a, const void *b) {
-  Surface *sa = (Surface *)a, *sb = (Surface *)b;
+  Surface *sa = *((Surface **)a), *sb = *(Surface **)b;
 
   return sa->type - sb->type;
 }
@@ -281,8 +281,8 @@ void triangle_free(Surface *s) {
 char axis = 'x';
 
 int sort_objects_by_axis(const void *a, const void *b) {
-  Point aref = ((Surface *)a)->reference;
-  Point bref = ((Surface *)b)->reference;
+  Point aref = (*((Surface **)a))->reference;
+  Point bref = (*((Surface **)b))->reference;
 
   if (axis == 'x')
     return aref.x < bref.x ? -1 : 1;
