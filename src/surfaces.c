@@ -163,7 +163,9 @@ AABox *aabox_new(Point pmin, Point pmax, Material *m) {
   arr_push(sides, plane_new(pmax, V(0, 1, 0), m));
   arr_push(sides, plane_new(pmax, V(0, 0, 1), m));
 
-  *b = (AABox){{.type = AABOX, .bounding_box = b, .reference = b->base.reference},
+  *b = (AABox){{.type = AABOX,
+                .bounding_box = b,
+                .reference = vec3_unscale(vec3_add(pmin, pmax), 2)},
                pmin,
                pmax,
                sides,
