@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 
@@ -21,7 +23,10 @@ def main():
 
     w.rule("ld", "gcc -o $out $in $ldflags", "ld $out")
     w.rule("asm", "nasm -o $out $asmflags $in", "nasm $in")
-    w.rule("regen_ninja", f"sh -c 'if command -v dotenv >/dev/null; then wrapper=\"dotenv run\"; fi; $$wrapper {sys.executable} $in > $out'")
+    w.rule(
+        "regen_ninja",
+        f"sh -c 'if command -v dotenv >/dev/null; then wrapper=\"dotenv run\"; fi; $$wrapper {sys.executable} $in > $out'",
+    )
 
     w.build("build.ninja", "regen_ninja", __file__, implicit=[".env"])
     objpaths = build_c_files(w)
