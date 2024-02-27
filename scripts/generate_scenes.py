@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import math
 import os
 import sys
 from random import random as frand, choices as rand_choices, choice as rand_choice
@@ -11,75 +10,127 @@ RESOLUTIONS = {
     "small": [100, 100],
     "medium": [200, 200],
     "large": [400, 400],
+    "vga": [640, 480],
+    "sd": [720, 480],
+    "hd": [1280, 720],
+    "fullhd": [1920, 1080],
 }
 
 MATERIAL_TYPES = ["lambertian", "metal", "dielectric", "light"]
 MATERIAL_WEIGHTS = [0.5, 0.35, 0.1, 0.05]
 
 OBJECT_TYPES = ["box", "sphere"]
+SCENES_DIR = os.path.join("scenes", "generated")
 
 
-def main():
-    config = parse_config(sys.argv)
+@dataclass
+class Vec:
+    x: float
+    y: float
+    z: float
 
-    if not os.path.isdir("scenes/gen"):
-        os.mkdir("scenes/gen")
+    def __str__(self) -> str:
+        return f"{self.x:.3f},{self.y:.3f},{self.z:.3f}"
 
-    for i in range(config.rows):
-        scene_file = f"scenes/gen/scene{i}"
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Vec):
+            return False
 
-        with open(scene_file, "w") as f:
-            f.write(
-                f"output: width={config.width} height={config.height} spp=50 depth=20\n"
-            )
-            f.write("camera: from=3,3,3 to=0,1,0\n")
+        return self.x == __value.x and self.y == __value.y and self.z == __value.z
 
-            num_objects = config.rows * config.cols
 
-            # materials
-            f.write("materials:\n")
-            f.write("    light=1,1,1\n")
-            f.write("    lambertian=.3,.1,.7\n")
-            for i in range(num_objects):
-                mtype = rand_choices(MATERIAL_TYPES, MATERIAL_WEIGHTS)[0]
-                f.write("    " + mtype)
-                [r, g, b] = [frand() for _ in range(3)]
-                if mtype == "light" or mtype == "lambertian":
-                    f.write(f"={r:.3f},{g:.3f},{b:.3f}\n")
-                else:
-                    alpha = frand()
-                    f.write(f": albedo={r:.3f},{g:.3f},{b:.3f} ")
-                    if mtype == "metal":
-                        f.write(f" fuzz={alpha:.3f}\n")
-                    else:
-                        f.write(f" ir={alpha:.3f}\n")
+@dataclass
+class Output:
+    width: int
+    height: int
+    spp: int
+    depth: int
 
-            f.write("objects:\n")
-            f.write("    plane: origin=0,6,0 normal=0,-1,0 material=0\n")
-            f.write("    plane: material=1\n")
-            mat_index = 0
-            for y in range(math.floor(-config.rows / 2), math.floor(config.rows / 2)):
-                for x in range(
-                    math.floor(-config.cols / 2), math.floor(config.cols / 2)
-                ):
-                    otype = rand_choice(OBJECT_TYPES)
-                    cx = x + 0.7 * frand()
-                    cz = y + 0.7 * frand()
+    def __str__(self) -> str:
+        return f"output: width={self.width} height={self.height} spp={self.spp} depth={self.depth}"
 
-                    if otype == "box":
-                        halfside = frand() * 0.5 + 0.1
-                        pmin = f"{cx-halfside:.3f},0,{cz-halfside:.3f}"
-                        pmax = f"{cx+halfside:.3f},{2*halfside:.3f},{cz+halfside:.3f}"
-                        f.write(
-                            f"    box: pmin={pmin} pmax={pmax} material={mat_index+2}\n"
-                        )
-                    else:
-                        radius = frand() * 0.5 + 0.1
-                        f.write(
-                            f"    sphere: center={cx:.3f},{radius:.3f},{cz:.3f} radius={radius:.3f} material={mat_index+2}\n"
-                        )
 
-                    mat_index += 1
+class Camera:
+    from_: Vec
+    to: Vec
+    vup: Vec
+    vfov: float
+    aperture: float
+
+    def __init__(self, from_, to, vup=Vec(0, 1, 0), vfov=45, aperture=2) -> None:
+        self.from_ = from_
+        self.to = to
+        self.vup = vup
+        self.vfov = vfov
+        self.aperture = aperture
+
+    def __str__(self) -> str:
+        desc = f"camera: from={self.from_} to={self.to}"
+
+        if not (self.vup == Vec(0, 1, 0)):
+            desc += " vup=" + str(self.vup)
+
+        if self.vfov != 45:
+            desc += " vfov=" + str(self.vfov)
+
+        if self.aperture != 2:
+            desc += " aperture=" + str(self.aperture)
+
+        return desc
+
+
+@dataclass
+class Material:
+    type_: str
+    albedo: Vec
+    alpha: float = 0
+
+    def __str__(self) -> str:
+        desc = f"{self.type_}"
+
+        if self.type_ == "light" or self.type_ == "lambertian":
+            desc += "=" + str(self.albedo)
+        else:
+            alpha_key = "fuzz" if self.type_ == "metal" else "ir"
+            desc += f": albedo={self.albedo} {alpha_key}={self.alpha}"
+
+        return desc
+
+
+@dataclass
+class Surface:
+    type_: str
+    props: dict
+
+    def __str__(self) -> str:
+        desc = f"{self.type_}:"
+
+        for k in self.props.keys():
+            if type(self.props[k]) == float:
+                desc += f" {k}={self.props[k]:.3f}"
+            else:
+                desc += f" {k}={self.props[k]}"
+
+        return desc
+
+
+@dataclass
+class GeneratedScene:
+    output: Output
+    camera: Camera
+    materials: list[Material]
+    objects: list[Surface]
+
+    def __str__(self) -> str:
+        desc = str(self.output) + "\n"
+        desc += str(self.camera) + "\n"
+        desc += "materials:\n"
+        for m in self.materials:
+            desc += "    " + str(m) + "\n"
+        desc += "objects:\n"
+        for o in self.objects:
+            desc += "    " + str(o) + "\n"
+        return desc
 
 
 @dataclass
@@ -88,6 +139,7 @@ class Config:
     height: int = 100
     rows: int = 5
     cols: int = 5
+    scenes: int = 1
 
 
 def parse_config(args: list[str]):
@@ -107,10 +159,98 @@ def parse_config(args: list[str]):
             config.cols = int(args[i + 1])
         elif args[i] == "-y":
             config.rows = int(args[i + 1])
+        elif args[i] == "-s":
+            config.scenes = int(args[i + 1])
 
         i += 2
 
     return config
+
+
+def generate_materials(config: Config):
+    n = config.rows * config.cols
+    res = []
+
+    for _ in range(n):
+        mtype = rand_choices(MATERIAL_TYPES, MATERIAL_WEIGHTS)[0]
+        res.append(Material(mtype, Vec(frand(), frand(), frand()), frand()))
+
+    return res
+
+
+def generate_objects(config: Config):
+    res = []
+    mat_index = 0
+
+    for y in range(0, config.rows):
+        for x in range(0, config.cols):
+            otype = rand_choice(OBJECT_TYPES)
+            side = frand() * 0.7 + 0.2
+            cx = x + 0.5 - side / 2
+            cz = y + 0.5 - side / 2
+
+            if otype == "box":
+                res.append(
+                    Surface(
+                        otype,
+                        {
+                            "pmin": Vec(cx, 0, cz),
+                            "pmax": Vec(cx + side, side, cz + side),
+                            "material": mat_index,
+                        },
+                    )
+                )
+            else:
+                res.append(
+                    Surface(
+                        otype,
+                        {
+                            "center": Vec(x + 0.5, side / 2, x + 0.5),
+                            "radius": side / 2,
+                            "material": mat_index,
+                        },
+                    )
+                )
+
+            mat_index += 1
+
+    return res
+
+
+def main():
+    config = parse_config(sys.argv)
+
+    if not os.path.isdir(SCENES_DIR):
+        os.mkdir(SCENES_DIR)
+
+    for i in range(config.scenes):
+        scene_file = os.path.join(SCENES_DIR, "scene" + str(i))
+
+        materials = generate_materials(config)
+        materials.append(Material("light", Vec(1, 1, 1)))
+        materials.append(Material("lambertian", Vec(0.4, 0.4, 0.4)))
+
+        objects = generate_objects(config)
+        objects.append(
+            Surface(
+                "plane",
+                {
+                    "origin": Vec(0, 8, 0),
+                    "normal": Vec(0, -1, 0),
+                    "material": len(materials) - 2,
+                },
+            )
+        )
+        objects.append(Surface("plane", {"material": len(materials) - 1}))
+        scene = GeneratedScene(
+            Output(config.width, config.height, 50, 20),
+            Camera(Vec(-5, 5, -5), Vec(config.cols / 2, 1, config.rows / 2)),
+            materials,
+            objects,
+        )
+
+        with open(scene_file, "w") as f:
+            f.write(str(scene))
 
 
 if __name__ == "__main__":
