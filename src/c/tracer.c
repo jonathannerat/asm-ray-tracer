@@ -6,12 +6,15 @@
 
 Color ray_color(List *, const Ray *, Color, uint);
 
-void tracer_c(Scene *s) {
+void tracer_c(Scene *s, bool measuring) {
   uint width = s->output.width, height = s->output.height;
   Color bg_color = V3(0);
   Color *framebuffer = s->framebuffer;
 
   for (uint j = 0; j < height; j++) {
+    if (!measuring)
+      report(j + 1, height);
+
     for (uint i = 0; i < width; i++) {
       Color pixel = V3(0);
 
@@ -46,4 +49,13 @@ Color ray_color(List *world, const Ray *r, Color bg, uint depth) {
 
   return vec3_add(emitted,
                   vec3_prod(attenuation, ray_color(world, &scattered, bg, depth - 1)));
+}
+
+void report(int row, int height) {
+  fprintf(stderr, "Processing row %d/%d\t\t\r", row, height);
+  if (row == height) {
+    fputc('\n', stderr);
+  } else {
+    fflush(stderr);
+  }
 }

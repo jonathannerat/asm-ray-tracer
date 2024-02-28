@@ -1,91 +1,80 @@
+#include "config.h"
 #include "scene/Scene.h"
 #include "structures/array.h"
 #include "tracer.h"
 #include "util.h"
+#include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <time.h>
 
-#define DEFAULT_SEED 0x20221218
-
-enum tracer_type { C, ASM };
-
-typedef struct {
-  char *scene_path;
-  enum tracer_type tracer_type;
-  int seed;
-} Config;
-
-Config parse_config(int argc, char **argv);
-void print_usage(char *);
+uint64_t get_time_measure(enum measure_type);
+void run_tracer(enum tracer_type, Scene *, bool);
 
 int main(int argc, char **argv) {
   Scene *s;
   Config c = parse_config(argc, argv);
 
+  // Parse scene config
   if (c.scene_path)
     s = scene_new_from_file(c.scene_path);
   else
     s = scene_new_from_stdin();
 
+  // Seed RNG
   mtsrand(c.seed);
 
-  if (c.tracer_type == C)
-    tracer_c(s);
-  else
-    tracer_asm(s->camera, s->output, s->world, s->framebuffer);
+  if (c.measure_type == MEASURE_NONE) {
+    run_tracer(c.tracer_type, s, false);
+    scene_dump(s, stdout);
+  } else {
+    uint64_t acc = 0;
 
-  scene_dump(s, stdout);
+    for (int i = 0; i < c.measurements; i++) {
+      fprintf(stderr, "Taking measurement %d/%d\t\t\r", i + 1, c.measurements);
+      fflush(stderr);
+      uint64_t start = get_time_measure(c.measure_type);
+      run_tracer(c.tracer_type, s, true);
+      uint64_t end = get_time_measure(c.measure_type);
+
+      acc += end - start;
+    }
+    fputc('\n', stderr);
+
+    printf("%" PRIu64 "\n", acc / (int64_t)c.measurements);
+  }
+
   scene_free(s);
 
   return 0;
 }
 
-Config parse_config(int argc, char **argv) {
-  Config config = {NULL, C, DEFAULT_SEED};
-
-  for (int i = 1; i < argc;) {
-    if (argv[i][0] == '-') {
-      switch (argv[i][1]) {
-      case 'c':
-        config.tracer_type = C;
-        i++;
-        break;
-      case 'a':
-        config.tracer_type = ASM;
-        i++;
-        break;
-      case 's':
-        config.scene_path = argv[i + 1];
-        i += 2;
-        break;
-      case 'r':
-        config.seed = atoi(argv[i+1]);
-        i += 2;
-        break;
-      case 'h':
-        print_usage(argv[0]);
-        exit(EXIT_SUCCESS);
-        break;
-      default:
-        fprintf(stderr, "Invalid option: %s", argv[i]);
-        print_usage(argv[0]);
-        exit(EXIT_FAILURE);
-        break;
-      }
-    } else {
-      fprintf(stderr, "Invalid option: %s", argv[i]);
-      print_usage(argv[0]);
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  return config;
+uint64_t exec_rdtsc() {
+  uint32_t lo, hi;
+  __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+  return ((uint64_t)lo) | (((uint64_t)hi) << 32);
 }
 
-void print_usage(char *binary) {
-  fprintf(stderr, "Usage: %s [-c|-a] [-s SCENE] [-r SEED]\n", binary);
-  fprintf(stderr, "-c        Run using C implementation (default)\n"
-                  "-a        Run using ASM implementation\n"
-                  "-s SCENE  Render the scene described in SCENE\n"
-                  "-r SEED   Seed the RNG with SEED\n");
+uint64_t get_time_measure(enum measure_type mtype) {
+  uint64_t measure;
+
+  if (mtype == MEASURE_NONE) {
+    measure = 0;
+  } else if (mtype == MEASURE_CLOCK_CYCLES) {
+    measure = exec_rdtsc();
+  } else {
+    struct timespec t;
+    clockid_t clock =
+      mtype == MEASURE_REAL_TIME_NANO ? CLOCK_REALTIME : CLOCK_PROCESS_CPUTIME_ID;
+    clock_gettime(clock, &t);
+    measure = t.tv_sec * 1e9 + t.tv_nsec;
+  }
+
+  return measure;
+}
+
+void run_tracer(enum tracer_type ttype, Scene *s, bool measuring) {
+  if (ttype == TRACER_C)
+    tracer_c(s, measuring);
+  else
+    tracer_asm(s->camera, s->output, s->world, s->framebuffer, measuring);
 }

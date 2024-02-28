@@ -3,8 +3,9 @@
 
 #include "scene/Scene.h"
 
-void tracer_c(Scene *);
-void tracer_asm(Camera, Output, List *, Color *);
+void tracer_c(Scene *, bool);
+void tracer_asm(Camera, Output, List *, Color *, bool);
+void report(int, int);
 
 void mtsrand(int);
 float mtfrand();

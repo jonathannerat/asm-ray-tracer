@@ -4,6 +4,8 @@ global mtsrand
 global mtfrand
 global mtfrand_vec
 
+extern report
+
 %include "constants.nasm"
 %include "macros.nasm"
 
@@ -24,7 +26,7 @@ section .text
 %include "mt.nasm"
 
 ; Ray Tracer
-; tracer_asm(Camera c[rbp+0x10], Output o[rdi:rsi], List *world[rdx], Color *buf[rcx]);
+; tracer_asm(Camera c[rbp+0x10], Output o[rdi:rsi], List *world[rdx], Color *buf[rcx], bool measuring[r8]);
 tracer_asm: ;{{{
     push rbp
     mov rbp, rsp
@@ -53,12 +55,22 @@ tracer_asm: ;{{{
 
     ; Color *f = $rcx
     mov [rsp+0x28], rcx
+
+    ; bool measuring = $r8d
+    mov [rsp+0x40], r8d
     ;}}}
 
     xor r12d, r12d ; j = 0
     height_loop: ;{{{
-
-        ; error on j==19 && i == 111 && k == (24;30)
+        ; reporting current row
+        mov r13d, [rsp+0x40]
+        test r13d, r13d
+        jnz skip_report
+        mov edi, r12d
+        inc edi
+        mov esi, [rsp+0x10]
+        call report
+        skip_report:
 
         xor r13d, r13d ; i = 0
         width_loop: ;{{{
