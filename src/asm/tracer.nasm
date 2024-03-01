@@ -43,9 +43,9 @@ tracer_asm: ;{{{
     ; output.height= $edi
     ; output.spp= $rsi>>32
     ; output.depth= $esi
-    mov [rsp+0x10], edi ; save Output height
+    mov [rsp+0x10], edi ; save Output width
     shr rdi, 32
-    mov [rsp+0x14], edi ; save Output width
+    mov [rsp+0x14], edi ; save Output height
     mov [rsp+0x18], esi ; save Output spp
     shr rsi, 32
     mov [rsp+0x1C], esi ; save Output depth
@@ -68,7 +68,7 @@ tracer_asm: ;{{{
         jnz skip_report
         mov edi, r12d
         inc edi
-        mov esi, [rsp+0x10]
+        mov esi, [rsp+0x14]
         call report
         skip_report:
 
@@ -97,17 +97,17 @@ tracer_asm: ;{{{
 
             mov rbx, [rsp+0x28] ; fb
             mov r14d, r12d
-            imul r14d, [rsp+0x14]
+            imul r14d, [rsp+0x10]
             add r14d, r13d
             add r14d, r14d ; multiply offset by 2
             movups [rbx+r14*8], xmm0 ; then by 8, so that we offset by 16
 
             inc r13d
-            cmp r13d, [rsp+0x14]
+            cmp r13d, [rsp+0x10]
             jl width_loop ;}}}
 
         inc r12d
-        cmp r12d, [rsp+0x10]
+        cmp r12d, [rsp+0x14]
         jl height_loop ;}}}
 
     add rsp, 0x50
