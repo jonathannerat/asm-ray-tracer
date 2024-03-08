@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     }
     fputc('\n', stderr);
 
-    printf("%" PRIu64 "\n", acc / (int64_t)c.measurements);
+    printf("%" PRIu64 "\n", acc / (uint64_t)c.measurements);
   }
 
   scene_free(s);
