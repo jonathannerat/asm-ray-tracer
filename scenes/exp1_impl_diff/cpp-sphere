@@ -1,0 +1,8 @@
+output: width=1366 height=768 spp=10 depth=5
+camera: from=0,2.5,2.5 to=0,1,0
+materials:
+    lambertian=.41,.38,.43
+    lambertian=.93,1,.2
+objects:
+    plane: material=0
+    sphere: center=0,1,0 radius=.8 material=1

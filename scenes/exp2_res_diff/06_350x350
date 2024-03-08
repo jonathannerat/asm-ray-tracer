@@ -1,0 +1,133 @@
+output: width=350 height=350 spp=20 depth=10
+camera: from=-4.000,2.000,-4.000 to=0.000,0.000,0.000
+materials:
+    lambertian=0.532,0.056,0.000
+    dielectric: albedo=0.228,0.737,0.895 ir=1.148
+    dielectric: albedo=0.637,0.201,0.292 ir=1.191
+    lambertian=0.905,0.613,0.825
+    dielectric: albedo=0.059,0.568,0.757 ir=1.299
+    metal: albedo=0.063,0.039,0.037 fuzz=0.555
+    lambertian=0.538,0.788,0.360
+    lambertian=0.291,0.201,0.450
+    metal: albedo=0.388,0.108,0.112 fuzz=0.900
+    lambertian=0.407,0.028,0.711
+    metal: albedo=0.783,0.347,0.474 fuzz=0.594
+    metal: albedo=0.461,0.029,0.564 fuzz=0.002
+    dielectric: albedo=0.914,0.683,0.435 ir=1.018
+    lambertian=0.270,0.685,0.480
+    dielectric: albedo=0.191,0.741,0.076 ir=1.108
+    lambertian=0.180,0.104,0.684
+    metal: albedo=0.857,0.104,0.649 fuzz=0.739
+    metal: albedo=0.187,0.128,0.943 fuzz=0.711
+    dielectric: albedo=0.369,0.722,0.994 ir=1.079
+    lambertian=0.987,0.154,0.854
+    lambertian=0.770,0.909,0.230
+    lambertian=0.711,0.639,0.314
+    lambertian=0.503,0.196,0.011
+    metal: albedo=0.595,0.311,0.921 fuzz=0.991
+    lambertian=0.133,0.157,0.030
+    lambertian=0.181,0.985,0.011
+    lambertian=0.515,0.138,0.467
+    lambertian=0.715,0.468,0.082
+    dielectric: albedo=0.265,0.867,0.984 ir=1.315
+    lambertian=0.587,0.083,0.272
+    lambertian=0.093,0.542,0.375
+    metal: albedo=0.222,0.777,0.850 fuzz=0.236
+    lambertian=0.213,0.156,0.073
+    metal: albedo=0.497,0.345,0.974 fuzz=0.599
+    lambertian=0.845,0.162,0.143
+    metal: albedo=0.929,0.802,0.035 fuzz=0.460
+    metal: albedo=0.365,0.589,0.789 fuzz=0.968
+    dielectric: albedo=0.367,0.585,0.838 ir=1.262
+    dielectric: albedo=0.396,0.349,0.593 ir=1.446
+    metal: albedo=0.817,0.778,0.366 fuzz=0.972
+    lambertian=0.730,0.067,0.772
+    metal: albedo=0.626,0.205,0.978 fuzz=0.834
+    metal: albedo=0.885,0.369,0.851 fuzz=0.096
+    dielectric: albedo=0.873,0.515,0.924 ir=1.158
+    lambertian=0.290,0.227,0.075
+    lambertian=0.828,0.507,0.188
+    lambertian=0.499,0.951,0.572
+    metal: albedo=0.969,0.545,0.267 fuzz=0.706
+    metal: albedo=0.055,0.229,0.867 fuzz=0.733
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    triangle: -3.000,0.118,-2.808 -2.778,0.118,-3.192 -3.222,0.118,-3.192 material=0
+    triangle: -3.000,0.561,-3.000 -3.222,0.118,-3.192 -2.778,0.118,-3.192 material=0
+    triangle: -3.000,0.561,-3.000 -2.778,0.118,-3.192 -3.000,0.118,-2.808 material=0
+    triangle: -3.000,0.561,-3.000 -3.000,0.118,-2.808 -3.222,0.118,-3.192 material=0
+    sphere: material=1 center=-2.000,0.463,-3.000 radius=0.267
+    box: material=2 pmin=-1.225,0.009,-3.225 pmax=-0.775,0.458,-2.775
+    box: material=3 pmin=-0.140,0.288,-3.140 pmax=0.140,0.568,-2.860
+    box: material=4 pmin=0.744,0.080,-3.256 pmax=1.256,0.592,-2.744
+    box: material=5 pmin=1.858,0.203,-3.142 pmax=2.142,0.487,-2.858
+    triangle: 3.000,0.210,-2.726 3.316,0.210,-3.274 2.684,0.210,-3.274 material=6
+    triangle: 3.000,0.843,-3.000 2.684,0.210,-3.274 3.316,0.210,-3.274 material=6
+    triangle: 3.000,0.843,-3.000 3.316,0.210,-3.274 3.000,0.210,-2.726 material=6
+    triangle: 3.000,0.843,-3.000 3.000,0.210,-2.726 2.684,0.210,-3.274 material=6
+    triangle: -3.000,0.248,-1.709 -2.663,0.248,-2.291 -3.337,0.248,-2.291 material=7
+    triangle: -3.000,0.921,-2.000 -3.337,0.248,-2.291 -2.663,0.248,-2.291 material=7
+    triangle: -3.000,0.921,-2.000 -2.663,0.248,-2.291 -3.000,0.248,-1.709 material=7
+    triangle: -3.000,0.921,-2.000 -3.000,0.248,-1.709 -3.337,0.248,-2.291 material=7
+    triangle: -2.000,0.280,-1.792 -1.760,0.280,-2.208 -2.240,0.280,-2.208 material=8
+    triangle: -2.000,0.760,-2.000 -2.240,0.280,-2.208 -1.760,0.280,-2.208 material=8
+    triangle: -2.000,0.760,-2.000 -1.760,0.280,-2.208 -2.000,0.280,-1.792 material=8
+    triangle: -2.000,0.760,-2.000 -2.000,0.280,-1.792 -2.240,0.280,-2.208 material=8
+    sphere: material=9 center=-1.000,0.272,-2.000 radius=0.077
+    sphere: material=10 center=0.000,0.421,-2.000 radius=0.282
+    box: material=11 pmin=0.796,0.108,-2.204 pmax=1.204,0.515,-1.796
+    box: material=12 pmin=1.673,0.084,-2.327 pmax=2.327,0.739,-1.673
+    box: material=13 pmin=2.945,0.137,-2.055 pmax=3.055,0.248,-1.945
+    triangle: -3.000,0.076,-0.756 -2.718,0.076,-1.244 -3.282,0.076,-1.244 material=14
+    triangle: -3.000,0.641,-1.000 -3.282,0.076,-1.244 -2.718,0.076,-1.244 material=14
+    triangle: -3.000,0.641,-1.000 -2.718,0.076,-1.244 -3.000,0.076,-0.756 material=14
+    triangle: -3.000,0.641,-1.000 -3.000,0.076,-0.756 -3.282,0.076,-1.244 material=14
+    sphere: material=15 center=-2.000,0.330,-1.000 radius=0.328
+    box: material=16 pmin=-1.201,0.049,-1.201 pmax=-0.799,0.451,-0.799
+    box: material=17 pmin=-0.127,0.079,-1.127 pmax=0.127,0.333,-0.873
+    sphere: material=18 center=1.000,0.367,-1.000 radius=0.321
+    triangle: 2.000,0.067,-0.921 2.091,0.067,-1.079 1.909,0.067,-1.079 material=19
+    triangle: 2.000,0.249,-1.000 1.909,0.067,-1.079 2.091,0.067,-1.079 material=19
+    triangle: 2.000,0.249,-1.000 2.091,0.067,-1.079 2.000,0.067,-0.921 material=19
+    triangle: 2.000,0.249,-1.000 2.000,0.067,-0.921 1.909,0.067,-1.079 material=19
+    sphere: material=20 center=3.000,0.267,-1.000 radius=0.183
+    sphere: material=21 center=-3.000,0.454,0.000 radius=0.260
+    box: material=22 pmin=-2.128,0.265,-0.128 pmax=-1.872,0.521,0.128
+    sphere: material=23 center=-1.000,0.154,0.000 radius=0.060
+    box: material=24 pmin=-0.070,0.137,-0.070 pmax=0.070,0.276,0.070
+    sphere: material=25 center=1.000,0.439,0.000 radius=0.332
+    sphere: material=26 center=2.000,0.334,0.000 radius=0.243
+    box: material=27 pmin=2.881,0.127,-0.119 pmax=3.119,0.364,0.119
+    triangle: -3.000,0.133,1.067 -2.923,0.133,0.933 -3.077,0.133,0.933 material=28
+    triangle: -3.000,0.286,1.000 -3.077,0.133,0.933 -2.923,0.133,0.933 material=28
+    triangle: -3.000,0.286,1.000 -2.923,0.133,0.933 -3.000,0.133,1.067 material=28
+    triangle: -3.000,0.286,1.000 -3.000,0.133,1.067 -3.077,0.133,0.933 material=28
+    triangle: -2.000,0.140,1.209 -1.758,0.140,0.791 -2.242,0.140,0.791 material=29
+    triangle: -2.000,0.624,1.000 -2.242,0.140,0.791 -1.758,0.140,0.791 material=29
+    triangle: -2.000,0.624,1.000 -1.758,0.140,0.791 -2.000,0.140,1.209 material=29
+    triangle: -2.000,0.624,1.000 -2.000,0.140,1.209 -2.242,0.140,0.791 material=29
+    box: material=30 pmin=-1.173,0.280,0.827 pmax=-0.827,0.626,1.173
+    triangle: 0.000,0.051,1.211 0.244,0.051,0.789 -0.244,0.051,0.789 material=31
+    triangle: 0.000,0.538,1.000 -0.244,0.051,0.789 0.244,0.051,0.789 material=31
+    triangle: 0.000,0.538,1.000 0.244,0.051,0.789 0.000,0.051,1.211 material=31
+    triangle: 0.000,0.538,1.000 0.000,0.051,1.211 -0.244,0.051,0.789 material=31
+    sphere: material=32 center=1.000,0.348,1.000 radius=0.228
+    sphere: material=33 center=2.000,0.493,1.000 radius=0.346
+    sphere: material=34 center=3.000,0.562,1.000 radius=0.323
+    box: material=35 pmin=-3.299,0.025,1.701 pmax=-2.701,0.623,2.299
+    box: material=36 pmin=-2.064,0.087,1.936 pmax=-1.936,0.214,2.064
+    sphere: material=37 center=-1.000,0.584,2.000 radius=0.291
+    sphere: material=38 center=0.000,0.102,2.000 radius=0.083
+    box: material=39 pmin=0.855,0.300,1.855 pmax=1.145,0.589,2.145
+    sphere: material=40 center=2.000,0.292,2.000 radius=0.288
+    box: material=41 pmin=2.886,0.133,1.886 pmax=3.114,0.361,2.114
+    sphere: material=42 center=-3.000,0.616,3.000 radius=0.329
+    box: material=43 pmin=-2.165,0.294,2.835 pmax=-1.835,0.624,3.165
+    box: material=44 pmin=-1.176,0.297,2.824 pmax=-0.824,0.650,3.176
+    sphere: material=45 center=0.000,0.491,3.000 radius=0.283
+    box: material=46 pmin=0.786,0.213,2.786 pmax=1.214,0.640,3.214
+    box: material=47 pmin=1.922,0.127,2.922 pmax=2.078,0.283,3.078
+    sphere: material=48 center=3.000,0.496,3.000 radius=0.226
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=49
+    plane: material=50
