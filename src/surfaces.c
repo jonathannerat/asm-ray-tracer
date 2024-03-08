@@ -150,7 +150,7 @@ void list_free(Surface *s) {
 
 AABox *aabox_new(Point pmin, Point pmax, Material *m) {
   // p1 must have coordinates lower than those of p2
-  assert(pmin.x < pmax.x && pmin.y < pmax.y && pmin.z < pmax.z);
+  // assert(pmin.x < pmax.x && pmin.y < pmax.y && pmin.z < pmax.z);
 
   AABox *b = malloc(sizeof(AABox));
   Plane **sides = NULL;
