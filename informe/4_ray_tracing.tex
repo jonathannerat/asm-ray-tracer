@@ -7,7 +7,7 @@ imagen de la misma lanzando rayos desde un origen (cámara) hacia una ventana, y
 trazando la trayectoria de los mismos para ver sobre que objetos / materiales
 incidió (Figura \ref{fig:rt-camera-throwing-rays-into-scene}).
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=.7\textwidth]{imgs/rt-camera-throwing-rays-into-scene.png}
     \caption{Cámara lanzando rayos por una ventana hacia una escena}
@@ -44,7 +44,7 @@ disco. La apertura es el diámetro de la lente, y la distancia de foco
 es la distancia entre el disco y el plano de foco (plano sobre el que estará la
 ``grilla'' que determinará los pixeles de la imagen).
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=.7\textwidth]{imgs/rt-camera-rays-through-lens.png}
     \caption{Lente y plano de foco}
@@ -136,7 +136,7 @@ despejar de la ecuación del plano:
     t &= \frac{(O - P) \cdot N}{D \cdot N} \\
 \end{align*}
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{PlaneHit}{$Plane, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \State $O, N \gets Plane$ \Comment{Descomponemos en origen y normal}
@@ -197,7 +197,7 @@ en 2 puntos, uno de entrada y uno de salida.
 Para decidir si el rayo intersecta o no, podemos calcular el discriminante y ver
 si es negativo (no intersecta) o no.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{SphereHit}{$Sphere, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \State $C, r \gets Sphere$ \Comment{Descomponemos en centro y radio}
@@ -249,7 +249,7 @@ usamos las coordenadas de los 2 vertices que definen al cubo: cada coordenada
 del punto de intersección debe estar entre las coordenadas correspondientes de
 los vertices.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{CubeHit}{$Cube, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \State $vmin \gets Cube.vmin$ \Comment{Obtenemos los vertices del cubo}
@@ -318,7 +318,7 @@ para cada borde. Es decir, sea $P$ un punto en el plano del triangulo, si:
 
 , significa que $P$ esta ``dentro'' del triangulo para cada borde.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{TriangleHit}{$Triangle, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \State $P_1, P_2, P_3 \gets Triangle$ \Comment{Obtenemos los vertices del triangulo}
@@ -374,7 +374,7 @@ cada nodo tenga más de \textit{max leaf size} objetos. Los objetos del nodo
 padre se dividen en dos mitades (usando el eje sobre el que están mejor
 distribuidos como referencia), y se reparten a cada nodo hijo.
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
@@ -407,7 +407,7 @@ utilizando los \textit{bounding boxes}. En lugar de calcular la intersección
 entre un rayo y cada objeto, hacemos una búsqueda binaria en la jerarquía de
 nodos, intersectando el rayo con el \textit{bounding box} de cada nodo.
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=\textwidth]{imgs/kdtree-ray-intersection.png}
     \caption{Intersección entre un rayo y el KDTree}
@@ -440,7 +440,7 @@ a la cámara, de modo que los rayos intersecten a todos los objetos, por lo que
 se realizarían $O(n+\log n)=O(n)$ intersecciones. Pero en mallas de triángulos
 (que es el principal uso que le daremos), ese caso no es tan común.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{NodeHit}{$Node, Ray, t_{min}, t_{max}$}{$\rightarrow (hit, record)$}
     \If {$Ray$ doesn't hit $Node.bounding\_box$}
@@ -536,7 +536,7 @@ dispersa).
 Para crear este material solo necesitamos un color $A$, que será el valor que se
 devuelva al llamar al método \texttt{Emit} sobre el mismo.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{DiffuseLightEmit}{$Light$}{$\rightarrow A$}
     \State \Return $Light.A$
@@ -552,7 +552,7 @@ Un material difuso o lambertiano se caracteriza por verse uniformemente
 iluminado de todas las direcciones. Si bien posee un color propio $A$, también
 toma parte de los colores de su entorno para formar el color final de la imagen.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
     \Function{LambertianScatter}{$Lambertian, r_{in}, rec$}{$\rightarrow
     (did\_scatter, A, R_{out})$}
@@ -587,7 +587,7 @@ parametrizar un material metálico nuevamente con un color $A$, y con un valor d
 sobre la superficie, y para $f>0$, se le suma algo de aleatoriedad al rayo de
 salida, cuyo aporte incrementa con $f$.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
     \Function{MetalScatter}{$Metal, r_{in}, rec$}{$\rightarrow
     (did\_scatter, A, R_{out})$}
@@ -666,7 +666,7 @@ Se puede probar que cada componente se calcula como:
 Y finalmente, el rayo refractado se puede calcular con el algoritmo
 \ref{alg:refract}.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
     \Function{Refract}{$R$, $n$, $i$}{ $\rightarrow R'$}
 
@@ -701,7 +701,7 @@ alternativa simple y que para nuestro caso de uso alcanza. La misma se basa en
 el uso de una propiedad llamada \textit{reflectance} que se calcula usando el
 coseno del ángulo de incidencia y la relación entre los índices de refracción.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{Reflectance}{$\cos_{\theta}$, $i$}{ $\rightarrow R'$}
     \State $r \gets \frac{1 - i}{1 + i}$
@@ -716,7 +716,7 @@ cuyo coseno es $\cos_{\theta}$, y con un radio de refracción $i = \eta / \eta'$
 El algoritmo \ref{alg:reflectance} calcula este valor. Lo que luego se pide en
 la aproximación es que sea mayor que un valor aleatorio entre $[0, 1]$.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \begin{algorithmic}[1]
 \Function{DielectricScatter}{$Dielectric, r_{in}, rec$}{$\rightarrow
     (did\_scatter, A, R_{out})$}
