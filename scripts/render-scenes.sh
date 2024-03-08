@@ -12,5 +12,5 @@ for f in $(find "$SCENES_DIR" -type f | sort); do
     echo "Rendering $scene with C tracer into $out-c.png"
     ./ray_tracer -c -s "$f" | convert ppm:- "$out-c.png"
     echo "Rendering $scene with ASM tracer into $out-asm.png"
-    ./ray_tracer -c -s "$f" | convert ppm:- "$out-asm.png"
+    ./ray_tracer -a -s "$f" | convert ppm:- "$out-asm.png"
 done
