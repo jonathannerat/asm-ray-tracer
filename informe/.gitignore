@@ -4,3 +4,6 @@
 # build files
 build/
 informe.pdf
+
+# jupyter
+.ipynb_checkpoints/

@@ -119,10 +119,45 @@ resoluciones}
 
 Inspirado en el experimento realizado por Mongi en su trabajo, compararemos los
 tiempos de ejecución de las implementaciones en C y ASM para una misma escena,
-pero variando la resolución de la imagen de salida.
+pero variando la resolución de la imagen de salida. Se espera que ASM sea
+ampliamente superior a C en este aspecto.
 
-% generar una escena usando todos los recursos posibles (objetos, materiales,
-% meshs, etc.), y medir los distintos tipos de tiempos
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{./imgs/exp2-scene.png}
+    \caption{Escena a utilizarse para la medición}
+    \label{fig:exp2-scene}
+\end{figure}
+
+Usaremos la escena que se muestra en la figura \ref{fig:exp2-scene} para
+realizar las mediciones usando las opciones \texttt{-m 1 -n 3} del programa, que
+le indica realizar 3 mediciones de tipo 1 (cantidad de ciclos de clock), y
+obtener el promedio.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./imgs/exp2-res-bar.png}
+        \caption{Ciclos de clock por resolución}
+        \label{fig:exp2-res-bar}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./imgs/exp2-res-line.png}
+        \caption{Ciclos de clock por cantidad de pixeles}
+        \label{fig:exp2-res-line}
+    \end{subfigure}
+    \caption{Resultado del experimento en 2 formatos}
+    \label{fig:exp2-res}
+\end{figure}
+
+En la figura \ref{fig:exp2-res} podemos ver el resultado en 2 formatos. En
+\ref{fig:exp2-res-bar} vemos como en cada resolución, ASM requiere de muchos
+menos ciclos para generar la misma imagen que en C. Por otro lado, en
+\ref{fig:exp2-res-line} se puede ver como estas magnitudes crecen de forma
+lineal respecto a la cantidad de pixeles de cada imagen, lo cual tiene sentido.
 
 \subsection{Tiempos de ejecución por tipo de objeto para distintas cantidades}
 
