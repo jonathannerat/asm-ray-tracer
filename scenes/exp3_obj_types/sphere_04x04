@@ -1,0 +1,40 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-2.500,2.000,-2.500 to=0.000,0.000,0.000
+materials:
+    metal: albedo=0.983,0.047,0.077 fuzz=0.361
+    metal: albedo=0.962,0.895,0.967 fuzz=0.781
+    lambertian=0.602,0.236,0.298
+    metal: albedo=0.456,0.078,0.490 fuzz=0.844
+    lambertian=0.306,0.002,0.188
+    metal: albedo=0.348,0.646,0.114 fuzz=0.472
+    lambertian=0.528,0.080,0.845
+    metal: albedo=0.421,0.544,0.952 fuzz=0.023
+    metal: albedo=0.201,0.457,0.033 fuzz=0.985
+    metal: albedo=0.512,0.532,0.977 fuzz=0.852
+    metal: albedo=0.876,0.481,0.731 fuzz=0.323
+    metal: albedo=0.609,0.880,0.037 fuzz=0.151
+    lambertian=0.650,0.353,0.148
+    lambertian=0.130,0.252,0.565
+    metal: albedo=0.644,0.060,0.459 fuzz=0.227
+    dielectric: albedo=0.339,0.767,0.151 ir=1.332
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    sphere: material=0 center=-1.500,0.318,-1.500 radius=0.055
+    sphere: material=1 center=-0.500,0.279,-1.500 radius=0.238
+    sphere: material=2 center=0.500,0.331,-1.500 radius=0.103
+    sphere: material=3 center=1.500,0.461,-1.500 radius=0.222
+    sphere: material=4 center=-1.500,0.339,-0.500 radius=0.275
+    sphere: material=5 center=-0.500,0.574,-0.500 radius=0.327
+    sphere: material=6 center=0.500,0.352,-0.500 radius=0.077
+    sphere: material=7 center=1.500,0.476,-0.500 radius=0.202
+    sphere: material=8 center=-1.500,0.474,0.500 radius=0.188
+    sphere: material=9 center=-0.500,0.403,0.500 radius=0.302
+    sphere: material=10 center=0.500,0.462,0.500 radius=0.286
+    sphere: material=11 center=1.500,0.379,0.500 radius=0.215
+    sphere: material=12 center=-1.500,0.474,1.500 radius=0.176
+    sphere: material=13 center=-0.500,0.472,1.500 radius=0.233
+    sphere: material=14 center=0.500,0.222,1.500 radius=0.130
+    sphere: material=15 center=1.500,0.355,1.500 radius=0.067
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=16
+    plane: material=17

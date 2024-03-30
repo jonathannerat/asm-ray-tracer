@@ -1,2 +1,22 @@
 \newpage
 \section{Resultados y Conclusión} \label{sec:conclusion}
+
+En este trabajo reescribimos en C un ray tracer inicialmente hecho en C++, y
+luego en ASM haciendo uso de instrucciones SIMD para mejorar la performance de
+las operaciones vectoriales.
+
+La mejora obtenida (calculada como la relación entre $t_C/t_{ASM}$), ronda entre
+5 y 7 veces más rápido. Si bien la mejora obtenida por Mongi es consistente,
+mientras que la nuestra se encuentra en un rango, tenemos que tener en cuenta
+que nuestra implementación hace uso de aleatoriedad para calcular el color de
+cada pixel.
+
+Una de las principales diferencias con la implementación de Mongi, y que también
+puede ser el origen de una nueva mejora en la performance, tiene que ver con la
+iluminación. Por ahora, nuestro Ray Tracer calcula los colores de los materiales
+haciendo rebotar el rayo hasta que impacte con otro material emisor de luz. Por
+otro lado, Mongi le asigna un color a cada objeto, y calcula el color final con
+la intensidad, y el ángulo con el que incide la luz sobre la superficie de
+impacto. Agregar esta mejora, implicaría que podríamos obtener imágenes con
+buena iluminación incluso con un \texttt{max\_depth=1}, lo cual por el momento
+no es posible.

@@ -1,0 +1,208 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-5.500,2.000,-5.500 to=0.000,0.000,0.000
+materials:
+    metal: albedo=0.619,0.463,0.947 fuzz=0.515
+    dielectric: albedo=0.446,0.211,0.363 ir=1.159
+    metal: albedo=0.225,0.743,0.773 fuzz=0.611
+    lambertian=0.983,0.004,0.904
+    metal: albedo=0.463,0.874,0.509 fuzz=0.559
+    lambertian=0.788,0.956,0.000
+    metal: albedo=0.236,0.643,0.909 fuzz=0.602
+    metal: albedo=0.500,0.699,0.251 fuzz=0.822
+    dielectric: albedo=0.659,0.336,0.021 ir=1.296
+    lambertian=0.769,0.651,0.555
+    lambertian=0.735,0.900,0.920
+    lambertian=0.475,0.987,0.945
+    metal: albedo=0.963,0.057,0.882 fuzz=0.623
+    dielectric: albedo=0.023,0.909,0.924 ir=1.481
+    lambertian=0.492,0.856,0.286
+    lambertian=0.791,0.612,0.004
+    lambertian=0.859,0.999,0.342
+    dielectric: albedo=0.469,0.836,0.669 ir=1.075
+    metal: albedo=0.606,0.102,0.584 fuzz=0.326
+    metal: albedo=0.470,0.708,0.746 fuzz=0.187
+    lambertian=0.833,0.273,0.931
+    lambertian=0.948,0.283,0.316
+    dielectric: albedo=0.201,0.366,0.796 ir=1.351
+    lambertian=0.785,0.968,0.789
+    lambertian=0.514,0.264,0.550
+    lambertian=0.785,0.588,0.727
+    metal: albedo=0.111,0.200,0.339 fuzz=0.957
+    lambertian=0.113,0.578,0.575
+    metal: albedo=0.206,0.924,0.290 fuzz=0.066
+    dielectric: albedo=0.410,0.202,0.723 ir=1.011
+    metal: albedo=0.608,0.525,0.320 fuzz=0.301
+    metal: albedo=0.996,0.929,0.842 fuzz=0.032
+    lambertian=0.248,0.591,0.537
+    metal: albedo=0.887,0.441,0.910 fuzz=0.703
+    lambertian=0.423,0.401,0.941
+    metal: albedo=0.055,0.576,0.705 fuzz=0.422
+    metal: albedo=0.567,0.214,0.623 fuzz=0.029
+    lambertian=0.540,0.142,0.806
+    lambertian=0.891,0.349,0.984
+    metal: albedo=0.031,0.878,0.557 fuzz=0.323
+    metal: albedo=0.882,0.239,0.413 fuzz=0.036
+    metal: albedo=0.340,0.498,0.450 fuzz=0.452
+    lambertian=0.590,0.174,0.326
+    lambertian=0.285,0.258,0.683
+    dielectric: albedo=0.816,0.095,0.581 ir=1.339
+    lambertian=0.251,0.694,0.392
+    dielectric: albedo=0.533,0.637,0.082 ir=1.407
+    metal: albedo=0.173,0.242,0.940 fuzz=0.218
+    metal: albedo=0.567,0.429,0.388 fuzz=0.602
+    metal: albedo=0.483,0.070,0.739 fuzz=0.567
+    lambertian=0.753,0.263,0.274
+    metal: albedo=0.740,0.434,0.126 fuzz=0.215
+    lambertian=0.903,0.186,0.479
+    metal: albedo=0.434,0.190,0.929 fuzz=0.317
+    metal: albedo=0.005,0.279,0.389 fuzz=0.488
+    dielectric: albedo=0.777,0.180,0.315 ir=1.194
+    metal: albedo=0.821,0.329,0.778 fuzz=0.563
+    metal: albedo=0.569,0.211,0.548 fuzz=0.057
+    metal: albedo=0.156,0.853,0.512 fuzz=0.624
+    metal: albedo=0.101,0.282,0.358 fuzz=0.713
+    lambertian=0.278,0.246,0.445
+    metal: albedo=0.168,0.142,0.540 fuzz=0.208
+    metal: albedo=0.034,0.506,0.720 fuzz=0.896
+    lambertian=0.683,0.789,0.030
+    dielectric: albedo=0.265,0.774,0.404 ir=1.107
+    lambertian=0.216,0.044,0.312
+    metal: albedo=0.276,0.657,0.252 fuzz=0.067
+    lambertian=0.952,0.266,0.227
+    metal: albedo=0.836,0.453,0.272 fuzz=0.839
+    metal: albedo=0.538,0.402,0.393 fuzz=0.809
+    metal: albedo=0.597,0.449,0.146 fuzz=0.134
+    dielectric: albedo=0.944,0.772,0.589 ir=1.220
+    lambertian=0.760,0.326,0.140
+    metal: albedo=1.000,0.129,0.294 fuzz=0.300
+    lambertian=0.993,0.554,0.000
+    metal: albedo=0.404,0.507,0.474 fuzz=0.532
+    dielectric: albedo=0.332,0.191,0.626 ir=1.267
+    metal: albedo=0.820,0.083,0.261 fuzz=0.909
+    dielectric: albedo=0.936,0.923,0.868 ir=1.412
+    lambertian=0.685,0.316,0.281
+    metal: albedo=0.090,0.134,0.562 fuzz=0.094
+    lambertian=0.115,0.148,0.109
+    lambertian=0.947,0.944,0.063
+    lambertian=0.582,0.911,0.564
+    lambertian=0.391,0.406,0.366
+    metal: albedo=0.934,0.798,0.832 fuzz=0.985
+    lambertian=0.149,0.063,0.203
+    lambertian=0.420,0.613,0.179
+    dielectric: albedo=0.454,0.297,0.446 ir=1.115
+    lambertian=0.419,0.770,0.783
+    lambertian=0.495,0.895,0.194
+    dielectric: albedo=0.620,0.828,0.394 ir=1.339
+    lambertian=0.085,0.029,0.157
+    metal: albedo=0.818,0.426,0.827 fuzz=0.319
+    dielectric: albedo=0.111,0.283,0.569 ir=1.458
+    dielectric: albedo=0.649,0.459,0.561 ir=1.328
+    lambertian=0.969,0.731,0.054
+    lambertian=0.397,0.876,0.005
+    dielectric: albedo=0.030,0.491,0.680 ir=1.013
+    lambertian=0.708,0.091,0.344
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    box: material=0 pmin=-4.708,0.169,-4.708 pmax=-4.292,0.585,-4.292
+    box: material=1 pmin=-3.691,0.232,-4.691 pmax=-3.309,0.613,-4.309
+    box: material=2 pmin=-2.695,0.080,-4.695 pmax=-2.305,0.470,-4.305
+    box: material=3 pmin=-1.639,0.095,-4.639 pmax=-1.361,0.372,-4.361
+    box: material=4 pmin=-0.640,0.038,-4.640 pmax=-0.360,0.319,-4.360
+    box: material=5 pmin=0.350,0.234,-4.650 pmax=0.650,0.533,-4.350
+    box: material=6 pmin=1.374,0.108,-4.626 pmax=1.626,0.361,-4.374
+    box: material=7 pmin=2.161,0.142,-4.839 pmax=2.839,0.821,-4.161
+    box: material=8 pmin=3.176,0.189,-4.824 pmax=3.824,0.837,-4.176
+    box: material=9 pmin=4.424,0.073,-4.576 pmax=4.576,0.226,-4.424
+    box: material=10 pmin=-4.580,0.149,-3.580 pmax=-4.420,0.309,-3.420
+    box: material=11 pmin=-3.628,0.129,-3.628 pmax=-3.372,0.385,-3.372
+    box: material=12 pmin=-2.743,0.131,-3.743 pmax=-2.257,0.617,-3.257
+    box: material=13 pmin=-1.563,0.104,-3.563 pmax=-1.437,0.229,-3.437
+    box: material=14 pmin=-0.648,0.081,-3.648 pmax=-0.352,0.376,-3.352
+    box: material=15 pmin=0.236,0.192,-3.764 pmax=0.764,0.721,-3.236
+    box: material=16 pmin=1.266,0.237,-3.734 pmax=1.734,0.705,-3.266
+    box: material=17 pmin=2.370,0.070,-3.630 pmax=2.630,0.330,-3.370
+    box: material=18 pmin=3.407,0.223,-3.593 pmax=3.593,0.408,-3.407
+    box: material=19 pmin=4.248,0.217,-3.752 pmax=4.752,0.722,-3.248
+    box: material=20 pmin=-4.650,0.160,-2.650 pmax=-4.350,0.461,-2.350
+    box: material=21 pmin=-3.679,0.256,-2.679 pmax=-3.321,0.614,-2.321
+    box: material=22 pmin=-2.806,0.079,-2.806 pmax=-2.194,0.691,-2.194
+    box: material=23 pmin=-1.692,0.197,-2.692 pmax=-1.308,0.582,-2.308
+    box: material=24 pmin=-0.794,0.062,-2.794 pmax=-0.206,0.651,-2.206
+    box: material=25 pmin=0.303,0.051,-2.697 pmax=0.697,0.445,-2.303
+    box: material=26 pmin=1.333,0.170,-2.667 pmax=1.667,0.503,-2.333
+    box: material=27 pmin=2.187,0.017,-2.813 pmax=2.813,0.643,-2.187
+    box: material=28 pmin=3.215,0.259,-2.785 pmax=3.785,0.829,-2.215
+    box: material=29 pmin=4.152,0.217,-2.848 pmax=4.848,0.912,-2.152
+    box: material=30 pmin=-4.777,0.120,-1.777 pmax=-4.223,0.674,-1.223
+    box: material=31 pmin=-3.587,0.121,-1.587 pmax=-3.413,0.296,-1.413
+    box: material=32 pmin=-2.838,0.196,-1.838 pmax=-2.162,0.872,-1.162
+    box: material=33 pmin=-1.665,0.082,-1.665 pmax=-1.335,0.411,-1.335
+    box: material=34 pmin=-0.578,0.051,-1.578 pmax=-0.422,0.208,-1.422
+    box: material=35 pmin=0.256,0.252,-1.744 pmax=0.744,0.741,-1.256
+    box: material=36 pmin=1.356,0.117,-1.644 pmax=1.644,0.404,-1.356
+    box: material=37 pmin=2.412,0.181,-1.588 pmax=2.588,0.356,-1.412
+    box: material=38 pmin=3.440,0.048,-1.560 pmax=3.560,0.168,-1.440
+    box: material=39 pmin=4.218,0.294,-1.782 pmax=4.782,0.858,-1.218
+    box: material=40 pmin=-4.639,0.005,-0.639 pmax=-4.361,0.283,-0.361
+    box: material=41 pmin=-3.783,0.113,-0.783 pmax=-3.217,0.679,-0.217
+    box: material=42 pmin=-2.663,0.173,-0.663 pmax=-2.337,0.499,-0.337
+    box: material=43 pmin=-1.737,0.071,-0.737 pmax=-1.263,0.546,-0.263
+    box: material=44 pmin=-0.701,0.173,-0.701 pmax=-0.299,0.575,-0.299
+    box: material=45 pmin=0.374,0.160,-0.626 pmax=0.626,0.411,-0.374
+    box: material=46 pmin=1.401,0.034,-0.599 pmax=1.599,0.231,-0.401
+    box: material=47 pmin=2.334,0.250,-0.666 pmax=2.666,0.582,-0.334
+    box: material=48 pmin=3.428,0.131,-0.572 pmax=3.572,0.275,-0.428
+    box: material=49 pmin=4.408,0.074,-0.592 pmax=4.592,0.258,-0.408
+    box: material=50 pmin=-4.627,0.018,0.373 pmax=-4.373,0.272,0.627
+    box: material=51 pmin=-3.836,0.248,0.164 pmax=-3.164,0.920,0.836
+    box: material=52 pmin=-2.594,0.299,0.406 pmax=-2.406,0.486,0.594
+    box: material=53 pmin=-1.554,0.014,0.446 pmax=-1.446,0.121,0.554
+    box: material=54 pmin=-0.683,0.102,0.317 pmax=-0.317,0.467,0.683
+    box: material=55 pmin=0.383,0.009,0.383 pmax=0.617,0.242,0.617
+    box: material=56 pmin=1.364,0.040,0.364 pmax=1.636,0.312,0.636
+    box: material=57 pmin=2.250,0.178,0.250 pmax=2.750,0.677,0.750
+    box: material=58 pmin=3.444,0.058,0.444 pmax=3.556,0.170,0.556
+    box: material=59 pmin=4.448,0.275,0.448 pmax=4.552,0.380,0.552
+    box: material=60 pmin=-4.689,0.060,1.311 pmax=-4.311,0.438,1.689
+    box: material=61 pmin=-3.606,0.110,1.394 pmax=-3.394,0.322,1.606
+    box: material=62 pmin=-2.700,0.180,1.300 pmax=-2.300,0.580,1.700
+    box: material=63 pmin=-1.637,0.041,1.363 pmax=-1.363,0.314,1.637
+    box: material=64 pmin=-0.638,0.099,1.362 pmax=-0.362,0.374,1.638
+    box: material=65 pmin=0.244,0.188,1.244 pmax=0.756,0.701,1.756
+    box: material=66 pmin=1.445,0.043,1.445 pmax=1.555,0.152,1.555
+    box: material=67 pmin=2.411,0.171,1.411 pmax=2.589,0.348,1.589
+    box: material=68 pmin=3.401,0.040,1.401 pmax=3.599,0.239,1.599
+    box: material=69 pmin=4.298,0.108,1.298 pmax=4.702,0.513,1.702
+    box: material=70 pmin=-4.644,0.252,2.356 pmax=-4.356,0.540,2.644
+    box: material=71 pmin=-3.782,0.008,2.218 pmax=-3.218,0.572,2.782
+    box: material=72 pmin=-2.623,0.208,2.377 pmax=-2.377,0.454,2.623
+    box: material=73 pmin=-1.674,0.146,2.326 pmax=-1.326,0.495,2.674
+    box: material=74 pmin=-0.848,0.137,2.152 pmax=-0.152,0.834,2.848
+    box: material=75 pmin=0.409,0.047,2.409 pmax=0.591,0.230,2.591
+    box: material=76 pmin=1.332,0.224,2.332 pmax=1.668,0.559,2.668
+    box: material=77 pmin=2.429,0.041,2.429 pmax=2.571,0.182,2.571
+    box: material=78 pmin=3.176,0.141,2.176 pmax=3.824,0.789,2.824
+    box: material=79 pmin=4.340,0.278,2.340 pmax=4.660,0.597,2.660
+    box: material=80 pmin=-4.791,0.174,3.209 pmax=-4.209,0.756,3.791
+    box: material=81 pmin=-3.671,0.157,3.329 pmax=-3.329,0.498,3.671
+    box: material=82 pmin=-2.592,0.023,3.408 pmax=-2.408,0.206,3.592
+    box: material=83 pmin=-1.706,0.290,3.294 pmax=-1.294,0.702,3.706
+    box: material=84 pmin=-0.683,0.253,3.317 pmax=-0.317,0.618,3.683
+    box: material=85 pmin=0.380,0.210,3.380 pmax=0.620,0.449,3.620
+    box: material=86 pmin=1.265,0.048,3.265 pmax=1.735,0.518,3.735
+    box: material=87 pmin=2.248,0.020,3.248 pmax=2.752,0.523,3.752
+    box: material=88 pmin=3.435,0.266,3.435 pmax=3.565,0.396,3.565
+    box: material=89 pmin=4.368,0.274,3.368 pmax=4.632,0.539,3.632
+    box: material=90 pmin=-4.608,0.261,4.392 pmax=-4.392,0.477,4.608
+    box: material=91 pmin=-3.748,0.290,4.252 pmax=-3.252,0.787,4.748
+    box: material=92 pmin=-2.634,0.290,4.366 pmax=-2.366,0.557,4.634
+    box: material=93 pmin=-1.711,0.012,4.289 pmax=-1.289,0.433,4.711
+    box: material=94 pmin=-0.771,0.231,4.229 pmax=-0.229,0.774,4.771
+    box: material=95 pmin=0.231,0.038,4.231 pmax=0.769,0.576,4.769
+    box: material=96 pmin=1.332,0.042,4.332 pmax=1.668,0.378,4.668
+    box: material=97 pmin=2.405,0.191,4.405 pmax=2.595,0.382,4.595
+    box: material=98 pmin=3.188,0.210,4.188 pmax=3.812,0.835,4.812
+    box: material=99 pmin=4.432,0.132,4.432 pmax=4.568,0.268,4.568
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=100
+    plane: material=101

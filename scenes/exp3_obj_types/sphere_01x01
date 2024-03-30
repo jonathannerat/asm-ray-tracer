@@ -1,0 +1,10 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-1.000,2.000,-1.000 to=0.000,0.000,0.000
+materials:
+    lambertian=0.829,0.648,0.198
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    sphere: material=0 center=0.000,0.330,0.000 radius=0.323
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=1
+    plane: material=2

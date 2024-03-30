@@ -3,7 +3,7 @@
 import os
 import sys
 from random import random as frand
-from lib.generation import random_material, random_surface
+from lib.generation import random_material, generate_surface
 from lib.config import Config, parse_config
 from lib.ray_tracer import Vec, Camera, Output, Material, Surface, GeneratedScene
 
@@ -30,8 +30,9 @@ def generate_objects(config: Config):
     for z in range(0, config.rows):
         for x in range(0, config.cols):
             center = Vec(x - xcenter + 0.5, frand() * 0.3, z - zcenter + 0.5)
+            surfaces = generate_surface(config.objtype, center, mat_index, 0.7)
 
-            surfaces = random_surface(center, mat_index, 0.7)
+
             if isinstance(surfaces, Surface):
                 res.append(surfaces)
             else:
@@ -69,7 +70,7 @@ def main():
         scene = GeneratedScene(
             Output(config.width, config.height, 50, 25),
             Camera(
-                Vec(-config.cols / 2 - .5, 2, -config.rows / 2 - .5), Vec(0, 0, 0)
+                Vec(-config.cols / 2 - 0.5, 2, -config.rows / 2 - 0.5), Vec(0, 0, 0)
             ),
             materials,
             objects,

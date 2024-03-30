@@ -1,0 +1,106 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-4.000,2.000,-4.000 to=0.000,0.000,0.000
+materials:
+    metal: albedo=0.067,0.036,0.650 fuzz=0.332
+    lambertian=0.495,0.238,0.586
+    metal: albedo=0.387,0.363,0.735 fuzz=0.202
+    lambertian=0.521,0.744,0.150
+    lambertian=0.032,0.816,0.581
+    lambertian=0.027,0.642,0.879
+    dielectric: albedo=0.602,0.477,0.954 ir=1.183
+    metal: albedo=0.604,0.578,0.077 fuzz=0.989
+    lambertian=0.580,0.335,0.881
+    metal: albedo=0.628,0.342,0.819 fuzz=0.693
+    lambertian=0.197,0.405,0.158
+    metal: albedo=0.570,0.422,0.025 fuzz=0.739
+    dielectric: albedo=0.148,0.483,0.192 ir=1.363
+    metal: albedo=0.831,0.452,0.129 fuzz=0.300
+    lambertian=0.927,0.380,0.495
+    lambertian=0.911,0.233,0.621
+    lambertian=0.393,0.667,0.944
+    metal: albedo=0.211,0.857,0.219 fuzz=0.865
+    lambertian=0.148,0.362,0.698
+    lambertian=0.586,0.299,0.574
+    lambertian=0.052,0.446,0.149
+    metal: albedo=0.794,0.965,0.742 fuzz=0.274
+    lambertian=0.267,0.486,0.502
+    lambertian=0.183,0.869,0.832
+    metal: albedo=0.677,0.829,0.893 fuzz=0.254
+    lambertian=0.242,0.821,0.309
+    dielectric: albedo=0.004,0.113,0.536 ir=1.441
+    lambertian=0.086,0.714,0.278
+    lambertian=0.465,0.166,0.107
+    lambertian=0.461,0.163,0.114
+    dielectric: albedo=0.131,0.058,0.077 ir=1.142
+    dielectric: albedo=0.561,0.302,0.561 ir=1.065
+    lambertian=0.332,0.225,0.729
+    lambertian=0.975,0.191,0.334
+    metal: albedo=0.599,0.883,0.291 fuzz=0.843
+    metal: albedo=0.771,0.565,0.944 fuzz=0.657
+    metal: albedo=0.566,0.807,0.176 fuzz=0.376
+    lambertian=0.242,0.889,0.462
+    metal: albedo=0.066,0.536,0.870 fuzz=0.488
+    lambertian=0.138,0.132,0.562
+    dielectric: albedo=0.618,0.815,0.309 ir=1.035
+    lambertian=0.555,0.177,0.810
+    metal: albedo=0.093,0.520,0.113 fuzz=0.707
+    lambertian=0.652,0.537,0.780
+    metal: albedo=0.920,0.570,0.330 fuzz=0.187
+    dielectric: albedo=0.487,0.496,0.836 ir=1.241
+    metal: albedo=0.765,0.245,0.991 fuzz=0.900
+    lambertian=0.241,0.620,0.826
+    metal: albedo=0.928,0.170,0.021 fuzz=0.859
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    sphere: material=0 center=-3.000,0.399,-3.000 radius=0.181
+    sphere: material=1 center=-2.000,0.238,-3.000 radius=0.116
+    sphere: material=2 center=-1.000,0.397,-3.000 radius=0.274
+    sphere: material=3 center=0.000,0.329,-3.000 radius=0.125
+    sphere: material=4 center=1.000,0.353,-3.000 radius=0.271
+    sphere: material=5 center=2.000,0.183,-3.000 radius=0.113
+    sphere: material=6 center=3.000,0.210,-3.000 radius=0.062
+    sphere: material=7 center=-3.000,0.409,-2.000 radius=0.272
+    sphere: material=8 center=-2.000,0.212,-2.000 radius=0.069
+    sphere: material=9 center=-1.000,0.439,-2.000 radius=0.270
+    sphere: material=10 center=0.000,0.223,-2.000 radius=0.170
+    sphere: material=11 center=1.000,0.277,-2.000 radius=0.064
+    sphere: material=12 center=2.000,0.373,-2.000 radius=0.224
+    sphere: material=13 center=3.000,0.491,-2.000 radius=0.228
+    sphere: material=14 center=-3.000,0.107,-1.000 radius=0.088
+    sphere: material=15 center=-2.000,0.327,-1.000 radius=0.205
+    sphere: material=16 center=-1.000,0.147,-1.000 radius=0.129
+    sphere: material=17 center=0.000,0.492,-1.000 radius=0.234
+    sphere: material=18 center=1.000,0.275,-1.000 radius=0.250
+    sphere: material=19 center=2.000,0.337,-1.000 radius=0.208
+    sphere: material=20 center=3.000,0.394,-1.000 radius=0.264
+    sphere: material=21 center=-3.000,0.315,0.000 radius=0.150
+    sphere: material=22 center=-2.000,0.372,0.000 radius=0.076
+    sphere: material=23 center=-1.000,0.340,0.000 radius=0.102
+    sphere: material=24 center=0.000,0.139,0.000 radius=0.132
+    sphere: material=25 center=1.000,0.528,0.000 radius=0.296
+    sphere: material=26 center=2.000,0.557,0.000 radius=0.303
+    sphere: material=27 center=3.000,0.219,0.000 radius=0.177
+    sphere: material=28 center=-3.000,0.327,1.000 radius=0.091
+    sphere: material=29 center=-2.000,0.350,1.000 radius=0.299
+    sphere: material=30 center=-1.000,0.411,1.000 radius=0.229
+    sphere: material=31 center=0.000,0.334,1.000 radius=0.313
+    sphere: material=32 center=1.000,0.257,1.000 radius=0.245
+    sphere: material=33 center=2.000,0.297,1.000 radius=0.285
+    sphere: material=34 center=3.000,0.371,1.000 radius=0.252
+    sphere: material=35 center=-3.000,0.286,2.000 radius=0.090
+    sphere: material=36 center=-2.000,0.474,2.000 radius=0.342
+    sphere: material=37 center=-1.000,0.160,2.000 radius=0.145
+    sphere: material=38 center=0.000,0.217,2.000 radius=0.188
+    sphere: material=39 center=1.000,0.472,2.000 radius=0.306
+    sphere: material=40 center=2.000,0.381,2.000 radius=0.160
+    sphere: material=41 center=3.000,0.186,2.000 radius=0.159
+    sphere: material=42 center=-3.000,0.190,3.000 radius=0.178
+    sphere: material=43 center=-2.000,0.464,3.000 radius=0.255
+    sphere: material=44 center=-1.000,0.424,3.000 radius=0.134
+    sphere: material=45 center=0.000,0.508,3.000 radius=0.294
+    sphere: material=46 center=1.000,0.379,3.000 radius=0.325
+    sphere: material=47 center=2.000,0.179,3.000 radius=0.055
+    sphere: material=48 center=3.000,0.352,3.000 radius=0.338
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=49
+    plane: material=50

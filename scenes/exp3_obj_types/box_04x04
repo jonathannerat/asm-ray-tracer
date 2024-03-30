@@ -1,0 +1,40 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-2.500,2.000,-2.500 to=0.000,0.000,0.000
+materials:
+    lambertian=0.462,0.671,0.125
+    lambertian=0.771,0.930,0.687
+    lambertian=0.105,0.645,0.077
+    metal: albedo=0.315,0.614,0.166 fuzz=0.006
+    lambertian=0.092,0.031,0.573
+    lambertian=0.719,0.846,0.826
+    lambertian=0.050,0.820,0.995
+    lambertian=0.132,0.317,0.555
+    metal: albedo=0.598,0.308,0.744 fuzz=0.319
+    lambertian=0.684,0.509,0.060
+    metal: albedo=0.279,0.288,0.278 fuzz=0.777
+    metal: albedo=0.645,0.796,0.170 fuzz=0.411
+    lambertian=0.787,0.528,0.665
+    lambertian=0.859,0.041,0.868
+    dielectric: albedo=0.098,0.969,0.092 ir=1.476
+    metal: albedo=0.817,0.151,0.222 fuzz=0.096
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    box: material=0 pmin=-1.764,0.186,-1.764 pmax=-1.236,0.715,-1.236
+    box: material=1 pmin=-0.631,0.149,-1.631 pmax=-0.369,0.412,-1.369
+    box: material=2 pmin=0.260,0.271,-1.740 pmax=0.740,0.751,-1.260
+    box: material=3 pmin=1.428,0.279,-1.572 pmax=1.572,0.423,-1.428
+    box: material=4 pmin=-1.664,0.047,-0.664 pmax=-1.336,0.374,-0.336
+    box: material=5 pmin=-0.786,0.225,-0.786 pmax=-0.214,0.797,-0.214
+    box: material=6 pmin=0.312,0.093,-0.688 pmax=0.688,0.469,-0.312
+    box: material=7 pmin=1.344,0.279,-0.656 pmax=1.656,0.591,-0.344
+    box: material=8 pmin=-1.772,0.261,0.228 pmax=-1.228,0.805,0.772
+    box: material=9 pmin=-0.591,0.178,0.409 pmax=-0.409,0.360,0.591
+    box: material=10 pmin=0.320,0.016,0.320 pmax=0.680,0.377,0.680
+    box: material=11 pmin=1.182,0.140,0.182 pmax=1.818,0.777,0.818
+    box: material=12 pmin=-1.578,0.226,1.422 pmax=-1.422,0.382,1.578
+    box: material=13 pmin=-0.826,0.277,1.174 pmax=-0.174,0.929,1.826
+    box: material=14 pmin=0.262,0.113,1.262 pmax=0.738,0.590,1.738
+    box: material=15 pmin=1.424,0.139,1.424 pmax=1.576,0.291,1.576
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=16
+    plane: material=17

@@ -19,8 +19,8 @@ def random_material() -> Material:
     )
 
 
-def random_surface(at: Vec,  mat: int, max_size: float = 1) -> Surface | list[Surface]:
-    otype = choice(OBJECT_TYPES)
+def generate_surface(otype: str, at: Vec, mat: int, max_size: float):
+    otype = choice(OBJECT_TYPES) if otype == "random" else otype
     side = frand() * (max_size - 0.1) + 0.1
     props = {}
 

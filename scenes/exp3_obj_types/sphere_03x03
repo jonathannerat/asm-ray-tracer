@@ -1,0 +1,26 @@
+output: width=100 height=100 spp=50 depth=25
+camera: from=-2.000,2.000,-2.000 to=0.000,0.000,0.000
+materials:
+    metal: albedo=0.878,0.467,0.747 fuzz=0.587
+    lambertian=0.006,0.401,0.204
+    lambertian=0.345,0.854,0.437
+    metal: albedo=0.514,0.301,0.750 fuzz=0.434
+    lambertian=0.727,0.998,0.148
+    lambertian=0.342,0.086,0.451
+    metal: albedo=0.193,0.966,0.668 fuzz=0.374
+    dielectric: albedo=0.278,0.041,0.175 ir=1.319
+    metal: albedo=0.032,0.048,0.312 fuzz=0.257
+    light=1.000,1.000,1.000
+    lambertian=0.400,0.400,0.400
+objects:
+    sphere: material=0 center=-1.000,0.355,-1.000 radius=0.170
+    sphere: material=1 center=0.000,0.190,-1.000 radius=0.082
+    sphere: material=2 center=1.000,0.268,-1.000 radius=0.165
+    sphere: material=3 center=-1.000,0.551,0.000 radius=0.338
+    sphere: material=4 center=0.000,0.526,0.000 radius=0.298
+    sphere: material=5 center=1.000,0.459,0.000 radius=0.337
+    sphere: material=6 center=-1.000,0.355,1.000 radius=0.295
+    sphere: material=7 center=0.000,0.355,1.000 radius=0.345
+    sphere: material=8 center=1.000,0.365,1.000 radius=0.148
+    plane: origin=0.000,4.000,0.000 normal=0.000,-1.000,0.000 material=9
+    plane: material=10

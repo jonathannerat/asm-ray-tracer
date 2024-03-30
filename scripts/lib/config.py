@@ -19,6 +19,7 @@ class Config:
     rows: int = 5
     cols: int = 5
     scenes: int = 1
+    objtype: str = 'random'
 
 
 def parse_config(args: list[str]):
@@ -46,6 +47,8 @@ def parse_config(args: list[str]):
             config.rows = int(args[i + 1])
         elif args[i] == "-s":
             config.scenes = int(args[i + 1])
+        elif args[i] == "-o":
+            config.objtype = args[i + 1]
 
         i += 2
 

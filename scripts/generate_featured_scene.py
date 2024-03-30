@@ -5,8 +5,7 @@ import sys
 
 from lib.ray_tracer import Vec, Camera, Output, Material, Surface, GeneratedScene
 from lib.config import Config, parse_config
-from lib.generation import random_material
-from lib.generation import random_surface
+from lib.generation import random_material, generate_surface
 
 
 SCENES_DIR = os.path.join("scenes", "generated")
@@ -40,7 +39,7 @@ def generate_objects(config: Config):
                     )
                 )
             else:
-                surfaces = random_surface(center, mat_index, 0.7)
+                surfaces = generate_surface("random", center, mat_index, 0.7)
                 if isinstance(surfaces, Surface):
                     res.append(surfaces)
                 else:

@@ -37,7 +37,7 @@ por la escena hasta llegar a una fuente de luz y combinar los aportes de todas
 las superficies, en la primer intersección se calcula el aporte de cada fuente
 de luz con la superficie.
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
@@ -114,17 +114,16 @@ definición. Si corremos nuevamente ASM pero con un \texttt{spp=1} y
 la calidad de la imagen.
 
 
-\subsection{Tiempos de ejecución con escena preparada para distintas
-resoluciones}
+\subsection{Ciclos de clock para distintas resoluciones en escena preparada}
 
 Inspirado en el experimento realizado por Mongi en su trabajo, compararemos los
 tiempos de ejecución de las implementaciones en C y ASM para una misma escena,
 pero variando la resolución de la imagen de salida. Se espera que ASM sea
 ampliamente superior a C en este aspecto.
 
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{./imgs/exp2-scene.png}
+    \includegraphics[width=.8\textwidth]{./imgs/exp2-scene.png}
     \caption{Escena a utilizarse para la medición}
     \label{fig:exp2-scene}
 \end{figure}
@@ -159,18 +158,82 @@ menos ciclos para generar la misma imagen que en C. Por otro lado, en
 \ref{fig:exp2-res-line} se puede ver como estas magnitudes crecen de forma
 lineal respecto a la cantidad de pixeles de cada imagen, lo cual tiene sentido.
 
-\subsection{Tiempos de ejecución por tipo de objeto para distintas cantidades}
+\subsection{Ciclos de clock por tipo de objeto para distintas cantidades}
 
-% generar escenas por cada tipo de objeto que contengan solo ese tipo, y variar
-% la cantidad de objetos de la escena, y ver la variación de tiempo por cada
-% uno.
+En este experimento, generaremos escenas de cubos, esferas y tetraedros, con una
+cantidad creciente de elementos por escena.
 
-\subsection{Tiempos de ejecución por tipo de material para distintas cantidades}
+Nuestro script \texttt{generate\_scenes.py} puede generar una grilla de objetos
+de distintos tamaños y materiales (como se puede apreciar en el experimento
+anterior), y enfocar la cámara en el centro para que todos los objetos sean
+visibles. Lo usaremos para generar escenas con grillas de $1 \times 1$, $2
+\times 2$, hasta $10 \times 10$, compuestas únicamente por cubos, esferas, o
+tetraedros.
 
-% idem pero por cada tipo de material. Usar esferas ya que son más simples y asi
-% las escenas tienen cierta uniformidad.
+Luego, mediremos la cantidad de ciclos de clock que le toma a cada ray tracer
+generar la imagen realizando 5 mediciones y calculando el promedio.
 
-\subsection{Variación de depth vs. spp para una escena preparada}
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./imgs/exp3-box-c_vs_asm.png}
+        \caption{Ciclos de clock por cantidad de \textit{boxes}}
+        % \label{fig:exp3-res-box}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./imgs/exp3-sphere-c_vs_asm.png}
+        \caption{Ciclos de clock por cantidad de \textit{spheres}}
+        % \label{fig:exp3-res-sphere}
+    \end{subfigure}
 
-% Ver como varía la imagen para distintos depth y spp, y elegir una
-% configuración óptima que no sacrifique mucha calidad de imagen
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./imgs/exp3-tetra-c_vs_asm.png}
+        \caption{Ciclos de clock por cantidad de \textit{tetrahedrons}}
+        % \label{fig:exp3-res-tetra}
+    \end{subfigure}
+    \caption{Resultados del experimento}
+    \label{fig:exp3-res}
+\end{figure}
+
+En la figura \ref{fig:exp3-res} podemos ver los resultados por tipo de objeto.
+En los 3 casos se puede ver un crecimiento casi lineal de la cantidad de ciclos,
+tanto en C como en ASM.
+
+% Descarto estas secciones porque es muy similar a la anterior, y seguramente se
+% obteienen los mismos resultados
+% \subsection{Tiempos de ejecución por tipo de material para distintas cantidades}
+%
+% % idem pero por cada tipo de material. Usar esferas ya que son más simples y asi
+% % las escenas tienen cierta uniformidad.
+%
+% \subsection{Variación de depth vs. spp para una escena preparada}
+%
+% % Ver como varía la imagen para distintos depth y spp, y elegir una
+% % configuración óptima que no sacrifique mucha calidad de imagen
+
+\subsection{Tiempo de ejecución entre C y ASM para mallas de triángulos}
+
+En este experimento, comparamos la diferencia en el tiempo de ejecución que
+tarda renderizar una imagen con un modelo de malla de triángulos. Se tomaran 10
+mediciones del tiempo CPU, y se informará el promedio.
+
+La escena a renderizar será la que se muestra en la figura \ref{fig:exp4-scene},
+pero con una menor resolución para facilitar la medición.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.95\textwidth]{./imgs/exp4.png}
+    \caption{Escena a utilizar en el experimento}
+    \label{fig:exp4-scene}
+\end{figure}
+
+Los resultados son:
+
+\begin{itemize}
+    \item ASM: 8105.55 ms
+    \item C: 44836.09 ms
+\end{itemize}
