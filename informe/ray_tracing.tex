@@ -7,7 +7,7 @@ imagen de la misma lanzando rayos desde un origen (cámara) hacia una ventana, y
 trazando la trayectoria de los mismos para ver sobre qué objetos / materiales
 incidió (Figura \ref{fig:rt-camera-throwing-rays-into-scene}).
 
-\begin{figure}
+\begin{figure}[H]
   \centering
   \includegraphics[width=.7\textwidth]{imgs/rt-camera-throwing-rays-into-scene.png}
   \caption{Cámara lanzando rayos por una ventana hacia una escena}
@@ -34,10 +34,8 @@ imagen vacía, pero sin cámara, simplemente no hay imagen.
 
 Para generar la imagen final, se utiliza la \textbf{posición} de la cámara como
 el origen de los rayos, y la \textbf{dirección} en la que apunta para establecer
-donde se encuentra el plano de foco, donde se construye la ventana que
-finalmente corresponde con la imagen. También es necesario conocer la
-\textbf{dirección arriba}: si la cámara fuese la de un celular, la dirección
-arriba estaría dada por la inclinación.
+donde se encuentra el plano de foco, sobre el que se construye la ventana que
+finalmente corresponde con la imagen.
 
 Por otro lado, el \textbf{field of view} establece las dimensiones de la
 ventana, mientras que la \textbf{apertura} y la \textbf{distancia de foco}
@@ -73,11 +71,10 @@ se promedia para calcular el color final del pixel.
 
 \subsection{Objetos}
 
-Los objetos son cuerpos del espacio tridimensional que pueden colisionar con los
-rayos y en consecuencia, modificar la trayectoria de los mismos y finalmente la
-imagen. Dependiendo del material de su superficie, estos pueden reflejar o
-refractar los rayos, y cambiar el color de cada pixel. En este trabajo se
-implementaron 5 tipos objetos:
+Los objetos son cuerpos de la escena con los que colisionan los rayos, modifican
+sus trayectorias, y finalmente, afectan a la imagen. Dependiendo del material de
+su superficie, estos pueden reflejar o refractar los rayos, y cambiar el color
+de cada pixel. En este trabajo se implementaron 5 tipos objetos:
 
 \begin{itemize}
   \item Esferas
