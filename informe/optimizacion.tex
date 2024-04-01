@@ -1,3 +1,68 @@
-\section{Optimización con SIMD} \label{sec:optimizacion}
+\section{Optimización} \label{sec:optimizacion}
 
+Como vimos hasta ahora, la generación de imágenes requiere realizar muchas
+operaciones vectoriales. Resulta natural, entonces, intentar optimizarlas para
+lograr un impacto positivo en la performance general.
 
+El primer intento consistió en identificar las funciones que realizaban
+operaciones vectoriales, y moverlas a un \textit{header} \texttt{core.h} que
+sería implementado tanto en C como en ASM. En C se implementaron las funciones
+de manera directa:
+
+\begin{lstlisting}[language=C]
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float _;
+} vec3;
+
+vec3 vec3_sum(vec3 a, vec3 b) {
+    return (vec3){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+\end{lstlisting}
+
+, mientras que en ASM, se utilizaron las instrucciones correspondientes:
+
+\begin{lstlisting}[language={[x86masm]Assembler}]
+vec3_sum:
+    addss xmm1, xmm3
+    addps xmm0, xmm2
+\end{lstlisting}
+
+Esto se hizo para funciones sobre vectores, como \texttt{vec3\_prod/sub/dot} que
+calculaban producto (componente a componente), resta y producto interno, entre
+otras. También se hizo para las funciones \textit{hit} de objetos (\textsc{PlaneHit},
+\textsc{SphereHit}, etc.), y \textit{scatter} de materiales
+(\textsc{LambertianScatter}, \textsc{MetalScatter}, etc).
+
+Cuando se comparó la performance entre las implementaciones, la diferencia era
+insignificante. En algunos casos RTASM obtenía un tiempo menor, pero no lo hacia
+de forma consistente.
+
+El enfoque de reescribir solamente las funciones y mantener el resto fuera del
+\texttt{core} exactamente igual, fue en principio conveniente, pero el overhead
+causado por los saltos en el programa por llamadas a funciones posiblemente
+anulo todas las ganancias obtenidas.
+
+Además, la convención de llamadas de C establecía que las estructuras con las
+que representamos a los vectores (\texttt{vec3}) debían ser pasadas en 2
+registros XMM en lugar de 1. Por lo que algunas funciones que se podían resolver
+en 1 instrucción pasaban a utilizar 2, o requerían un paso previo para combinar
+los 2 registros XMM en uno solo, y otro posterior para volver a separarlo.
+
+Todo esto nos llevó a un segundo enfoque, que fue prácticamente reescribir toda
+la lógica del ray tracer en ASM. Esto nos permitió tener un mayor control sobre
+como se ejecutaba el código, no solo en el \textit{packing} de estructuras como
+\texttt{vec3}, sino también en, por ejemplo, la utilización óptima de registros
+para evitar \texttt{push}/\texttt{pop} al stack innecesarios entre llamadas a
+funciones.
+
+Las operaciones que antes requerían una llamada a una función
+(\texttt{vec3\_sum}), ahora se podían resolver en una sola instrucción
+(\texttt{addps}). La mejora es incluso más evidente en operaciones como
+\texttt{vec3\_dot}, que calcula el producto interno entre vectores. La
+implementación en C puede llegar a tomar 10 instrucciones, que incluyen
+movimientos desde y hacia memoria, mientras que en ASM se puede implementar en
+una instrucción: \texttt{vdpps xmm0, xmm1, xmm2, 0xF1} es equivalente a
+\texttt{float a = vec3\_dot(b, c)}.
